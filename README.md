@@ -56,7 +56,7 @@ python3 taban.py veri/zlib.jsonl -n 60 -m glm-5.3 [--dusunme]
 ## Evren platform API'si (2026-10-08 inceleme, giriş yapılmadan)
 
 - İki ayrı anahtar var: LLM geçidi `evren_llm_...` (elimizde) ve platform API'si
-  `evren_...` (**API Anahtarları** sayfasından Emin oluşturur). Başlık: `X-API-Key`.
+  `evren_...` (**API Anahtarları** sayfasından oluşturulur). Başlık: `X-API-Key`.
 - Platformun resmî örnekleri: model listeleme, sürümler, `/inference/predict`.
 - Arayüz kodunda veri seti yükleme akışı var: `POST /datasets/{id}/upload/presign`
   (`files: [{filename, sha256_hash, file_size, client_uid}]`) → presigned URL'lere PUT →
