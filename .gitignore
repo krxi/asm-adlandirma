@@ -1,5 +1,7 @@
 kaynak/
 __pycache__/
 .taslak/
+.notlar/
+CLAUDE.md
 .env
 *.env
