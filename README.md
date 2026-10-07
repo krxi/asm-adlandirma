@@ -67,3 +67,20 @@ python3 taban.py veri/zlib.jsonl -n 60 -m glm-5.3 [--dusunme]
   açılıyor mu doğrulanmadı.
 - **Koşullar 4.9:** yüklenen veri, model ve çıktılar platform tarafından geliştirme ve
   araştırma için kullanılabilir. Açık kaynak türevi veri için sorun değil; özel veri yükleme.
+
+## Evren platform API — anahtarla doğrulandı (2026-10-08, yalnız GET)
+
+- Taban adres `https://api.ssyz.org.tr/api/v1`, başlık `X-API-Key`. `~/Desktop/evren.env`:
+  `EVREN_PLT_API_KEY` (platform, **tam hesap yetkisi** — billing/transfer dahil, dikkat),
+  `EVREN_MD_API_KEY` (yalnız model/çıkarım uçları; diğerlerinde 403).
+- Çalışan okuma uçları: `/auth/me`, `/datasets`, `/models`, `/projects`, `/api-keys`,
+  `/billing/balance` (1010 CR), `/billing/earning/overview`, `/me/stats`, `/llm/quota`
+  (5 dk pencerede 2.5M token), `/training/jobs`, `/training/queue-status` (16 GPU),
+  `/training/recipes`.
+- Veri seti modaliteleri: VISION, TEXT, NLP, AUDIO, MULTIMODAL → metin (jsonl) veri seti açılabilir.
+- **Eğitim tarifleri yalnız görüntü** (Hızlı/Standart/Kaliteli/Yüksek Çözünürlük, YOLO/DETR).
+  API'de LLM/LoRA eğitimi görünmüyor; "LLM / NLP" yol haritasında yalnız çıkarım olarak geçiyor.
+  → LoRA eğitimi şimdilik yerelde (Mac'te mlx-lm ile 0.5-1.5B model) ya da Evren ekibine sorarak.
+- Kredi kuralları (seçme): 1000 veri +15, 10k veri +40 (günde 1), veri seti yayınlama +5,
+  model yayınlama +10, günlük giriş +10.
+- Hesapta zaten "Assembly yorumlayıcı" adlı **public** proje var (Emin açtı), henüz boş.
