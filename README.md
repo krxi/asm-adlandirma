@@ -37,3 +37,33 @@ python3 taban.py veri/zlib.jsonl -n 60 -m glm-5.3 [--dusunme]
   bekletebiliyor (`reasoning_effort: low` dahil). Varsayılan düşünme kapalı
   (`chat_template_kwargs.enable_thinking=false`, ~1-3 sn); açıkken tavan 4096.
 - `glm-5.3` düşünme kapalıyken bile yavaş (~25 sn) ve JSON'dan önce gerekçe yazıyor.
+
+## İlk taban sonuçları (2026-10-08, düşünmesiz, n=60, F1)
+
+| model | -O0 | -O2 | tam isabet |
+|---|---|---|---|
+| mimo-v2.6-pro | 0.17 | 0.31 | 6 |
+| deepseek-v4.1-flash | 0.10 | 0.13 | 0 |
+| qwen3.8-flash-next | 0.06 | 0.17 | 0 |
+| gemma-4-31b | 0.05 | 0.04 | 0 |
+
+- 4-8 istek **HTTP 503** ile düştü (10 koşu × 6 eşzamanlı = 60 istek fazla). Sonraki turda
+  toplam eşzamanlılığı ~16'da tut, yalnız `HATA` satırlarını yeniden sor.
+- **Ezber riski:** zlib çok ünlü; mimo'nun `lm_init`, `longest_match` tam isabetleri
+  kaynak kodu eğitimde görmüş olmasından olabilir. Gerçek test seti az bilinen veya
+  bizim yazdığımız kodla kurulmalı; zlib yalnız ısınma.
+
+## Evren platform API'si (2026-10-08 inceleme, giriş yapılmadan)
+
+- İki ayrı anahtar var: LLM geçidi `evren_llm_...` (elimizde) ve platform API'si
+  `evren_...` (**API Anahtarları** sayfasından Emin oluşturur). Başlık: `X-API-Key`.
+- Platformun resmî örnekleri: model listeleme, sürümler, `/inference/predict`.
+- Arayüz kodunda veri seti yükleme akışı var: `POST /datasets/{id}/upload/presign`
+  (`files: [{filename, sha256_hash, file_size, client_uid}]`) → presigned URL'lere PUT →
+  `POST /datasets/{id}/upload/confirm`. Kabul edilen uzantılar arasında `.jsonl/.json/.txt`
+  da var. **Platform anahtarıyla çağrılabildiği doğrulanmadı.**
+- Eğitim arayüzü görüntü odaklı (YOLO/DETR, `lr0`, `image_size`). LLM LoRA yalnız tanıtım
+  tablosunda geçiyor ("LLaMA-3 8B LoRA ~100k örnek, 8 GPU ~39 dk"); arayüzden LLM eğitimi
+  açılıyor mu doğrulanmadı.
+- **Koşullar 4.9:** yüklenen veri, model ve çıktılar platform tarafından geliştirme ve
+  araştırma için kullanılabilir. Açık kaynak türevi veri için sorun değil; özel veri yükleme.

@@ -1,0 +1,64 @@
+0.00  -O2  deflateEnd                   ← free_ssl_session
+0.50  -O2  inflateReset                 ← reset_decoder
+0.00  -O0  adler32_combine              ← wrapper_call
+0.00  -O0  deflateBound_z               ← sqlite3VarintLen
+0.00  -O2  deflateSetDictionary         ← lzma_code
+0.40  -O0  zlibVersion                  ← get_version_string
+0.00  -O2  adler32_combine              ← mod_inverse_65521
+0.00  -O0  deflateSetDictionary         ← inflate
+0.80  -O0  inflate_fixed                ← inflate_fixed_init
+0.00  -O2  inflate_fixed                ← init_encoder_tables
+0.00  -O0  crc_word                     ← crc64_hesapla
+0.00  -O0  tr_align                     ← send_bits
+0.00  -O2  crc32_combine                ← gf2_matrix_square
+0.00  -O2  crc32                        ← tail_call_thunk
+0.33  -O2  tr_flush_bits                ← flush_bit_buffer
+0.00  -O2  zcalloc                      ← calloc_like_alloc
+0.40  -O2  inflateSync                  ← inflate_reset_keep
+0.00  -O2  deflateCopy                  ← clone_av_frame
+0.00  -O2  crc32_combine_gen64          ← mpn_sec_powm
+0.00  -O2  inflatePrime                 ← bit_writer_put_bits
+0.00  -O2  deflateTune                  ← set_parameter_values
+0.00  -O2  tr_tally                     ← put_byte
+0.40  -O0  deflateParams                ← deflate_set_level
+0.00  -O2  inflateCopy                  ← clone_context
+0.00  -O0  adler32                      ← 
+0.00  -O0  inflateCopy                  ← 
+0.00  -O0  inflateReset2                ← set_quality
+0.00  -O0  inflateSyncPoint             ← check_connection_state
+0.67  -O2  adler32_z                    ← adler32
+0.00  -O0  deflateGetDictionary         ← avcodec_receive_frame
+0.00  -O0  inflateEnd                   ← 
+0.40  -O0  inflateBackInit_             ← inflateInit2_
+0.00  -O2  uncompress                   ← swap_uint64
+0.50  -O0  tr_init                      ← deflate_init
+0.67  -O0  inflateResetKeep             ← deflate_reset_keep
+0.00  -O2  inflateValidate              ← set_stream_state
+0.40  -O2  longest_match                ← lzma_match_finder
+0.00  -O0  deflateReset                 ← check_and_process
+0.40  -O0  crc32_combine_op             ← hash_combine
+0.00  -O0  deflatePrime                 ← put_bits
+0.00  -O0  uncompress2_z                ← inflate_state_init
+0.40  -O2  crc32_combine_op             ← crc32_update
+0.00  -O0  deflateUsed                  ← get_connection_state
+0.00  -O0  multmodp                     ← 
+0.00  -O2  inflateGetDictionary         ← buffer_ring_read
+0.40  -O2  inflateBackInit_             ← inflateInit2_
+0.00  -O0  pqdownheap                   ← sift_down
+0.00  -O0  tr_stored_block              ← deflate_huff
+0.00  -O0  x2nmodp                      ← gf2_matrix_square
+0.00  -O0  inflatePrime                 ← bit_writer_put_bits
+0.00  -O0  lm_init                      ← 
+0.00  -O2  deflatePending               ← get_character_animation_state
+0.00  -O0  zcfree                       ← free_wrapper
+0.00  -O0  detect_data_type             ← check_register_usage
+0.00  -O0  compressBound                ← get_value_or_default
+0.00  -O0  adler32_combine64            ← call_with_three_args
+0.00  -O0  inflateMark                  ← get_audio_buffer_size
+0.29  -O2  deflateSetHeader             ← set_peer_certificate_chain
+0.00  -O2  inflateSyncPoint             ← check_connection_state
+0.00  -O0  inflateValidate              ← set_nonblocking
+-O0: ortalama F1 0.10  (n=34, tam isabet 0)
+-O2: ortalama F1 0.13  (n=26, tam isabet 0)
+toplam token: 59455
+ayrıntı → sonuc/zlib-deepseek-v4.1-flash.jsonl
