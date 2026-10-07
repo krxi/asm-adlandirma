@@ -1,2 +1,5 @@
 kaynak/
 __pycache__/
+.taslak/
+.env
+*.env

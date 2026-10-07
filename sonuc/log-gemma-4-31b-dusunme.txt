@@ -1,0 +1,64 @@
+0.00  -O2  deflateEnd                   ← release_resources
+0.40  -O2  inflateReset                 ← reset_context_state
+0.00  -O0  adler32_combine              ← wrapper
+0.00  -O0  deflateBound_z               ← calculate_offset
+0.00  -O2  deflateSetDictionary         ← reset_internal_state
+0.00  -O0  zlibVersion                  ← get_string
+0.00  -O2  adler32_combine              ← calculate_hash
+0.00  -O0  deflateSetDictionary         ← process_data_block
+0.00  -O0  inflate_fixed                ← init_fix_params
+0.00  -O2  inflate_fixed                ← 
+0.00  -O0  crc_word                     ← calculate_crc64
+0.00  -O0  tr_align                     ← decode_huffman_symbol
+0.00  -O2  crc32_combine                ← compute_x2n_hash
+0.00  -O2  crc32                        ← wrapper_func
+0.33  -O2  tr_flush_bits                ← flush_internal_buffer
+0.00  -O2  zcalloc                      ← malloc_array
+0.00  -O2  inflateSync                  ← process_packet_header
+0.00  -O2  deflateCopy                  ← clone_object
+0.00  -O2  crc32_combine_gen64          ← calc_x2n
+0.00  -O2  inflatePrime                 ← update_bitfield
+0.00  -O2  deflateTune                  ← update_object_properties
+0.00  -O2  tr_tally                     ← 
+0.00  -O0  deflateParams                ← set_configuration
+0.00  -O2  inflateCopy                  ← clone_context
+0.00  -O0  adler32                      ← wrapper_function
+0.00  -O0  inflateCopy                  ← clone_object
+0.00  -O0  inflateReset2                ← set_active_slot
+0.00  -O0  inflateSyncPoint             ← validate_component_state
+0.67  -O2  adler32_z                    ← adler32
+0.33  -O0  deflateGetDictionary         ← get_buffer_data
+0.00  -O0  inflateEnd                   ← release_resource
+0.33  -O0  inflateBackInit_             ← init_buffer_descriptor
+0.00  -O2  uncompress                   ← update_value
+0.40  -O0  tr_init                      ← init_context_descriptors
+0.00  -O0  inflateResetKeep             ← init_context
+0.00  -O2  inflateValidate              ← set_status_flag
+0.00  -O2  longest_match                ← find_pattern
+0.00  -O0  deflateReset                 ← ensure_initialized
+0.00  -O0  crc32_combine_op             ← calculate_hash
+0.00  -O0  deflatePrime                 ← set_bit_mask
+0.00  -O0  uncompress2_z                ← compare_buffers
+0.50  -O2  crc32_combine_op             ← crc32
+0.00  -O0  deflateUsed                  ← get_value
+0.00  -O0  multmodp                     ← crc32
+0.00  -O2  inflateGetDictionary         ← copy_buffer_data
+0.40  -O2  inflateBackInit_             ← init_context
+0.00  -O0  pqdownheap                   ← sift_down
+0.00  -O0  tr_stored_block              ← write_to_buffer
+0.00  -O0  x2nmodp                      ← modular_exponentiation
+0.00  -O0  inflatePrime                 ← write_bits
+0.50  -O0  lm_init                      ← init_configuration
+0.00  -O2  deflatePending               ← get_object_attributes
+0.00  -O0  zcfree                       ← free_resource
+0.00  -O0  detect_data_type             ← check_resource_availability
+0.00  -O0  compressBound                ← get_value
+0.00  -O0  adler32_combine64            ← wrapper_function
+0.00  -O0  inflateMark                  ← calculate_offset
+0.00  -O2  deflateSetHeader             ← update_object_reference
+0.00  -O2  inflateSyncPoint             ← validate_entity_status
+0.00  -O0  inflateValidate              ← set_status_flag
+-O0: ortalama F1 0.05  (n=34, tam isabet 0)
+-O2: ortalama F1 0.09  (n=26, tam isabet 0)
+toplam token: 135172
+ayrıntı → sonuc/zlib-gemma-4-31b-dusunme.jsonl

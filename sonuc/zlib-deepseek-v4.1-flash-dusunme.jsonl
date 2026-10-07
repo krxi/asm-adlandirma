@@ -1,0 +1,60 @@
+{"id": "deflate.c:-O2:deflateEnd", "gercek": "deflateEnd", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 5178}
+{"id": "inflate.c:-O2:inflateReset", "gercek": "inflateReset", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4923}
+{"id": "adler32.c:-O0:adler32_combine", "gercek": "adler32_combine", "tahmin": "", "aciklama": "HATA: HTTP Error 503: Service Unavailable", "f1": 0.0, "opt": "-O0", "token": 0}
+{"id": "deflate.c:-O0:deflateBound_z", "gercek": "deflateBound_z", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 7542}
+{"id": "deflate.c:-O2:deflateSetDictionary", "gercek": "deflateSetDictionary", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 6152}
+{"id": "zutil.c:-O0:zlibVersion", "gercek": "zlibVersion", "tahmin": "get_version", "aciklama": "Sabit bir sürüm dizesinin adresini döndüren basit bir alıcı fonksiyon.", "f1": 0.5, "opt": "-O0", "token": 1546}
+{"id": "adler32.c:-O2:adler32_combine", "gercek": "adler32_combine", "tahmin": "adler32_combine", "aciklama": "İki Adler-32 sağlama değerini ve ikinci veri uzunluğunu birleştirerek yeni Adler-32 değerini hesaplar.", "f1": 1.0, "opt": "-O2", "token": 4277}
+{"id": "deflate.c:-O0:deflateSetDictionary", "gercek": "deflateSetDictionary", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 7219}
+{"id": "inftrees.c:-O0:inflate_fixed", "gercek": "inflate_fixed", "tahmin": "fixedtables", "aciklama": "zlib inflate için sabit Huffman kod tablolarını (lenfix/distfix) ve bit uzunluklarını ayarlayan fixedtables fonksiyonu.", "f1": 0.0, "opt": "-O0", "token": 1048}
+{"id": "inftrees.c:-O2:inflate_fixed", "gercek": "inflate_fixed", "tahmin": "fixedtables", "aciklama": "zlib inflate için sabit Huffman tablolarını (lenfix/distfix) ayarlayan fonksiyon.", "f1": 0.0, "opt": "-O2", "token": 1451}
+{"id": "crc32.c:-O0:crc_word", "gercek": "crc_word", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4529}
+{"id": "trees.c:-O0:tr_align", "gercek": "tr_align", "tahmin": "", "aciklama": "HATA: HTTP Error 503: Service Unavailable", "f1": 0.0, "opt": "-O0", "token": 0}
+{"id": "crc32.c:-O2:crc32_combine", "gercek": "crc32_combine", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4969}
+{"id": "crc32.c:-O2:crc32", "gercek": "crc32", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4298}
+{"id": "trees.c:-O2:tr_flush_bits", "gercek": "tr_flush_bits", "tahmin": "bi_flush", "aciklama": "zlib'deki bit tamponunu pending_buf'a boşaltan bi_flush fonksiyonu.", "f1": 0.4, "opt": "-O2", "token": 2700}
+{"id": "zutil.c:-O2:zcalloc", "gercek": "zcalloc", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4296}
+{"id": "inflate.c:-O2:inflateSync", "gercek": "inflateSync", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 6382}
+{"id": "deflate.c:-O2:deflateCopy", "gercek": "deflateCopy", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 6213}
+{"id": "crc32.c:-O2:crc32_combine_gen64", "gercek": "crc32_combine_gen64", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4773}
+{"id": "inflate.c:-O2:inflatePrime", "gercek": "inflatePrime", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4766}
+{"id": "deflate.c:-O2:deflateTune", "gercek": "deflateTune", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4689}
+{"id": "trees.c:-O2:tr_tally", "gercek": "tr_tally", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4812}
+{"id": "deflate.c:-O0:deflateParams", "gercek": "deflateParams", "tahmin": "deflate_params", "aciklama": "zlib'de sıkıştırma seviyesi ve stratejisini çalışma zamanında değiştiren deflateParams fonksiyonu.", "f1": 1.0, "opt": "-O0", "token": 2593}
+{"id": "inflate.c:-O2:inflateCopy", "gercek": "inflateCopy", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 5663}
+{"id": "adler32.c:-O0:adler32", "gercek": "adler32", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4417}
+{"id": "inflate.c:-O0:inflateCopy", "gercek": "inflateCopy", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 6200}
+{"id": "inflate.c:-O0:inflateReset2", "gercek": "inflateReset2", "tahmin": "inflateReset2", "aciklama": "zlib inflateReset2 fonksiyonu; windowBits parametresine göre sarma ve pencere bitlerini ayarlayıp inflateReset çağırır.", "f1": 1.0, "opt": "-O0", "token": 3587}
+{"id": "inflate.c:-O0:inflateSyncPoint", "gercek": "inflateSyncPoint", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4648}
+{"id": "adler32.c:-O2:adler32_z", "gercek": "adler32_z", "tahmin": "adler32", "aciklama": "Verilen tampon üzerinde Adler-32 sağlama toplamını hesaplayan zlib fonksiyonudur.", "f1": 0.667, "opt": "-O2", "token": 3184}
+{"id": "deflate.c:-O0:deflateGetDictionary", "gercek": "deflateGetDictionary", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 5074}
+{"id": "inflate.c:-O0:inflateEnd", "gercek": "inflateEnd", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4776}
+{"id": "infback.c:-O0:inflateBackInit_", "gercek": "inflateBackInit_", "tahmin": "inflate_back_init_", "aciklama": "zlib kütüphanesindeki inflateBackInit_ fonksiyonu; inflateBack için pencere ve durum yapısını başlatır.", "f1": 1.0, "opt": "-O0", "token": 4900}
+{"id": "uncompr.c:-O2:uncompress", "gercek": "uncompress", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4416}
+{"id": "trees.c:-O0:tr_init", "gercek": "tr_init", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4771}
+{"id": "inflate.c:-O0:inflateResetKeep", "gercek": "inflateResetKeep", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 5241}
+{"id": "inflate.c:-O2:inflateValidate", "gercek": "inflateValidate", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4623}
+{"id": "deflate.c:-O2:longest_match", "gercek": "longest_match", "tahmin": "longest_match", "aciklama": "zlib kütüphanesinin deflate.c dosyasında en uzun eşleşmeyi bulan longest_match fonksiyonu.", "f1": 1.0, "opt": "-O2", "token": 5554}
+{"id": "deflate.c:-O0:deflateReset", "gercek": "deflateReset", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4452}
+{"id": "crc32.c:-O0:crc32_combine_op", "gercek": "crc32_combine_op", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4540}
+{"id": "deflate.c:-O0:deflatePrime", "gercek": "deflatePrime", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 5308}
+{"id": "uncompr.c:-O0:uncompress2_z", "gercek": "uncompress2_z", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 6389}
+{"id": "crc32.c:-O2:crc32_combine_op", "gercek": "crc32_combine_op", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4532}
+{"id": "deflate.c:-O0:deflateUsed", "gercek": "deflateUsed", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4565}
+{"id": "crc32.c:-O0:multmodp", "gercek": "multmodp", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4828}
+{"id": "inflate.c:-O2:inflateGetDictionary", "gercek": "inflateGetDictionary", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4852}
+{"id": "infback.c:-O2:inflateBackInit_", "gercek": "inflateBackInit_", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4953}
+{"id": "trees.c:-O0:pqdownheap", "gercek": "pqdownheap", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 6150}
+{"id": "trees.c:-O0:tr_stored_block", "gercek": "tr_stored_block", "tahmin": "_tr_stored_block", "aciklama": "zlib'in deflate modülünde depolanmış blok başlığını (3 bit) ve LEN/NLEN alanlarını yazıp veriyi kopyalayan _tr_stored_block fonksiyonu.", "f1": 1.0, "opt": "-O0", "token": 5545}
+{"id": "crc32.c:-O0:x2nmodp", "gercek": "x2nmodp", "tahmin": "x2nmodp", "aciklama": "zlib'de CRC32 birleştirmede kullanılan x^(2^n) mod p değerini hesaplayan iç fonksiyon.", "f1": 1.0, "opt": "-O0", "token": 1792}
+{"id": "inflate.c:-O0:inflatePrime", "gercek": "inflatePrime", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 5147}
+{"id": "deflate.c:-O0:lm_init", "gercek": "lm_init", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 5356}
+{"id": "deflate.c:-O2:deflatePending", "gercek": "deflatePending", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4820}
+{"id": "zutil.c:-O0:zcfree", "gercek": "zcfree", "tahmin": "free_second_arg", "aciklama": "İkinci argümanı free ile serbest bırakan, birinci argümanı yok sayan yardımcı fonksiyon.", "f1": 0.0, "opt": "-O0", "token": 2404}
+{"id": "trees.c:-O0:detect_data_type", "gercek": "detect_data_type", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 5150}
+{"id": "compress.c:-O0:compressBound", "gercek": "compressBound", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4485}
+{"id": "adler32.c:-O0:adler32_combine64", "gercek": "adler32_combine64", "tahmin": "wrapper", "aciklama": "Üç argümanı olduğu gibi sub_0003 fonksiyonuna ileten bir sarmalayıcı fonksiyon.", "f1": 0.0, "opt": "-O0", "token": 3808}
+{"id": "inflate.c:-O0:inflateMark", "gercek": "inflateMark", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4941}
+{"id": "deflate.c:-O2:deflateSetHeader", "gercek": "deflateSetHeader", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4679}
+{"id": "inflate.c:-O2:inflateSyncPoint", "gercek": "inflateSyncPoint", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4584}
+{"id": "inflate.c:-O0:inflateValidate", "gercek": "inflateValidate", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4709}
