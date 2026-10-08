@@ -144,7 +144,7 @@ Qwen2.5-Coder-0.5B (4-bit), 1.500 adım (~1 saat 40 dk, 4,8 GB bellek). İki den
 **2. Girdiyi zenginleştirmek**
 - [x] Çağrı bağlamı (çağrılan fonksiyonların importları ve string'leri): büyük modellerde F1 belirgin arttı
 - [x] Derin bağlam: kısa çağrılanların tam assembly'si, iki seviye özet: özetin üstüne küçük kazanç, sarmalayıcılar hâlâ 0
-- [ ] Gerçek link + strip ile veri hattı (şu an `.o` dosyalarından)
+- [x] Gerçek link + strip ile veri hattı (`cikar_bin.py`, v4): zlib, lua, tomlc17'de denendi, [rapor](VERI_HATTI_V4.md)
 
 **3. Küçük model**
 - [x] İlk LoRA denemeleri (0.5B): işe yaramadı, önek ezberi ve mod çöküşü
@@ -152,7 +152,7 @@ Qwen2.5-Coder-0.5B (4-bit), 1.500 adım (~1 saat 40 dk, 4,8 GB bellek). İki den
 - [ ] Damıtma: kaynak kodu gören büyük modelden her fonksiyona kısa açıklama; model ad + açıklama üretsin
 
 **4. Araç**
-- [ ] Ghidra betiği: `FUN_…` fonksiyonlarını yerel modelle adlandırıp açıklama yazar
+- [ ] Ghidra betiği: `FUN_…` fonksiyonlarını yerel modelle adlandırıp açıklama yazar (betik hazır: [ghidra/](ghidra/README.md); gerçek Ghidra'da henüz denenmedi)
 
 **5. Yayın**
 - [ ] Modelin açık yayını ve karşılaştırma yazısı
@@ -169,7 +169,21 @@ python3 ozet.py test                                  # sonuç tablosu
 python3 analiz.py veri/test.jsonl -o grafik/test-hata.png   # fonksiyon türüne göre hata analizi
 ```
 
-Her satır bir fonksiyon: `id`, `proje`, `surum`, `dosya`, `opt`, `ad` (doğru cevap), `komut_sayisi`, `sizinti`, `asm`.
+Her satır bir fonksiyon: `id`, `proje`, `surum`, `dosya`, `opt`, `ad` (doğru cevap), `komut_sayisi`, `sizinti`, `asm`, `baglam`, `baglam_derin`.
+
+Gerçek binary hattı (v4): projeyi `-O0`/`-O2` dylib olarak linkler, `strip -x` uygular, fonksiyon sınırlarını stripped kopyadan alır.
+
+```bash
+python3 cikar_bin.py --projeler projeler.json zlib lua tomlc17   # → veri/bin/
+python3 -m unittest test_cikar_bin
+```
+
+Damıtma (kaynak kodu gören öğretmen modelden tek cümlelik açıklama):
+
+```bash
+python3 kaynak_kod.py -j 6                       # fonksiyon → C gövdesi, veri/kaynak/
+python3 aciklama.py -m <model> -j 6 --devam      # → veri/aciklama/
+```
 
 LoRA (Apple Silicon, mlx-lm):
 
