@@ -14,7 +14,7 @@ from pathlib import Path
 from taban import BASE, anahtar
 
 SISTEM = ("Sen C kaynak kodunu açıklayan deneyimli bir yazılım mühendisisin. "
-          "Yalnız tek cümlelik Türkçe açıklama yaz. Cümle 'Bu fonksiyon' ile başlasın, "
+          "Yalnız tek cümlelik Türkçe açıklama yaz. 'Bu fonksiyon' diye başlama, doğrudan ne yaptığını yaz; "
           "en çok 25 kelime olsun ve verilen fonksiyon adını tekrar etmesin. "
           "Markdown, başlık, JSON veya ek açıklama kullanma.")
 
@@ -44,13 +44,11 @@ def temizle(metin: str, ad: str) -> str:
     except json.JSONDecodeError:
         pass
     metin = " ".join(metin.split()).strip(' "\'')
-    bas = metin.find("Bu fonksiyon")
-    if bas >= 0:
-        metin = metin[bas:]
-    elif metin:
-        metin = "Bu fonksiyon " + metin[0].lower() + metin[1:]
-    else:
+    # Gereksiz "Bu fonksiyon(,)" öneki eğitim hedefinde yer kaplamasın.
+    metin = re.sub(r"^bu fonksiyon\b,?\s*", "", metin, flags=re.I)
+    if not metin:
         return ""
+    metin = metin[0].upper() + metin[1:]
 
     # Tam fonksiyon adı cevapta geçerse anlamı bozmadan genel bir ifadeyle değiştir.
     metin = re.sub(re.escape(ad), "ilgili işlemi", metin, flags=re.I)
