@@ -25,8 +25,18 @@ def adini_bul(kimlik: str) -> str:
     return kimlik.rsplit(":", 1)[1]
 
 
+def kimlik_al(kayit: dict) -> str:
+    """Eski veri için id, v4 için anahtar alanını döndür."""
+    alan = "anahtar" if "anahtar" in kayit else "id"
+    return kayit[alan]
+
+
+def kimlik_alani(kayit: dict) -> str:
+    return "anahtar" if "anahtar" in kayit else "id"
+
+
 def istem(kayit: dict, model: str) -> dict:
-    ad = adini_bul(kayit["id"])
+    ad = adini_bul(kimlik_al(kayit))
     kullanici = f"Fonksiyon adı: {ad}\n\nC kaynak kodu:\n```c\n{kayit['kaynak']}\n```"
     return {"model": model, "temperature": 0, "max_tokens": 128,
             "chat_template_kwargs": {"enable_thinking": False},
@@ -74,7 +84,7 @@ def sor(model: str, kayit: dict) -> str:
                                                     "Content-Type": "application/json"})
             yanit = json.load(urllib.request.urlopen(istek, timeout=900))
             metin = yanit["choices"][0]["message"].get("content") or ""
-            aciklama = temizle(metin, adini_bul(kayit["id"]))
+            aciklama = temizle(metin, adini_bul(kimlik_al(kayit)))
             if not aciklama:
                 raise ValueError("boş model cevabı")
             return aciklama
@@ -92,43 +102,52 @@ def jsonl_oku(yol: Path) -> list[dict]:
     return [json.loads(satir) for satir in yol.open() if satir.strip()]
 
 
-def projeyi_isle(proje: str, satirlar: list[dict], veri: Path, model: str, is_sayisi: int, devam: bool):
-    cikti = veri / "aciklama" / f"{proje}.jsonl"
+def projeyi_isle(proje: str, satirlar: list[dict], cikti_dizini: Path,
+                 model: str, is_sayisi: int, devam: bool):
+    cikti = cikti_dizini / f"{proje}.jsonl"
     cikti.parent.mkdir(parents=True, exist_ok=True)
     eski = {}
     if devam and cikti.exists():
-        eski = {r["id"]: r for r in jsonl_oku(cikti) if saglam(r, model)}
+        eski = {kimlik_al(r): r for r in jsonl_oku(cikti) if saglam(r, model)}
 
     ara = cikti.with_suffix(".ara")
     yeni = {}
     if ara.exists():
-        yeni = {r["id"]: r for r in jsonl_oku(ara) if saglam(r, model)}
+        yeni = {kimlik_al(r): r for r in jsonl_oku(ara) if saglam(r, model)}
 
-    sorulacak = [r for r in satirlar if r["id"] not in eski and r["id"] not in yeni]
+    sorulacak = [r for r in satirlar if kimlik_al(r) not in eski and kimlik_al(r) not in yeni]
     yerel = [r for r in sorulacak if not r.get("bulundu") or not r.get("kaynak")]
     for r in yerel:
-        yeni[r["id"]] = {"id": r["id"], "aciklama": "HATA: kaynak bulunamadı", "model": model}
+        alan, kimlik = kimlik_alani(r), kimlik_al(r)
+        yeni[kimlik] = {alan: kimlik, "aciklama": "HATA: kaynak bulunamadı", "model": model}
     sorulacak = [r for r in sorulacak if r not in yerel]
     print(f"{proje}: {len(eski)} satır korundu, {len(yeni)} ara/yerel, {len(sorulacak)} soruluyor",
           file=sys.stderr)
 
-    # -O0 ve -O2 kopyaları aynı kaynağı paylaşır: öğretmene bir kez sor.
+    # Eski kipte -O0/-O2 kopyaları aynı kaynağı paylaşır. v4 zaten
+    # anahtar düzeyinde tekildir; her anahtar kendi isteğini alır.
     gruplar = {}
     for r in sorulacak:
-        gruplar.setdefault((r["kaynak"], adini_bul(r["id"])), []).append(r)
+        if "anahtar" in r:
+            grup_anahtari = (r["anahtar"],)
+        else:
+            grup_anahtari = (r["kaynak"], adini_bul(r["id"]))
+        gruplar.setdefault(grup_anahtari, []).append(r)
     with ThreadPoolExecutor(max_workers=is_sayisi) as havuz, ara.open("a") as f:
         isler = {havuz.submit(sor, model, grup[0]): grup for grup in gruplar.values()}
         for gelen in as_completed(isler):
             aciklama = gelen.result()
             for r in isler[gelen]:
-                sonuc = {"id": r["id"], "aciklama": aciklama, "model": model}
-                yeni[r["id"]] = sonuc
+                alan, kimlik = kimlik_alani(r), kimlik_al(r)
+                sonuc = {alan: kimlik, "aciklama": aciklama, "model": model}
+                yeni[kimlik] = sonuc
                 f.write(json.dumps(sonuc, ensure_ascii=False) + "\n")
             f.flush()
 
     with cikti.open("w") as f:
         for r in satirlar:
-            sonuc = eski.get(r["id"]) or yeni[r["id"]]
+            kimlik = kimlik_al(r)
+            sonuc = eski.get(kimlik) or yeni[kimlik]
             f.write(json.dumps(sonuc, ensure_ascii=False) + "\n")
     ara.unlink(missing_ok=True)
     print(f"{len(satirlar)} açıklama → {cikti}")
@@ -138,6 +157,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("proje", nargs="*", help="yalnız bu proje adlarını işle")
     ap.add_argument("--veri", type=Path, default=Path("veri"))
+    ap.add_argument("--kaynak-dizini", type=Path,
+                    help="kaynak JSONL dizini (v4: veri/kaynak-v4)")
+    ap.add_argument("--cikti-dizini", type=Path,
+                    help="açıklama JSONL dizini (v4: veri/aciklama-v4)")
     ap.add_argument("--model", "-m", default="deepseek-v4.1-flash")
     ap.add_argument("-j", type=int, default=6)
     ap.add_argument("-n", type=int, help="toplam en çok bu kadar satır işle")
@@ -150,7 +173,9 @@ def main():
     if a.n is not None and a.n < 0:
         ap.error("-n negatif olamaz")
 
-    yollar = sorted((a.veri / "kaynak").glob("*.jsonl"))
+    kaynak_dizini = a.kaynak_dizini or a.veri / "kaynak"
+    cikti_dizini = a.cikti_dizini or a.veri / "aciklama"
+    yollar = sorted(kaynak_dizini.glob("*.jsonl"))
     bilinen = {p.stem for p in yollar}
     bilinmeyen = set(a.proje) - bilinen
     if bilinmeyen:
@@ -158,26 +183,31 @@ def main():
     if a.proje:
         yollar = [p for p in yollar if p.stem in a.proje]
 
+    proje_satirlari = [(yol.stem, jsonl_oku(yol)) for yol in yollar]
+    v4_kipi = any(satirlar and "anahtar" in satirlar[0] for _, satirlar in proje_satirlari)
+    if v4_kipi:
+        proje_satirlari.sort(key=lambda x: (len(x[1]), x[0]))
+
     kalan = a.n
     secilenler = []
-    for yol in yollar:
-        satirlar = jsonl_oku(yol)
+    for proje, satirlar in proje_satirlari:
         if kalan is not None:
             satirlar = satirlar[:kalan]
             kalan -= len(satirlar)
         if satirlar:
-            secilenler.append((yol.stem, satirlar))
+            secilenler.append((proje, satirlar))
         if kalan == 0:
             break
 
     if a.kuru:
         for _, satirlar in secilenler:
             for kayit in satirlar:
-                print(json.dumps({"id": kayit["id"], "istek": istem(kayit, a.model)}, ensure_ascii=False))
+                alan = kimlik_alani(kayit)
+                print(json.dumps({alan: kimlik_al(kayit), "istek": istem(kayit, a.model)}, ensure_ascii=False))
         return
 
     for proje, satirlar in secilenler:
-        projeyi_isle(proje, satirlar, a.veri, a.model, a.j, a.devam)
+        projeyi_isle(proje, satirlar, cikti_dizini, a.model, a.j, a.devam)
 
 
 if __name__ == "__main__":
