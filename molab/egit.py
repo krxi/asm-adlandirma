@@ -3,7 +3,7 @@
 # dependencies = [
 #     "transformers",
 #     "peft",
-#     #     "bitsandbytes>=0.46.1",
+#     "bitsandbytes>=0.46.1",
 #     "accelerate",
 #     "datasets",
 #     "torch",
