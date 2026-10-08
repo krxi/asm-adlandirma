@@ -120,16 +120,26 @@ Qwen2.5-Coder-0.5B (4-bit), 1.500 adım (~1 saat 40 dk, 4,8 GB bellek). İki den
 
 ## Yol haritası
 
-- [x] Veri üretim hattı (zlib, -O0/-O2)
-- [x] Büyük modellerle taban ölçüm
-- [x] Az bilinen projelerden ezbere dayanıklı test seti
-- [x] Hata analizi: hangi fonksiyon türlerinde modeller çöküyor
-- [x] Veri büyütme: 14 projeden 16.804 fonksiyon, eğitim/test ayrımı proje bazında
+**1. Temel** ✅
+- [x] Veri üretim hattı (-O0/-O2, sızıntısız v3)
+- [x] Büyük modellerle taban ölçüm, ezbere dayanıklı test seti, hata analizi
+- [x] 14 projeden 16.804 fonksiyon; açık yayın ([Hugging Face](https://huggingface.co/datasets/krxi123/asm-adlandirma), EVREN)
+
+**2. Girdiyi zenginleştirmek**
+- [x] Çağrı bağlamı (çağrılan fonksiyonların importları ve string'leri): büyük modellerde F1 belirgin arttı
+- [ ] Derin bağlam: kısa çağrılanların tam assembly'si, iki seviye özet (sarmalayıcılar için)
 - [ ] Gerçek link + strip ile veri hattı (şu an `.o` dosyalarından)
-- [ ] Çağrı bağlamı: çağrılan ve çağıran fonksiyonların bilgisini girdiye eklemek
-- [ ] Küçük modele LoRA eğitimi ve karşılaştırma (ilk deneme yapıldı, işe yaramadı)
-- [x] Veri setinin açık yayını ([Hugging Face](https://huggingface.co/datasets/krxi123/asm-adlandirma))
-- [ ] Modelin açık yayını
+
+**3. Küçük model**
+- [x] İlk LoRA denemeleri (0.5B): işe yaramadı, önek ezberi ve mod çöküşü
+- [ ] 1.5B model, bağlamlı veri, daha uzun eğitim
+- [ ] Damıtma: kaynak kodu gören büyük modelden her fonksiyona kısa açıklama; model ad + açıklama üretsin
+
+**4. Araç**
+- [ ] Ghidra betiği: `FUN_…` fonksiyonlarını yerel modelle adlandırıp açıklama yazar
+
+**5. Yayın**
+- [ ] Modelin açık yayını ve karşılaştırma yazısı
 
 ## Kendiniz çalıştırın
 
