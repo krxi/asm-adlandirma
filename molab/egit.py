@@ -325,10 +325,10 @@ def _(
             raise ValueError(f"Hedef yalnız ad içermeli: {_hedef}")
 
         _istem = tokenizer.apply_chat_template(
-            _mesajlar[:2], tokenize=True, add_generation_prompt=True
+            _mesajlar[:2], tokenize=True, add_generation_prompt=True, return_dict=False
         )
         _tumu = tokenizer.apply_chat_template(
-            _mesajlar, tokenize=True, add_generation_prompt=False
+            _mesajlar, tokenize=True, add_generation_prompt=False, return_dict=False
         )
         if _tumu[: len(_istem)] != _istem:
             raise ValueError("Sohbet şablonunda assistant başlangıcı belirlenemedi.")
@@ -618,6 +618,7 @@ def _(
                 tokenize=True,
                 add_generation_prompt=True,
                 return_tensors="pt",
+                return_dict=False,
             ).to(model.device)
             if _girdi.shape[1] > MAX_UZUNLUK:
                 raise ValueError(
