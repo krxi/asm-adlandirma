@@ -84,7 +84,11 @@ def main():
     ap.add_argument("--tohum", type=int, default=7)
     ap.add_argument("--dusunme", action="store_true", help="modelin düşünmesini aç (yavaş, pahalı)")
     ap.add_argument("--tavan", type=int, default=4096, help="düşünmede max_tokens")
-    ap.add_argument("--baglam", action="store_true", help="çağrılan iç fonksiyonların özetlerini asm'ye ekle")
+    baglam_grubu = ap.add_mutually_exclusive_group()
+    baglam_grubu.add_argument("--baglam", action="store_true",
+                              help="çağrılan iç fonksiyonların özetlerini asm'ye ekle")
+    baglam_grubu.add_argument("--baglam-derin", action="store_true",
+                              help="çağrılan iç fonksiyonların derin bağlamını asm'ye ekle")
     ap.add_argument("--devam", action="store_true",
                     help="var olan sonuç dosyasındaki sağlam satırları koru, yalnız eksik/HATA olanları sor")
     ap.add_argument("--kesik-de", action="store_true", help="--devam ile: tavana çarpıp boş kalanları da yeniden sor")
@@ -94,7 +98,8 @@ def main():
     random.Random(a.tohum).shuffle(satirlar)
     ornek = satirlar[: a.n]
 
-    sonuc = Path("sonuc") / f"{a.veri.stem}-{a.model}{'-dusunme' if a.dusunme else ''}{'-baglam' if a.baglam else ''}.jsonl"
+    baglam_eki = "-baglam2" if a.baglam_derin else "-baglam" if a.baglam else ""
+    sonuc = Path("sonuc") / f"{a.veri.stem}-{a.model}{'-dusunme' if a.dusunme else ''}{baglam_eki}.jsonl"
     sonuc.parent.mkdir(exist_ok=True)
     eski = {}
     if a.devam and sonuc.exists():
@@ -120,11 +125,13 @@ def main():
         sorulacak = [r for r in sorulacak if r["id"] not in yeni]
     with ThreadPoolExecutor(a.j) as havuz, ara.open("a") as f:
         def girdi(r):
-            if not a.baglam or not r.get("baglam"):
+            alan = "baglam_derin" if a.baglam_derin else "baglam"
+            if not (a.baglam or a.baglam_derin) or not r.get(alan):
                 return r["asm"]
-            return r["asm"] + "\n\n; --- çağrılan fonksiyonlar ---\n" + r["baglam"]
+            return r["asm"] + "\n\n; --- çağrılan fonksiyonlar ---\n" + r[alan]
 
-        isler = {havuz.submit(sor, a.model, girdi(r), a.dusunme, a.tavan, a.baglam): r for r in sorulacak}
+        baglamli = a.baglam or a.baglam_derin
+        isler = {havuz.submit(sor, a.model, girdi(r), a.dusunme, a.tavan, baglamli): r for r in sorulacak}
         for gelen in as_completed(isler):
             r = isler[gelen]
             yeni[r["id"]] = satir(r, gelen.result())
