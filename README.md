@@ -1,8 +1,14 @@
 # asm-adlandirma
 
-**Sembolleri silinmiş bir binary'deki fonksiyona bakıp ona anlamlı bir ad ve kısa bir açıklama veren küçük bir dil modeli.**
+**English** · [Türkçe](README.tr.md)
 
-Ghidra ya da IDA ile stripped bir programı açtığınızda yüzlerce `FUN_00401a30` görürsünüz. Tersine mühendisliğin büyük kısmı, bunların ne iş yaptığını tek tek anlayıp adlandırmaktır. Bu proje o ilk adımı bir modele öğretmeyi amaçlıyor:
+**A small language model that looks at a function in a stripped binary and gives it a meaningful name and a short description.**
+
+## Current status
+
+The v4 dataset contains 228,177 functions from 341 projects across 5 optimization levels and is published on [Hugging Face](https://huggingface.co/datasets/krxi123/asm-adlandirma) under the `v4` config. The Ghidra script is ready, and training of the 7-8B model is in progress. The model currently generates its descriptions in Turkish.
+
+Open a stripped program in Ghidra or IDA and you will see hundreds of functions named `FUN_00401a30`. Much of reverse engineering consists of understanding and naming these functions one by one. This project aims to teach a model that first step:
 
 ```
 girdi  (stripped x86-64)              hedeflenen çıktı
@@ -13,30 +19,30 @@ cmp    rdx, 0xfff1      ← 65521                 Adler-32 sağlama toplamı hes
 ...
 ```
 
-## Hedef
+## Goal
 
-Büyük genel amaçlı modeller bu işi bir ölçüde yapabiliyor, ama yavaş, pahalı ve bulutta çalışıyorlar. Hedef:
+Large general-purpose models can handle this task to some extent, but they are slow, expensive, and cloud-hosted. The goal is to answer this question:
 
-> Bu iş için özel veriyle eğitilmiş **küçük** bir model, büyük modellere yaklaşabilir mi, hatta onları geçebilir mi? Üstelik dizüstü bilgisayarda çalışabilir mi?
+> Can a **small** model trained on purpose-built data match or even outperform large models on this task—while running on a laptop?
 
-Bunu ölçmek için üç katman aynı test setinde karşılaştırılıyor:
+Three tiers are evaluated on the same test set:
 
-| Katman | Model | Rolü |
+| Tier | Model | Role |
 |---|---|---|
-| Tavan | Büyük açık modeller (DeepSeek, GLM, MiMo, Gemma, Qwen) | Bugün hazır modellerle varılabilen nokta |
-| Taban | Küçük açık model, eğitilmemiş hali | Başlangıç noktası |
-| **Bu proje** | Aynı küçük model + bu veri setiyle LoRA | Katkı |
+| Ceiling | Large open models (DeepSeek, GLM, MiMo, Gemma, Qwen) | The best currently achievable with off-the-shelf models |
+| Baseline | Small open model, before fine-tuning | Starting point |
+| **This project** | The same small model + LoRA on this dataset | The project's contribution |
 
-## Nasıl çalışıyor
+## How it works
 
-1. **Veri üretimi (`cikar.py`):** Açık kaynak C projeleri farklı optimizasyon seviyelerinde (`-O0`, `-O2`) x86-64 için derlenir. Her fonksiyonun assembly kodu çıkarılır. Doğru cevap, yani gerçek fonksiyon adı, kaynak koddan bedavaya gelir; elle etiketleme gerekmez. Hangi projenin hangi commit'le, hangi bayraklarla derlendiği `projeler.json`'da durur.
-2. **Stripped binary taklidi:** Çıktı, Ghidra'da stripped bir fonksiyona bakınca görülene benzer:
-   - projenin kendi fonksiyonları `sub_01a3`, global verileri `dat_0042` olur (numaralar karıştırılır, `-O0` ve `-O2` ayrı ad uzayıdır),
-   - dal hedefleri fonksiyon içi `loc_1`, `loc_2` etiketleridir,
-   - dış kütüphane çağrıları (`memcpy`, `__stack_chk_fail`) ve string sabitleri (`; -> "out of memory"`) görünür kalır, çünkü gerçek bir binary'de de görünürler.
+1. **Data generation (`cikar.py`):** Open-source C projects are compiled for x86-64 at different optimization levels (`-O0`, `-O2`). The assembly for each function is extracted. The ground truth—the original function name—comes directly from the source, so no manual labeling is needed. `projeler.json` records the commit and compiler flags used for every project.
+2. **Simulating a stripped binary:** The output resembles what Ghidra shows for a function in a stripped binary:
+   - project-local functions become `sub_01a3`, and global data becomes `dat_0042` (the numbers are shuffled, with separate namespaces for `-O0` and `-O2`),
+   - branch targets use function-local labels such as `loc_1` and `loc_2`,
+   - external library calls (`memcpy`, `__stack_chk_fail`) and string literals (`; -> "out of memory"`) remain visible because they are also visible in a real binary.
    
-   Fonksiyonun gerçek adı kendi assembly'sinde geçiyorsa (ör. bir hata mesajında) satır `sizinti` olarak işaretlenir ve test setine alınmaz.
-3. **Ölçüm (`taban.py`):** Modele yalnız assembly verilir, ad tahmini istenir. Tahmin kelime örtüşmesiyle (F1) puanlanır. Böylece `crc32_update` ile `update_crc` gibi yakın tahminler de kısmen doğru sayılır.
+   If the function's real name appears in its own assembly—for example, in an error message—the row is marked `sizinti` and excluded from the test set.
+3. **Evaluation (`taban.py`):** The model receives only the assembly and is asked to predict a name. Predictions are scored by token overlap (F1), so close answers such as `crc32_update` and `update_crc` receive partial credit.
 
 ```
 loc_6:
@@ -48,80 +54,80 @@ cmp     rax, rdx
 jne     loc_6
 ```
 
-## Veri
+## Data
 
-| | projeler | fonksiyon (-O0 + -O2) |
+| | Projects | Functions (-O0 + -O2) |
 |---|---|---|
-| Eğitim | zlib, libpng, sqlite, lua, mbedtls, zstd, libsodium, expat, brotli, jansson, lz4, libyaml, xxhash, cJSON | 16.804 |
-| Test (ezbere dayanıklı) | tomlc17, cyaml, mu_json_x, sajs, picomatch | 777 → ölçüm seti 115 |
+| Training | zlib, libpng, sqlite, lua, mbedtls, zstd, libsodium, expat, brotli, jansson, lz4, libyaml, xxhash, cJSON | 16,804 |
+| Test (memorization-resistant) | tomlc17, cyaml, mu_json_x, sajs, picomatch | 777 → evaluation set 115 |
 
-Veri seti Hugging Face'te: [krxi123/asm-adlandirma](https://huggingface.co/datasets/krxi123/asm-adlandirma) (eğitim 16.804, test 777, `eval_115` ölçüm seti, lisans metinleri dahil).
+The dataset is available on Hugging Face: [krxi123/asm-adlandirma](https://huggingface.co/datasets/krxi123/asm-adlandirma) (16,804 training examples, 777 test examples, the `eval_115` evaluation set, and license texts).
 
-### Ölçeklenmiş veri (v4 hattı, 5 optimizasyon seviyesi)
+### Scaled dataset (v4 pipeline, 5 optimization levels)
 
-`olcekle.py` ile GitHub'dan seçilen izin verici lisanslı (MIT, BSD, Apache-2.0, ISC, zlib) C projeleri `cikar_bin.py` (gerçek dylib + `strip -x`) ile `-O0/-O1/-O2/-O3/-Os` seviyelerinde derlendi. Proje derleme betikleri çalıştırılmadı, dosyalar tek tek clang ile derlendi; derlenemeyen dosya ve proje atlandı. Normalize assembly hash'iyle tekilleştirildi; doğrulama/test ile aynı assembly'yi taşıyan satırlar eğitimden, eğitimdeki (dosya, ad) çiftini taşıyan vendored kopyalar doğrulama/testten çıkarıldı. Her satırda `lisans` alanı var.
+Permissively licensed (MIT, BSD, Apache-2.0, ISC, zlib) C projects selected from GitHub with `olcekle.py` were compiled at `-O0/-O1/-O2/-O3/-Os` using `cikar_bin.py` (real dylib + `strip -x`). Project build scripts were not run; files were compiled individually with clang, and files or projects that failed to compile were skipped. Rows were deduplicated by normalized assembly hash. Rows with assembly identical to validation/test data were removed from training, while vendored copies whose (file, name) pairs appeared in training were removed from validation/test. Every row has a `lisans` field.
 
-| ayrım | proje | satır | benzersiz kaynak fonksiyon |
+| Split | Projects | Rows | Unique source functions |
 |---|---:|---:|---:|
-| eğitim | 290 | 196.117 | 72.179 |
-| doğrulama | 23 | 19.770 | 6.667 |
-| test (az bilinen, ≤200 yıldız, 2024+) | 28 | 12.290 | 4.685 |
+| Training | 290 | 196,117 | 72,179 |
+| Validation | 23 | 19,770 | 6,667 |
+| Test (little-known, ≤200 stars, 2024+) | 28 | 12,290 | 4,685 |
 
-473 projeden 352'si satır üretti, 120'si derlenemedi (çekirdek, gömülü, platforma bağlı kod). Yalnız clang kullanıldı. Veri git dışında; `python3 aday_bul.py` ve `python3 olcekle.py hepsi` ile yeniden üretilir.
+Of 473 projects, 352 produced rows and 120 failed to compile (kernel, embedded, or platform-dependent code). Only clang was used. The data is kept outside Git and can be regenerated with `python3 aday_bul.py` and `python3 olcekle.py hepsi`.
 
-Eğitim/test ayrımı **proje bazındadır**: bir projenin hiçbir fonksiyonu iki tarafa birden düşmez. Test projeleri bilerek az bilinen (2-190 yıldız), çoğu 2024-2025'te başlamış projelerden seçildi; büyük modellerin bunları eğitimde görmüş olma ihtimali zlib'e göre çok düşük. Lisanslar: [veri/LISANSLAR.md](veri/LISANSLAR.md).
+The training/test split is strictly **project-level**: no function from a project can appear on both sides. Test projects were deliberately chosen to be little-known (2-190 stars), and most were started in 2024-2025, making it far less likely that large models encountered them during training than a library such as zlib. Licenses: [veri/LISANSLAR.md](veri/LISANSLAR.md).
 
-## Sonuçlar
+## Results
 
-### 1. Ezbere dayanıklı test: az bilinen 5 proje, 115 fonksiyon
+### 1. Memorization-resistant test: 5 little-known projects, 115 functions
 
-Ortalama ad F1 (1.0 = tam doğru). "Öneksiz" sütununda projenin ortak ad öneki (`cyaml_`, `mu_`, `sajs_`) iki taraftan da atılır; model bu öneki assembly'den bilemez.
+Mean name F1 (1.0 = exact match). In the “Prefix-stripped F1” column, each project's common name prefix (`cyaml_`, `mu_`, `sajs_`) is removed from both sides; the model cannot infer this prefix from assembly.
 
-| Model | -O0 | -O2 | öneksiz F1 | Tam isabet |
+| Model | -O0 | -O2 | Prefix-stripped F1 | Exact matches |
 |---|---|---|---|---|
-| mimo-v2.6-pro (düşünmeli) | **0.20** | **0.17** | **0.21** | 3 / 115 |
+| mimo-v2.6-pro (reasoning) | **0.20** | **0.17** | **0.21** | 3 / 115 |
 | mimo-v2.6-pro | 0.18 | 0.16 | 0.20 | **4 / 115** |
-| glm-5.3 (düşünmeli) | 0.16 | 0.11 | 0.15 | **4 / 115** |
-| qwen3.8-flash-next (düşünmeli) | 0.16 | 0.08 | 0.13 | 3 / 115 |
-| deepseek-v4.1-flash (düşünmeli) | 0.12 | 0.08 | 0.12 | 3 / 115 |
+| glm-5.3 (reasoning) | 0.16 | 0.11 | 0.15 | **4 / 115** |
+| qwen3.8-flash-next (reasoning) | 0.16 | 0.08 | 0.13 | 3 / 115 |
+| deepseek-v4.1-flash (reasoning) | 0.12 | 0.08 | 0.12 | 3 / 115 |
 | deepseek-v4.1-flash | 0.10 | 0.11 | 0.12 | 2 / 115 |
 | glm-5.3 | 0.12 | 0.08 | 0.12 | 2 / 115 |
 | qwen3.8-flash-next | 0.13 | 0.07 | 0.11 | 1 / 115 |
-| gemma-4-31b (düşünmeli) | 0.11 | 0.08 | 0.10 | 2 / 115 |
+| gemma-4-31b (reasoning) | 0.11 | 0.08 | 0.10 | 2 / 115 |
 | gemma-4-31b | 0.11 | 0.07 | 0.10 | 0 / 115 |
-| qwen2.5-coder-0.5b, eğitimsiz | 0.00 | 0.01 | 0.01 | 0 / 112 |
+| qwen2.5-coder-0.5b, untrained | 0.00 | 0.01 | 0.01 | 0 / 112 |
 | qwen2.5-coder-0.5b + LoRA v1 | 0.02 | 0.00 | 0.01 | 0 / 112 |
 
-Düşünmeli koşularda `max_tokens` tavanı 12.288. deepseek ve qwen bu tavanda bile isteklerin yarısından fazlasında, glm 115'in 50'sinde cevaba varamadan düşünmeye devam ediyor; bu satırlar 0 sayıldı.
+Reasoning runs used a `max_tokens` ceiling of 12,288. Even at that limit, deepseek and qwen failed to finish reasoning and produce an answer on more than half the requests; glm did the same on 50 of 115. These rows were scored as 0.
 
-### 2. Ezber: düşünmek ünlü kodda işe yarıyor, bilinmeyen kodda yaramıyor
+### 2. Memorization: reasoning helps on famous code, not unfamiliar code
 
-Aynı veri hattı, aynı sayıda fonksiyon (115), mimo-v2.6-pro:
+Same data pipeline, same number of functions (115), mimo-v2.6-pro:
 
-| | düşünmesiz | düşünmeli |
+| | Without reasoning | With reasoning |
 |---|---|---|
-| zlib (çok ünlü) | 9 tam isabet, F1 0.18 | **28 tam isabet**, F1 0.29 |
-| az bilinen projeler | 4 tam isabet, F1 0.20 | 3 tam isabet, F1 0.21 |
+| zlib (very well known) | 9 exact matches, F1 0.18 | **28 exact matches**, F1 0.29 |
+| little-known projects | 4 exact matches, F1 0.20 | 3 exact matches, F1 0.21 |
 
-Düşünme, zlib'de tam isabeti üç katına çıkarıyor; az bilinen kodda hiçbir şey katmıyor. En olası açıklama: model düşünürken assembly'yi "anlamıyor", tanıdığı kaynak kodu hatırlıyor. Hazır modellerin bu işteki başarısını ünlü kütüphanelerle ölçmek yanıltıcı.
+Reasoning triples the number of exact matches on zlib and contributes nothing on little-known code. The most likely explanation is that, during reasoning, the model is not “understanding” the assembly but recalling source code it has seen before. Evaluating off-the-shelf models on famous libraries therefore gives a misleading picture of performance on this task.
 
-### 3. Modeller nerede çöküyor
+### 3. Where models fail
 
-![Fonksiyon türüne göre F1](grafik/test-hata.png)
+![F1 by function type](grafik/test-hata.png)
 
-- **Sarmalayıcılar: bütün modellerde 0.** Tek bir iç fonksiyonu çağıran kısa fonksiyonun adı, çağrılanı bilmeden bulunamıyor (çağrı bağlamıyla da düzelmedi, bkz. 4).
-- **String'ler en güçlü ipucu.** String sabiti olan fonksiyonlarda F1 belirgin şekilde yüksek (mimo 0.27'ye karşı 0.15).
-- **-O2 daha zor.** Hemen her modelde -O2 F1'i -O0'dan düşük.
-- **Uzun fonksiyonlar kolay değil.** zlib'de en kolay grup uzun fonksiyonlar (mimo düşünmeli 0.58, [grafik](grafik/zlib-hata.png)); az bilinen kodda aynı grup 0.15. Yine ezberin izi.
+- **Wrappers: 0 for every model.** The name of a short function that merely calls one internal function cannot be recovered without knowing the callee (call context did not help either; see 4).
+- **Strings are the strongest signal.** F1 is markedly higher for functions containing string literals (0.27 versus 0.15 for mimo).
+- **-O2 is harder.** Nearly every model scores lower at -O2 than at -O0.
+- **Long functions are not inherently easy.** On zlib, long functions are the easiest group (mimo with reasoning: 0.58; [chart](grafik/zlib-hata.png)); on little-known code, the same group scores 0.15—another trace of memorization.
 
-### 4. Çağrı bağlamı
+### 4. Call context
 
-Fonksiyonun assembly'sine, çağırdığı iç fonksiyonlar hakkında bilgi eklendi (düşünmesiz, öneksiz F1):
+Information about internal callees was added to each function's assembly (without reasoning, prefix-stripped F1):
 
-- **özet**: çağrılanların importları, iç çağrıları ve string'leri
-- **derin**: ayrıca kısa çağrılanların tam assembly'si ve iki seviye özet
+- **summary**: callees' imports, internal calls, and strings
+- **deep**: also includes the full assembly of short callees and a two-level summary
 
-| Model | bağlamsız | özet | derin | uzun fonksiyonlar (bağlamsız → derin) |
+| Model | No context | Summary | Deep | Long functions (no context → deep) |
 |---|---|---|---|---|
 | mimo-v2.6-pro | 0.20 | 0.22 | **0.24** | 0.12 → 0.25 |
 | deepseek-v4.1-flash | 0.12 | 0.17 | 0.17 | 0.10 → 0.18 |
@@ -129,51 +135,51 @@ Fonksiyonun assembly'sine, çağırdığı iç fonksiyonlar hakkında bilgi ekle
 | gemma-4-31b | 0.10 | 0.09 | 0.10 | 0.04 → 0.11 |
 | glm-5.3 | 0.12 | 0.14 | 0.13 | 0.06 → 0.05 |
 
-Bağlam en çok uzun ve iç fonksiyon çağıran fonksiyonlarda işe yarıyor (glm hariç: 115 isteğin 35'inde cevap kesildi, uzun girdi ona yaramıyor). Derin bağlam özetin üstüne az şey katıyor. **Sarmalayıcılar derin bağlamla da 0'da kalıyor** (test setinde yalnız 6 tane; çağrılanın tam assembly'si bile modeli doğru ada götürmüyor).
+Context helps most for long functions and functions that call other internal functions (except for glm: responses were truncated on 35 of 115 requests, indicating that long inputs hurt it). Deep context adds little over the summary. **Wrappers remain at 0 even with deep context** (there are only 6 in the test set; even the callee's complete assembly does not lead the model to the correct name).
 
-### 5. Küçük model, ilk LoRA denemesi (MacBook Air M4)
+### 5. Small model, first LoRA attempt (MacBook Air M4)
 
-Qwen2.5-Coder-0.5B (4-bit), 1.500 adım (~1 saat 40 dk, 4,8 GB bellek). İki deneme de **işe yaramadı**:
+Qwen2.5-Coder-0.5B (4-bit), 1,500 steps (~1 hour 40 minutes, 4,8 GB memory). Neither attempt **worked**:
 
-| deneme | veri | F1 | tam isabet | ne oldu |
+| Run | Data | F1 | Exact matches | What happened |
 |---|---|---|---|---|
-| eğitimsiz | — | 0.01 | 0 / 112 | çoğu cevap anlamsız |
-| LoRA v1 | 14.710 fonksiyon, gerçek adlar | 0.01 | 0 / 112 | proje öneklerini ezberledi: 112 tahminin 54'ü `mbedtls_…` |
-| LoRA v2 | 10.360 fonksiyon, önek atılmış, proje başına ≤1.500 | 0.02 | 0 / 112 | mod çöküşü: 112 tahminin 56'sı iki ad |
+| Untrained | — | 0.01 | 0 / 112 | most responses were meaningless |
+| LoRA v1 | 14,710 functions, original names | 0.01 | 0 / 112 | memorized project prefixes: 54 of 112 predictions were `mbedtls_…` |
+| LoRA v2 | 10,360 functions, prefixes removed, ≤1,500 per project | 0.02 | 0 / 112 | mode collapse: 56 of 112 predictions were one of two names |
 
-0.5B model ve yarım epoch bu iş için yetersiz görünüyor. Sıradaki denemeler: daha büyük taban (1.5B-3B), daha uzun eğitim, girdiye çağrı bağlamı.
+The 0.5B model and half an epoch appear insufficient for this task. Next experiments: a larger base model (1.5B-3B), longer training, and call context in the input.
 
-### Not: zlib ısınma turu ve veri hattındaki sızıntılar
+### Note: the zlib warm-up and pipeline leakage
 
-İlk zlib ölçümü (v1, 60 fonksiyon) daha basit bir veri hattıyla yapıldı ve o hat modele farkında olmadan ipucu sızdırıyordu: global değişken adları (`crc_table`, `configuration_table`), alfabetik `sub_` numaraları, `.o` ofsetleri. Bir tersine mühendislik modeliyle (Codex) yapılan denetimden sonra bu sızıntılar kapatıldı (v3). v1 sonuçları `sonuc/zlib-*.jsonl` altında duruyor ama yukarıdaki karşılaştırmalar v3 hatla yapıldı.
+The first zlib evaluation (v1, 60 functions) used a simpler data pipeline that inadvertently leaked clues to the model: global variable names (`crc_table`, `configuration_table`), alphabetical `sub_` numbers, and `.o` offsets. After an audit with a reverse-engineering model (Codex), these leaks were closed in v3. The v1 results remain under `sonuc/zlib-*.jsonl`, but all comparisons above use the v3 pipeline.
 
-## Yol haritası
+## Roadmap
 
-**1. Temel** ✅
-- [x] Veri üretim hattı (-O0/-O2, sızıntısız v3)
-- [x] Büyük modellerle taban ölçüm, ezbere dayanıklı test seti, hata analizi
-- [x] 14 projeden 16.804 fonksiyon; açık yayın ([Hugging Face](https://huggingface.co/datasets/krxi123/asm-adlandirma), EVREN)
+**1. Foundation** ✅
+- [x] Data generation pipeline (-O0/-O2, leak-free v3)
+- [x] Baseline evaluation with large models, memorization-resistant test set, and error analysis
+- [x] 16,804 functions from 14 projects; publicly released ([Hugging Face](https://huggingface.co/datasets/krxi123/asm-adlandirma), EVREN)
 
-**2. Girdiyi zenginleştirmek**
-- [x] Çağrı bağlamı (çağrılan fonksiyonların importları ve string'leri): büyük modellerde F1 belirgin arttı
-- [x] Derin bağlam: kısa çağrılanların tam assembly'si, iki seviye özet: özetin üstüne küçük kazanç, sarmalayıcılar hâlâ 0
-- [x] Gerçek link + strip ile veri hattı (`cikar_bin.py`, v4): zlib, lua, tomlc17'de denendi, [rapor](VERI_HATTI_V4.md)
+**2. Enrich the input**
+- [x] Call context (callees' imports and strings): substantially improved F1 for large models
+- [x] Deep context: complete assembly for short callees and two-level summaries; small gain over summaries, wrappers still at 0
+- [x] Real linking + stripping pipeline (`cikar_bin.py`, v4): tested on zlib, lua, tomlc17; [report](VERI_HATTI_V4.md)
 
-**3. Küçük model**
-- [x] İlk LoRA denemeleri (0.5B): işe yaramadı, önek ezberi ve mod çöküşü
-- [ ] 1.5B model, bağlamlı veri, daha uzun eğitim
-- [x] Damıtma verisi: kaynak kodu gören öğretmen model (mimo-v2.6-pro) 17.581 fonksiyonun hepsine tek cümlelik Türkçe açıklama yazdı (ort. 12,5 kelime)
-- [ ] Küçük model ad + açıklama birlikte üretsin
+**3. Small model**
+- [x] First LoRA attempts (0.5B): unsuccessful due to prefix memorization and mode collapse
+- [ ] 1.5B model, contextual data, longer training
+- [x] Distillation data: a teacher model with access to source code (mimo-v2.6-pro) wrote a one-sentence Turkish description for all 17,581 functions (12,5 words on average)
+- [ ] Have the small model generate both a name and a description
 
-**4. Araç**
-- [ ] Ghidra betiği: `FUN_…` fonksiyonlarını yerel modelle adlandırıp açıklama yazar (betik hazır: [ghidra/](ghidra/README.md); Ghidra 12 headless'ta uçtan uca çalıştı, kuru kip)
+**4. Tooling**
+- [ ] Ghidra script: rename `FUN_…` functions with the local model and add descriptions (script ready: [ghidra/](ghidra/README.md); successfully ran end-to-end in Ghidra 12 headless, dry-run mode)
 
-**5. Yayın**
-- [ ] Modelin açık yayını ve karşılaştırma yazısı
+**5. Release**
+- [ ] Publish the model and a comparative write-up
 
-## Kendiniz çalıştırın
+## Run it yourself
 
-Gereksinimler: `clang`, `objdump` (LLVM), Python 3.9+. Ölçüm için OpenAI uyumlu bir LLM uç noktası gerekiyor.
+Requirements: `clang`, `objdump` (LLVM), Python 3.9+. Evaluation requires an OpenAI-compatible LLM endpoint.
 
 ```bash
 python3 cikar.py --projeler projeler.json             # projeleri indir, derle → veri/egitim, veri/test
@@ -183,16 +189,16 @@ python3 ozet.py test                                  # sonuç tablosu
 python3 analiz.py veri/test.jsonl -o grafik/test-hata.png   # fonksiyon türüne göre hata analizi
 ```
 
-Her satır bir fonksiyon: `id`, `proje`, `surum`, `dosya`, `opt`, `ad` (doğru cevap), `komut_sayisi`, `sizinti`, `asm`, `baglam`, `baglam_derin`.
+Each row represents one function: `id`, `proje`, `surum`, `dosya`, `opt`, `ad` (ground truth), `komut_sayisi`, `sizinti`, `asm`, `baglam`, `baglam_derin`.
 
-Gerçek binary hattı (v4): projeyi `-O0`/`-O2` dylib olarak linkler, `strip -x` uygular, fonksiyon sınırlarını stripped kopyadan alır.
+Real-binary pipeline (v4): links the project as a dylib at `-O0`/`-O2`, applies `strip -x`, and obtains function boundaries from the stripped copy.
 
 ```bash
 python3 cikar_bin.py --projeler projeler.json zlib lua tomlc17   # → veri/bin/
 python3 -m unittest test_cikar_bin
 ```
 
-Damıtma (kaynak kodu gören öğretmen modelden tek cümlelik açıklama):
+Distillation (a one-sentence description from a teacher model with access to source code):
 
 ```bash
 python3 kaynak_kod.py -j 6                       # fonksiyon → C gövdesi, veri/kaynak/
@@ -209,8 +215,8 @@ sh lora/egit.sh                                                 # ayarlar lora/a
 .venv/bin/python lora/olc.py                                    # test setinde ölç → sonuc/
 ```
 
-Ölçümler [EVREN](https://evren.ssyz.org.tr) yapay zekâ platformunun Türkiye'deki altyapısında yapıldı.
+Evaluations were run on infrastructure in Türkiye provided by the [EVREN](https://evren.ssyz.org.tr) AI platform.
 
-## Lisans
+## License
 
-Kod MIT lisanslıdır. `veri/` altındaki assembly, derlenen projelerin kendi lisanslarına tabidir: [veri/LISANSLAR.md](veri/LISANSLAR.md).
+The code is licensed under MIT. Assembly under `veri/` is subject to the licenses of the projects from which it was compiled: [veri/LISANSLAR.md](veri/LISANSLAR.md).
