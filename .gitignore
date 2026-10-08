@@ -1,4 +1,4 @@
-kaynak/
+kaynak
 __pycache__/
 .taslak/
 .notlar/
@@ -9,6 +9,8 @@ CLAUDE.md
 lora/veri/
 lora/adaptor/
 veri/egitim/
+veri/kaynak/
+veri/aciklama/
 sonuc/*.ara
 sonuc/*BITTI
 lora/veri-*/
