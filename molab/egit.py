@@ -437,7 +437,7 @@ def _(
     DENETIM_DIZINI.mkdir(parents=True, exist_ok=True)
     EGITIM_LOGU = KOK / "egitim.log"
 
-    egitim_ayari = TrainingArguments(
+    _ayar = dict(
         output_dir=str(DENETIM_DIZINI),
         num_train_epochs=EPOCH,
         max_steps=MAX_ADIM if MAX_ADIM > 0 else -1,
@@ -466,6 +466,17 @@ def _(
         dataloader_num_workers=2,
         remove_unused_columns=False,
     )
+    # transformers 5 bazı eski argümanları kaldırdı; kabul edilmeyenleri düşür ve yaz.
+    import inspect as _inspect
+    _kabul = set(_inspect.signature(TrainingArguments.__init__).parameters)
+    if "warmup_ratio" not in _kabul and "warmup_ratio" in _ayar:
+        _ayar["warmup_steps"] = _ayar.pop("warmup_ratio")  # v5: float oran kabul ediyor
+    if "group_by_length" not in _kabul and "train_sampling_strategy" in _kabul:
+        _ayar["train_sampling_strategy"] = "group_by_length" if _ayar.pop("group_by_length") else "random"
+    _dusen = sorted(k for k in _ayar if k not in _kabul)
+    if _dusen:
+        print(f"TrainingArguments bu sürümde desteklemiyor, atlandı: {_dusen}")
+    egitim_ayari = TrainingArguments(**{k: v for k, v in _ayar.items() if k in _kabul})
 
     veri_toplayici = DataCollatorForSeq2Seq(
         tokenizer=tokenizer,
