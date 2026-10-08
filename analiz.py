@@ -43,7 +43,8 @@ def main():
     veri = {r["id"]: r for r in map(json.loads, a.veri.open())}
     modeller, tablo, sayilar = [], {}, {}
     for p in sorted(Path("sonuc").glob(f"{a.veri.stem}-*.jsonl")):
-        model = p.stem[len(a.veri.stem) + 1:]
+        model = p.stem[len(a.veri.stem) + 1:].replace("Qwen2.5-Coder-0.5B-Instruct-4bit", "qwen2.5-coder-0.5b") \
+            .replace("Qwen2.5-Coder-0.5B", "qwen2.5-coder-0.5b").replace("-lora", " + LoRA").replace("-taban", " (eğitimsiz)")
         satirlar = [json.loads(l) for l in p.open()]
         satirlar = [s for s in satirlar if not str(s.get("aciklama", "")).startswith("HATA") and s["id"] in veri]
         if not satirlar:

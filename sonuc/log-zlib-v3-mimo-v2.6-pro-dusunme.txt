@@ -1,0 +1,120 @@
+0 satır korundu, 115 soruluyor
+0.00  -O2  gzseek64                     ← fseeko
+1.00  -O0  inflateReset2                ← inflate_reset2
+0.00  -O0  scan_tree                    ← update_run_stats
+0.00  -O2  crc32_combine                ← 
+0.00  -O2  crc32                        ← to_uint32
+1.00  -O0  adler32_combine_             ← adler32_combine
+0.00  -O2  gzerror                      ← get_last_error
+0.50  -O2  _tr_init                     ← init_context
+0.00  -O2  gzbuffer                     ← set_compression_level
+0.00  -O2  zError                       ← handle_command
+0.00  -O2  zcalloc                      ← alloc_grid
+0.40  -O0  crc32_combine_op             ← hash_combine
+0.00  -O0  inflateMark                  ← 
+0.00  -O0  x2nmodp                      ← hash_bitmask
+0.00  -O0  bi_windup                    ← flush_bit_buffer
+0.00  -O0  gz_look                      ← 
+0.00  -O0  inflateUndermine             ← enable_processing
+1.00  -O0  init_block                   ← init_block
+0.00  -O0  inflateGetHeader             ← set_buffer
+0.00  -O0  gzdopen                      ← fd_stream_create
+0.00  -O0  gzgets                       ← fgets
+0.00  -O2  gzgetc_                      ← get_byte
+0.00  -O2  deflateEnd                   ← 
+1.00  -O2  gzvprintf                    ← gzvprintf
+0.00  -O2  gz_read                      ← 
+1.00  -O2  deflateSetDictionary         ← deflate_set_dictionary
+0.00  -O0  multmodp                     ← 
+0.00  -O2  gzopen                       ← str_copy
+1.00  -O0  fill_window                  ← fill_window
+1.00  -O0  deflate_huff                 ← deflate_huff
+0.00  -O0  deflatePending               ← get_buffer_status
+1.00  -O0  inflateSync                  ← inflate_sync
+1.00  -O2  inflateValidate              ← inflate_validate
+0.00  -O0  uncompress2                  ← 
+0.00  -O0  gzoffset                     ← validated_result
+1.00  -O2  inflateInit2_                ← inflate_init2
+0.00  -O2  gzputc                       ← fputc
+0.00  -O0  deflateReset                 ← validate_and_cleanup
+0.00  -O2  uncompress_z                 ← pass_by_address_wrapper
+0.00  -O2  gzprintf                     ← fprintf
+1.00  -O0  inflateCopy                  ← inflate_copy
+0.50  -O0  deflateCopy                  ← inflate_copy
+0.00  -O0  gzclearerr                   ← reset_state
+0.00  -O0  gz_comp                      ← 
+1.00  -O2  longest_match                ← longest_match
+1.00  -O2  gzoffset                     ← gzoffset
+0.00  -O2  deflateGetDictionary         ← 
+0.00  -O0  gzputc                       ← 
+0.00  -O2  inflateBackEnd               ← free_buffer
+0.67  -O2  adler32_z                    ← adler32
+0.00  -O2  gz_vacate                    ← buffer_compact
+1.00  -O0  deflateInit2_                ← deflate_init2
+0.50  -O0  gz_error                     ← set_error
+0.00  -O2  flush_pending                ← read_from_buffer
+0.00  -O2  inflate_fixed                ← init_type_descriptor
+0.67  -O0  uncompress2_z                ← uncompress2
+0.00  -O0  gzprintf                     ← my_sprintf
+0.50  -O0  zlibVersion                  ← get_version
+0.00  -O2  gzclose                      ← 
+0.00  -O0  adler32_combine64            ← process_data
+1.00  -O0  build_tree                   ← build_tree
+1.00  -O2  gz_look                      ← gz_look
+0.00  -O0  gzopen64                     ← 
+0.00  -O0  inflateStateCheck            ← is_valid
+1.00  -O0  _tr_stored_block             ← tr_stored_block
+1.00  -O2  inflateGetDictionary         ← inflate_get_dictionary
+0.00  -O0  compress2_z                  ← uncompress2_with_window_bits
+1.00  -O2  inflateReset2                ← inflate_reset2
+0.50  -O2  adler32_combine64            ← adler32_combine
+0.00  -O0  gz_avail                     ← fill_buffer
+1.00  -O2  _tr_stored_block             ← tr_stored_block
+0.00  -O0  compressBound                ← validate_input
+0.00  -O0  inflate_fixed                ← init_defaults
+1.00  -O2  inflateResetKeep             ← inflate_reset_keep
+0.00  -O0  inflatePrime                 ← put_bits
+0.00  -O0  gz_fetch                     ← 
+0.00  -O2  deflateUsed                  ← 
+0.00  -O0  putShortMSB                  ← write_u16_be
+1.00  -O2  adler32_combine              ← adler32_combine
+0.00  -O2  deflateReset                 ← 
+1.00  -O2  inflateSync                  ← inflate_sync
+1.00  -O0  deflateEnd                   ← deflate_end
+0.00  -O2  gzclose_r                    ← 
+1.00  -O2  inflateSyncPoint             ← inflate_sync_point
+1.00  -O0  lm_init                      ← lm_init
+0.00  -O2  deflateResetKeep             ← 
+0.00  -O2  gz_error                     ← 
+0.00  -O0  zcfree                       ← free_pair_value
+0.00  -O0  adler32                      ← memcpy_wrapper
+0.40  -O0  zlibCompileFlags             ← default_flags
+0.00  -O0  gz_vacate                    ← compact_input_buffer
+0.00  -O0  gzsetparams                  ← resize
+0.00  -O2  deflateTune                  ← 
+0.50  -O0  inflateReset                 ← reset_context
+0.00  -O0  adler32_combine              ← tail_call_wrapper
+0.00  -O0  gzeof                        ← get_object_id
+0.00  -O0  gzopen                       ← 
+0.00  -O2  gzdopen                      ← fd_stream_new
+0.00  -O0  _tr_flush_bits               ← get_name
+0.00  -O2  _tr_tally                    ← 
+0.33  -O0  inflateGetDictionary         ← get_buffered_data
+0.00  -O2  gzwrite                      ← 
+0.00  -O2  gzgetc                       ← read_byte
+0.00  -O2  inflateInit_                 ← 
+0.00  -O0  gzflush                      ← deflate
+0.33  -O0  deflateGetDictionary         ← get_pending_data
+0.00  -O0  slide_hash                   ← 
+1.00  -O2  inflateBackInit_             ← inflate_back_init_
+1.00  -O2  inflateReset                 ← inflate_reset
+0.00  -O0  gz_read                      ← 
+0.00  -O0  uncompress_z                 ← 
+0.00  -O2  gzrewind                     ← reader_rewind
+0.00  -O0  syncsearch                   ← 
+0.00  -O2  gzclearerr                   ← 
+0.00  -O2  crc32_combine_op             ← 
+-O0: ortalama F1 0.26  (n=62, tam isabet 12)
+-O2: ortalama F1 0.33  (n=53, tam isabet 16)
+yeni token: 603237
+ayrıntı → sonuc/zlib-v3-mimo-v2.6-pro-dusunme.jsonl

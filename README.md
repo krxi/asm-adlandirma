@@ -57,36 +57,66 @@ jne     loc_6
 
 Eğitim/test ayrımı **proje bazındadır**: bir projenin hiçbir fonksiyonu iki tarafa birden düşmez. Test projeleri bilerek az bilinen (2-190 yıldız), çoğu 2024-2025'te başlamış projelerden seçildi; büyük modellerin bunları eğitimde görmüş olma ihtimali zlib'e göre çok düşük. Lisanslar: [veri/LISANSLAR.md](veri/LISANSLAR.md).
 
-## İlk sonuçlar
+## Sonuçlar
 
-zlib'den rastgele seçilen 60 fonksiyon, ortalama F1 (1.0 = tam doğru):
+### 1. Ezbere dayanıklı test: az bilinen 5 proje, 115 fonksiyon
 
-| Model | -O0 | -O2 | Tam isabet |
-|---|---|---|---|
-| mimo-v2.6-pro (düşünmeli) | **0.39** | 0.28 | **16 / 60** |
-| mimo-v2.6-pro | 0.17 | **0.31** | 6 / 60 |
-| deepseek-v4.1-flash (düşünmeli) | 0.16 | 0.12 | 7 / 60 |
-| deepseek-v4.1-flash | 0.10 | 0.13 | 0 / 60 |
-| qwen3.8-flash-next | 0.06 | 0.17 | 0 / 60 |
-| gemma-4-31b (düşünmeli) | 0.05 | 0.09 | 0 / 60 |
-| gemma-4-31b | 0.05 | 0.04 | 0 / 60 |
+Ortalama ad F1 (1.0 = tam doğru). "Öneksiz" sütununda projenin ortak ad öneki (`cyaml_`, `mu_`, `sajs_`) iki taraftan da atılır; model bu öneki assembly'den bilemez.
 
-İlk gözlemler:
+| Model | -O0 | -O2 | öneksiz F1 | Tam isabet |
+|---|---|---|---|---|
+| mimo-v2.6-pro (düşünmeli) | **0.20** | **0.17** | **0.21** | 3 / 115 |
+| mimo-v2.6-pro | 0.18 | 0.16 | 0.20 | **4 / 115** |
+| qwen3.8-flash-next (düşünmeli) | 0.16 | 0.08 | 0.13 | 3 / 115 |
+| deepseek-v4.1-flash (düşünmeli) | 0.12 | 0.08 | 0.12 | 3 / 115 |
+| deepseek-v4.1-flash | 0.10 | 0.11 | 0.12 | 2 / 115 |
+| glm-5.3 | 0.12 | 0.08 | 0.12 | 2 / 115 |
+| qwen3.8-flash-next | 0.13 | 0.07 | 0.11 | 1 / 115 |
+| gemma-4-31b (düşünmeli) | 0.11 | 0.08 | 0.10 | 2 / 115 |
+| gemma-4-31b | 0.11 | 0.07 | 0.10 | 0 / 115 |
+| qwen2.5-coder-0.5b, eğitimsiz | 0.00 | 0.01 | 0.01 | 0 / 112 |
+| qwen2.5-coder-0.5b + LoRA v1 | 0.02 | 0.00 | 0.01 | 0 / 112 |
 
-- **Hazır modeller bu işte zayıf.** En iyi model bile fonksiyonların dörtte birinden azını tam doğru adlandırıyor.
-- **Düşünmek işe yarıyor ama pahalı.** MiMo'da düşünme açılınca tam isabet 6'dan 16'ya çıkıyor; harcanan token yaklaşık 3 katına çıkıyor.
-- **Sarmalayıcılar zor.** `-O0`'da `adler32` sadece `adler32_z`'yi çağıran bir sarmalayıcı. Modeller çoğunlukla "wrapper" diyor. Çağrılan fonksiyonun bağlamı olmadan doğru adı bulmak imkânsıza yakın.
-- **Ezber riski.** zlib çok yaygın bir kütüphane. Bazı tam isabetler, modelin kaynak kodu eğitimde görmüş olmasından gelebilir. Bu yüzden zlib yalnız bir ısınma turu. Asıl test seti az bilinen projelerden kurulacak.
+Düşünmeli koşularda `max_tokens` tavanı 12.288. deepseek ve qwen bu tavanda bile isteklerin yarısından fazlasında cevaba varamadan düşünmeye devam ediyor; bu satırlar 0 sayıldı.
+
+### 2. Ezber: düşünmek ünlü kodda işe yarıyor, bilinmeyen kodda yaramıyor
+
+Aynı veri hattı, aynı sayıda fonksiyon (115), mimo-v2.6-pro:
+
+| | düşünmesiz | düşünmeli |
+|---|---|---|
+| zlib (çok ünlü) | 9 tam isabet, F1 0.18 | **28 tam isabet**, F1 0.29 |
+| az bilinen projeler | 4 tam isabet, F1 0.20 | 3 tam isabet, F1 0.21 |
+
+Düşünme, zlib'de tam isabeti üç katına çıkarıyor; az bilinen kodda hiçbir şey katmıyor. En olası açıklama: model düşünürken assembly'yi "anlamıyor", tanıdığı kaynak kodu hatırlıyor. Hazır modellerin bu işteki başarısını ünlü kütüphanelerle ölçmek yanıltıcı.
+
+### 3. Modeller nerede çöküyor
+
+![Fonksiyon türüne göre F1](grafik/test-hata.png)
+
+- **Sarmalayıcılar: bütün modellerde 0.** Tek bir iç fonksiyonu çağıran kısa fonksiyonun adı, çağrılanı bilmeden bulunamıyor. Çağrı bağlamı eklemek bir sonraki deney.
+- **String'ler en güçlü ipucu.** String sabiti olan fonksiyonlarda F1 belirgin şekilde yüksek (mimo 0.27'ye karşı 0.15).
+- **-O2 daha zor.** Hemen her modelde -O2 F1'i -O0'dan düşük.
+- **Uzun fonksiyonlar kolay değil.** zlib'de en kolay grup uzun fonksiyonlar (mimo düşünmeli 0.58, [grafik](grafik/zlib-hata.png)); az bilinen kodda aynı grup 0.15. Yine ezberin izi.
+
+### 4. Küçük model, ilk LoRA denemesi (MacBook Air M4)
+
+Qwen2.5-Coder-0.5B (4-bit), 14 eğitim projesinden 14.710 fonksiyon, 1.500 adım (~1 saat 40 dk, 4,8 GB bellek): **F1 0.01, yani işe yaramadı.** Model anlam yerine eğitim projelerinin ad öneklerini öğrendi: 112 tahminin 54'ü `mbedtls_` ile başlıyor. İkinci deneme (hedeflerden proje öneki atılmış, projeler dengelenmiş) sürüyor.
+
+### Not: zlib ısınma turu ve veri hattındaki sızıntılar
+
+İlk zlib ölçümü (v1, 60 fonksiyon) daha basit bir veri hattıyla yapıldı ve o hat modele farkında olmadan ipucu sızdırıyordu: global değişken adları (`crc_table`, `configuration_table`), alfabetik `sub_` numaraları, `.o` ofsetleri. Bir tersine mühendislik modeliyle (Codex) yapılan denetimden sonra bu sızıntılar kapatıldı (v3). v1 sonuçları `sonuc/zlib-*.jsonl` altında duruyor ama yukarıdaki karşılaştırmalar v3 hatla yapıldı.
 
 ## Yol haritası
 
 - [x] Veri üretim hattı (zlib, -O0/-O2)
 - [x] Büyük modellerle taban ölçüm
-- [ ] Az bilinen projelerden ezbere dayanıklı test seti
-- [ ] Hata analizi: hangi fonksiyon türlerinde modeller çöküyor
-- [ ] Veri büyütme: binlerce fonksiyon (libpng, sqlite, lua, mbedtls…). Eğitim/test ayrımı proje bazında yapılacak.
+- [x] Az bilinen projelerden ezbere dayanıklı test seti
+- [x] Hata analizi: hangi fonksiyon türlerinde modeller çöküyor
+- [x] Veri büyütme: 14 projeden 16.804 fonksiyon, eğitim/test ayrımı proje bazında
+- [ ] Gerçek link + strip ile veri hattı (şu an `.o` dosyalarından)
 - [ ] Çağrı bağlamı: çağrılan ve çağıran fonksiyonların bilgisini girdiye eklemek
-- [ ] Küçük modele LoRA eğitimi ve karşılaştırma
+- [ ] Küçük modele LoRA eğitimi ve karşılaştırma (ilk deneme yapıldı, işe yaramadı)
 - [ ] Veri seti ve modelin açık yayını
 
 ## Kendiniz çalıştırın
@@ -94,16 +124,26 @@ zlib'den rastgele seçilen 60 fonksiyon, ortalama F1 (1.0 = tam doğru):
 Gereksinimler: `clang`, `objdump` (LLVM), Python 3.9+. Ölçüm için OpenAI uyumlu bir LLM uç noktası gerekiyor.
 
 ```bash
-git clone https://github.com/madler/zlib kaynak/zlib
-python3 cikar.py kaynak/zlib -o veri/zlib.jsonl      # fonksiyon → assembly çiftleri
-python3 taban.py veri/zlib.jsonl -n 60 -m <model>    # ad tahmini + puan (sonuc/ altına)
-python3 ozet.py                                      # sonuç tablosu
+python3 cikar.py --projeler projeler.json             # projeleri indir, derle → veri/egitim, veri/test
+python3 test_seti.py                                  # ölçüm seti → veri/test.jsonl
+python3 taban.py veri/test.jsonl -n 1000 -m <model>   # ad tahmini + puan (sonuc/ altına); --dusunme, --devam
+python3 ozet.py test                                  # sonuç tablosu
+python3 analiz.py veri/test.jsonl -o grafik/test-hata.png   # fonksiyon türüne göre hata analizi
 ```
 
-`veri/zlib.jsonl` her satırda bir fonksiyon içerir: `id`, `dosya`, `opt`, `ad` (doğru cevap), `komut_sayisi`, `asm`.
+Her satır bir fonksiyon: `id`, `proje`, `surum`, `dosya`, `opt`, `ad` (doğru cevap), `komut_sayisi`, `sizinti`, `asm`.
+
+LoRA (Apple Silicon, mlx-lm):
+
+```bash
+python3.12 -m venv .venv && .venv/bin/pip install mlx-lm transformers matplotlib
+.venv/bin/python lora/hazirla.py --onek-at --proje-tavan 1500   # → lora/veri
+sh lora/egit.sh                                                 # ayarlar lora/ayar.yaml
+.venv/bin/python lora/olc.py                                    # test setinde ölç → sonuc/
+```
 
 Ölçümler [EVREN](https://evren.ssyz.org.tr) yapay zekâ platformunun Türkiye'deki altyapısında yapıldı.
 
 ## Lisans
 
-Kod MIT lisanslıdır. `veri/` altındaki assembly, derlenen projelerin kendi lisanslarına tabidir (zlib: zlib License).
+Kod MIT lisanslıdır. `veri/` altındaki assembly, derlenen projelerin kendi lisanslarına tabidir: [veri/LISANSLAR.md](veri/LISANSLAR.md).

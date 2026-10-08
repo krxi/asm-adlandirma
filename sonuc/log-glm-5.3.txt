@@ -1,1 +1,80 @@
 0 satır korundu, 60 soruluyor
+0.00  -O2  deflateEnd                   ← Let me analyze this x86-64 function to determine what it lik
+0.00  -O2  inflateReset                 ← Let me analyze this x86-64 function to figure out what it do
+0.00  -O0  adler32_combine              ← forward_call
+0.00  -O0  deflateBound_z               ← Let me analyze this x86-64 function to figure out what it do
+0.00  -O2  deflateSetDictionary         ← Let me analyze this x86-64 function to determine what it doe
+0.50  -O0  zlibVersion                  ← get_version
+0.00  -O2  adler32_combine              ← 
+0.00  -O0  deflateSetDictionary         ← Let me analyze this x86-64 function to determine what it doe
+0.00  -O0  inflate_fixed                ← fixedtables
+0.00  -O2  inflate_fixed                ← fixedtables
+0.00  -O0  crc_word                     ← crc32_hash_u64
+0.00  -O0  tr_align                     ← 
+0.00  -O2  crc32_combine                ← Let me analyze this x86-64 function to figure out what it do
+0.00  -O2  crc32                        ← 
+0.00  -O2  tr_flush_bits                ← 
+0.00  -O2  zcalloc                      ← 
+0.00  -O2  inflateSync                  ← 
+0.00  -O2  deflateCopy                  ← clone_state
+0.00  -O2  crc32_combine_gen64          ← Let me analyze this x86-64 function to figure out what it do
+0.00  -O2  inflatePrime                 ← Let me analyze this x86-64 function to figure out what it do
+0.00  -O2  deflateTune                  ← Let me analyze this x86-64 function to determine what it doe
+0.00  -O2  tr_tally                     ← 
+0.00  -O0  deflateParams                ← set_mode
+0.00  -O2  inflateCopy                  ← clone_state
+0.00  -O0  adler32                      ← wrapper
+0.00  -O0  inflateCopy                  ← clone_state
+0.00  -O0  inflateReset2                ← Let me analyze this x86-64 function to determine what it doe
+0.00  -O0  inflateSyncPoint             ← is_idle
+0.00  -O2  adler32_z                    ← 
+0.00  -O0  deflateGetDictionary         ← read_data
+0.00  -O0  inflateEnd                   ← Let me analyze this x86-64 function to determine what it lik
+0.00  -O0  inflateBackInit_             ← 
+0.00  -O2  uncompress                   ← Let me analyze this x86-64 function in Intel syntax.
+
+```
+pu
+1.00  -O0  tr_init                      ← _tr_init
+0.00  -O0  inflateResetKeep             ← Let me analyze this x86-64 function to determine what it doe
+0.00  -O2  inflateValidate              ← Let me analyze this x86-64 function.
+
+The function:
+1. Sets 
+0.00  -O2  longest_match                ← Let me analyze this x86-64 function to figure out what it do
+0.00  -O0  deflateReset                 ← close
+0.00  -O0  crc32_combine_op             ← 
+0.00  -O0  deflatePrime                 ← write_bits
+0.00  -O0  uncompress2_z                ← Let me analyze this x86-64 function to determine what it doe
+0.00  -O2  crc32_combine_op             ← Let me analyze this x86-64 function.
+
+The function takes arg
+0.00  -O0  deflateUsed                  ← get_last_error
+0.00  -O0  multmodp                     ← Let me analyze this function.
+
+The function takes two argume
+0.00  -O2  inflateGetDictionary         ← Let me analyze this x86-64 function.
+
+The function:
+1. Retur
+0.00  -O2  inflateBackInit_             ← Let me analyze this x86-64 function to determine what it doe
+0.00  -O0  pqdownheap                   ← Let me analyze this x86-64 function to figure out what it do
+0.00  -O0  tr_stored_block              ← Let me analyze this x86-64 function to determine what it doe
+0.00  -O0  x2nmodp                      ← Let me analyze this function:
+
+1. It takes two arguments: `r
+0.00  -O0  inflatePrime                 ← put_bits
+0.00  -O0  lm_init                      ← reset_state
+0.00  -O2  deflatePending               ← Let me analyze this x86-64 function to determine what it lik
+0.00  -O0  zcfree                       ← free_value
+0.00  -O0  detect_data_type             ← Let me analyze this x86-64 function to determine what it doe
+0.00  -O0  compressBound                ← find_index
+0.00  -O0  adler32_combine64            ← wrapper
+0.00  -O0  inflateMark                  ← Let me analyze this x86-64 function to determine what it lik
+0.00  -O2  deflateSetHeader             ← Let me analyze this x86-64 function to figure out what it do
+0.00  -O2  inflateSyncPoint             ← 
+0.00  -O0  inflateValidate              ← 
+-O0: ortalama F1 0.04  (n=34, tam isabet 1)
+-O2: ortalama F1 0.00  (n=26, tam isabet 0)
+yeni token: 163099
+ayrıntı → sonuc/zlib-glm-5.3.jsonl
