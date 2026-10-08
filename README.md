@@ -115,6 +115,7 @@ Fonksiyonun assembly'sine, çağırdığı iç fonksiyonlar hakkında bilgi ekle
 | deepseek-v4.1-flash | 0.12 | 0.17 | 0.17 | 0.10 → 0.18 |
 | qwen3.8-flash-next | 0.11 | 0.15 | 0.16 | 0.06 → 0.18 |
 | gemma-4-31b | 0.10 | 0.09 | 0.10 | 0.04 → 0.11 |
+| glm-5.3 | 0.12 | 0.14 | (sürüyor) | 0.06 → 0.06 (özet) |
 
 Bağlam en çok uzun ve iç fonksiyon çağıran fonksiyonlarda işe yarıyor. Derin bağlam özetin üstüne az şey katıyor. **Sarmalayıcılar derin bağlamla da 0'da kalıyor** (test setinde yalnız 6 tane; çağrılanın tam assembly'si bile modeli doğru ada götürmüyor).
 
