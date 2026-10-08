@@ -1,0 +1,40 @@
+cyaml: 12 satır korundu, 0 ara/yerel, 393 soruluyor
+405 açıklama → veri/aciklama/cyaml.jsonl
+mu_json_x: 0 satır korundu, 0 ara/yerel, 134 soruluyor
+134 açıklama → veri/aciklama/mu_json_x.jsonl
+sajs: 0 satır korundu, 0 ara/yerel, 91 soruluyor
+91 açıklama → veri/aciklama/sajs.jsonl
+picomatch: 0 satır korundu, 0 ara/yerel, 29 soruluyor
+29 açıklama → veri/aciklama/picomatch.jsonl
+tomlc17: 0 satır korundu, 0 ara/yerel, 118 soruluyor
+118 açıklama → veri/aciklama/tomlc17.jsonl
+cjson: 0 satır korundu, 0 ara/yerel, 262 soruluyor
+262 açıklama → veri/aciklama/cjson.jsonl
+jansson: 0 satır korundu, 0 ara/yerel, 404 soruluyor
+404 açıklama → veri/aciklama/jansson.jsonl
+libyaml: 0 satır korundu, 0 ara/yerel, 262 soruluyor
+262 açıklama → veri/aciklama/libyaml.jsonl
+lz4: 0 satır korundu, 0 ara/yerel, 352 soruluyor
+352 açıklama → veri/aciklama/lz4.jsonl
+xxhash: 0 satır korundu, 0 ara/yerel, 252 soruluyor
+252 açıklama → veri/aciklama/xxhash.jsonl
+zlib: 0 satır korundu, 0 ara/yerel, 255 soruluyor
+255 açıklama → veri/aciklama/zlib.jsonl
+brotli: 0 satır korundu, 0 ara/yerel, 445 soruluyor
+445 açıklama → veri/aciklama/brotli.jsonl
+expat: 0 satır korundu, 0 ara/yerel, 650 soruluyor
+650 açıklama → veri/aciklama/expat.jsonl
+libpng: 0 satır korundu, 0 ara/yerel, 981 soruluyor
+981 açıklama → veri/aciklama/libpng.jsonl
+lua: 0 satır korundu, 0 ara/yerel, 1757 soruluyor
+1757 açıklama → veri/aciklama/lua.jsonl
+libsodium: 0 satır korundu, 0 ara/yerel, 1889 soruluyor
+1889 açıklama → veri/aciklama/libsodium.jsonl
+uyor
+libsodium: 1889 satır korundu, 0 ara/yerel, 0 soruluyor
+zstd: 0 satır korundu, 0 ara/yerel, 2038 soruluyor
+1889 açıklama → veri/aciklama/libsodium.jsonl
+2038 açıklama → veri/aciklama/zstd.jsonl
+sqlite: 0 satır korundu, 0 ara/yerel, 3490 soruluyor
+3767 açıklama → veri/aciklama/mbedtls.jsonl
+3490 açıklama → veri/aciklama/sqlite.jsonl
