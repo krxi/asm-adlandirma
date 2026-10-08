@@ -1,0 +1,189 @@
+0 satır korundu, 115 soruluyor
+0.00  -O0  toml_parse_file_ex           ← 
+0.00  -O2  pm_expsize                   ← 
+0.00  -O2  toml_seek                    ← Let me analyze this x86-64 function to determine what it doe
+0.00  -O2  eat_mem_next                 ← Let me analyze this x86-64 function.
+
+The function takes:
+- 
+0.67  -O0  cyaml_strndup                ← strndup
+0.00  -O2  mu_str_ltrim                 ← 
+0.00  -O2  ypath_lex_number             ← Let me analyze this x86-64 function.
+
+The function:
+- Takes 
+0.00  -O2  matches_class                ← Let me analyze this x86-64 function.
+
+The function takes:
+- 
+0.50  -O0  emit_op                      ← emit_byte
+0.00  -O0  dump_scalar                  ← Let me analyze this function carefully.
+
+The function takes:
+0.00  -O0  pm_geterror                  ← get_value
+0.00  -O0  toml_merge                   ← 
+0.00  -O0  matches_class                ← Let me analyze this x86-64 function.
+
+The function takes:
+- 
+0.00  -O2  pm_match                     ← 
+0.00  -O2  eat_num_int_start            ← lex_digit
+0.00  -O2  cyaml_span_eq                ← 
+1.00  -O0  memrchr                      ← memrchr
+0.00  -O2  event_anchor                 ← Let me analyze this x86-64 function.
+
+The function takes two
+0.00  -O0  scan_literal                 ← Let me analyze this function.
+
+The function takes two argume
+0.00  -O0  match_loop_lazy              ← 
+0.00  -O0  pm_compile                   ← 
+0.00  -O2  mu_json_token_prev_sibling   ← 
+0.33  -O2  mu_str_parse_uint64          ← parse_int
+0.00  -O0  top_frame                    ← get_data_ptr
+0.00  -O0  eat_mem_next                 ← Let me analyze this x86-64 function to figure out what it do
+0.40  -O0  cyaml_parse_hex64            ← parse_hex
+0.00  -O0  mu_json_token_depth          ← get_status
+0.00  -O0  emit_scalar                  ← 
+0.00  -O2  pm_getgroups                 ← get_size
+0.00  -O2  scan_literal                 ← Let me analyze this x86-64 function.
+
+The function takes two
+0.00  -O0  pm_match                     ← 
+0.00  -O2  datum_equiv                  ← Let me analyze this x86-64 function.
+
+The function takes two
+0.00  -O2  mu_str_find_subcstr          ← 
+0.00  -O0  parse_doc_end                ← Let me analyze this x86-64 function to figure out what it do
+0.29  -O0  mu_str_parse_int32           ← str_to_int
+0.00  -O0  mu_str_rfind_substr          ← 
+0.00  -O2  emit_quantifier              ← Let me analyze this x86-64 assembly function to determine wh
+0.00  -O0  parse_val                    ← 
+0.00  -O2  pool_destroy                 ← Let me analyze this x86-64 function.
+
+The function:
+1. Takes
+0.00  -O2  eat_start                    ← free
+0.00  -O2  cyaml_map_merge              ← Let me analyze this x86-64 function to figure out what it do
+0.00  -O2  pm_compile                   ← None
+0.00  -O0  mu_json_parse_c_str          ← Let me analyze this x86-64 function.
+
+The function:
+1. Takes
+0.00  -O2  eat_num_exp_int_start        ← match_digit
+0.00  -O2  mu_json_parse_c_str          ← 
+0.00  -O0  do_change_if                 ← 
+0.00  -O0  emit_quantifier              ← 
+0.50  -O2  mu_str_rfind                 ← rfind
+0.00  -O0  process_numstr               ← Let me analyze this function.
+
+The function takes:
+- rdi: a 
+0.00  -O0  eat_num_exp_start            ← Let me analyze this x86-64 assembly code to figure out what 
+0.00  -O2  scan_float                   ← 
+0.00  -O2  eat_string_esc_lo            ← Let me analyze this x86-64 function.
+
+The function takes `rd
+0.00  -O0  scan_value                   ← 
+0.67  -O0  sajs_strerror                ← strerror
+0.00  -O0  mu_json_token_next_sibling   ← find_match
+0.00  -O2  emit_tag                     ← 
+0.00  -O0  compile_body                 ← Let me analyze this code. We have a function that:
+
+1. Takes
+0.40  -O0  is_valid_char                ← is_displayable
+0.00  -O0  mu_str_rfind                 ← 
+0.00  -O2  mu_json_token_depth          ← get_type
+0.00  -O0  mu_json_token_prev           ← 
+0.00  -O2  check_overflow               ← Let me analyze this x86-64 function.
+
+The function takes `rs
+1.00  -O0  is_valid_date                ← is_valid_date
+0.00  -O2  eat_elem_next                ← check_capability
+0.00  -O0  toml_get                     ← Let me analyze this x86-64 function.
+
+The function:
+1. Takes
+0.57  -O2  toml_parse_file_ex           ← json_parse_file
+0.40  -O2  mu_str_init                  ← pair_init
+0.00  -O0  mu_json_token_root           ← 
+0.00  -O2  ypath_lex_ident              ← Let me analyze this x86-64 function.
+
+The function takes a p
+0.00  -O2  cyaml_stream_free            ← array_destroy
+0.00  -O2  mu_str_buf                   ← get_data
+0.00  -O2  sajs_lexer_init              ← 
+0.00  -O0  eat_num_exp_int_start        ← parse_digit
+0.00  -O2  cyaml_map_sort               ← 
+0.00  -O0  copystring                   ← safe_strcpy
+0.00  -O2  mu_str_rfind_subcstr         ← 
+0.00  -O2  cyaml_as_bool                ← parse_boolean
+0.00  -O0  eat_elem_sep                 ← 
+0.00  -O0  parse_document_internal      ← Let me analyze this function carefully.
+
+The function:
+1. Ta
+0.00  -O2  eat_num_frac_start           ← handle_digit
+0.00  -O2  toml_set_option              ← 
+0.33  -O2  toml_default_option          ← get_default_config
+0.67  -O2  sajs_strerror                ← strerror
+0.00  -O0  is_digit                     ← isdigit
+0.00  -O0  check_overflow               ← Let me analyze this x86-64 function.
+
+The function takes two
+0.00  -O2  toml_parse_file_named        ← Let me analyze this x86-64 function.
+
+The function:
+1. Takes
+0.00  -O2  eat_num_frac_cont            ← Let me analyze this x86-64 function.
+
+The function takes:
+- 
+0.50  -O2  eat_true                     ← parse_true
+0.50  -O0  is_container                 ← is_active
+0.40  -O2  grow_tokens                  ← ring_buffer_grow
+0.00  -O0  eat_elem_first               ← 
+0.00  -O2  toml_get                     ← lookup_by_name
+0.00  -O0  pm_expsize                   ← 
+0.00  -O0  eat_elem_next                ← 
+0.00  -O0  scan_next                    ← Let me analyze this function. It's from tomlc17.c (a TOML pa
+0.00  -O0  mu_str_ltrim                 ← hashmap_lookup_or_insert
+0.33  -O0  ypath_str_null               ← is_null_value
+0.40  -O0  is_class_char                ← is_delimiter
+0.00  -O0  emit_exact                   ← Let me analyze this function.
+
+The function takes:
+- rdi: so
+0.00  -O0  cyaml_node_new               ← 
+0.00  -O0  cyaml_is_nb_char             ← 
+0.67  -O0  mu_str_parse_int             ← parse_int
+0.00  -O2  pm_geterror                  ← get_handle
+0.50  -O0  grow_indents                 ← array_grow
+0.00  -O0  eat_mem_value_start          ← Let me analyze this x86-64 function.
+
+The function:
+1. Takes
+0.57  -O2  mu_str_parse_unsigned_int    ← parse_int
+0.00  -O2  cyaml_json                   ← 
+0.00  -O0  eat_num_exp_int_cont         ← Let me analyze this x86-64 function.
+
+The main function:
+- T
+0.00  -O2  datum_merge                  ← Let me analyze this x86-64 function to figure out what it do
+0.40  -O0  ypath_lex_init               ← lexer_init
+0.40  -O0  cyaml_as_bool                ← parse_bool
+0.00  -O2  eat_string_esc               ← Let me analyze this x86-64 function.
+
+The function takes arg
+0.00  -O0  match_loop                   ← Let me analyze this x86-64 function.
+
+The function takes:
+- 
+0.40  -O2  push_state                   ← int_array_push
+0.00  -O2  mu_str_rfind_substr          ← Let me analyze this x86-64 assembly function.
+
+The function 
+-O0: ortalama F1 0.14  (n=60, tam isabet 2)
+-O2: ortalama F1 0.09  (n=55, tam isabet 0)
+yeni token: 301220
+ayrıntı → sonuc/test-glm-5.3-baglam2.jsonl
