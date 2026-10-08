@@ -29,7 +29,7 @@ UYGUNSUZ_AD = re.compile(r"(awesome|tutorial|leetcode|homework|exercise|course|k
                          r"malware|rootkit|keylogger|ransom|cracker)", re.I)
 # Ad + açıklamada: saldırı aracı ya da macOS'ta derlenmeyecek platforma bağlı proje.
 UYGUNSUZ_ACIKLAMA = re.compile(r"\b(keygen|crack(ed|er)?|cheats?|game ?hack|c2|command[- ]and[- ]control|implant|"
-    r"beacon|shellcode|payload|injector|injection|bypass|edr|evasion|lateral|malware|stealer|exploit|"
+    r"beacon|shellcode|payload|injector|injection|bypass|edr|evasion|lateral|malware|stealer|exploit\w*|cve|pocs?|[01]day|backdoor|dump(er|ing)|lsass|credentials?|penetration|jailbreak|reverse shells?|dram scrambling|il2cpp|dll inject\w*|"
     r"rootkit|ransomware|red ?team|offensive|pentest)\b", re.I)
 # Yalnız test seçiminde: macOS'ta dosya dosya derlenmesi beklenmeyen platforma bağlı projeler.
 PLATFORM = re.compile(r"\b(flipper|esp32|esp8266|esp-idf|arduino|stm32|rp2040|"
