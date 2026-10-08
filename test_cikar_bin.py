@@ -190,5 +190,34 @@ int ikinci(int n) { return yardimci(n) + acik_fonk(n); }
         self.assertTrue(cikti.with_suffix(".rapor.json").exists())
 
 
+    def test_hosgoru_derlenemeyen_cift_sembol_ve_gizli_ithal(self):
+        k = self.kok / "hosgoru"
+        k.mkdir()
+        (k / "a.c").write_text('''extern int kayip_fonk(int);
+int main(void) { return 0; }
+int kullanan_fonk(int n) { return kayip_fonk(n) + kayip_fonk(n + 1) + 3; }
+''')
+        (k / "b.c").write_text("int main(void) { return 1; }\nint ikinci_fonk(int n) { return n * 3 + 1; }\n")
+        (k / "c.c").write_text("int kayip_fonk(int n) { return n; } bu C degil;")
+        cikti = k / "cikti.jsonl"
+        with contextlib.redirect_stdout(io.StringIO()):
+            cikar(k, cikti, proje="hos", en_az=1, en_cok=1000, kipler=("tam",), opts=("-O0", "-O1"),
+                  lisans="MIT", hosgoru=True)
+        satirlar = [json.loads(s) for s in cikti.read_text().splitlines()]
+        rapor = json.loads(cikti.with_suffix(".rapor.json").read_text())
+        self.assertEqual({r["opt"] for r in satirlar}, {"-O0", "-O1"})
+        self.assertTrue(all(r["lisans"] == "MIT" for r in satirlar))
+        for o in rapor["optimizasyonlar"].values():
+            self.assertEqual(o["derlenemeyen"], ["c.c"])
+            self.assertEqual(o["cift_sembol_atilan"], ["b.c"])
+            self.assertEqual(o["gizli_ithal"], 1)
+        kullanan = [r for r in satirlar if r["ad"] == "kullanan_fonk"]
+        self.assertTrue(kullanan)
+        for r in kullanan:
+            self.assertNotIn("kayip_fonk", r["asm"] + r["baglam"])
+            self.assertIn("ext_0000", r["asm"])
+        self.assertFalse([r for r in satirlar if r["ad"] == "ikinci_fonk"])
+
+
 if __name__ == "__main__":
     unittest.main()

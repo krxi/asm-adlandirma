@@ -240,24 +240,27 @@ class Komut:
     metin: str
 
 
-def ayristir(m, baslar, veriler):
-    """Veri aralıklarını objdump'a vermeden çöz; sembol başlıklarını tamamen yok say."""
+def ayristir(m, baslar, veriler, bozuklar=None):
+    """Veri aralıklarını objdump'a vermeden çöz; sembol başlıklarını tamamen yok say.
+
+    bozuklar bir küme verilirse çözülemeyen aralığın fonksiyon başlangıcı oraya eklenir
+    ve o aralık atlanır (toplu çıkarım); verilmezse hata yükselir."""
     s = m.kod[0]
     sinirlar = sorted(baslar) + [s.adres + s.boy]
     araliklar = [aralik for bas, son in zip(sinirlar, sinirlar[1:])
                 for aralik in kod_araliklari(bas, son, veriler)]
-    def coz(aralik):
-        bas, son = aralik
-        sonuc = []
+    SATIR = re.compile(r"^\s*([0-9a-f]+):\s+((?:[0-9a-f]{2}\s+)+)\s*(\S.*)$")
+
+    def dok(bas, son):
         dump = calistir(["objdump", "-d", "--section=__text", "--disassemble-zeroes",
                         "--x86-asm-syntax=intel", f"--start-address={bas}",
                         f"--stop-address={son}", m.yol])
-        beklenen = bas
-        for satir in dump.splitlines():
-            es = re.match(r"^\s*([0-9a-f]+):\s+((?:[0-9a-f]{2}\s+)+)\s*(\S.*)$", satir)
-            if not es:
-                continue
-            a, boy, metin = int(es[1], 16), len(es[2].split()), es[3]
+        return [(int(es[1], 16), len(es[2].split()), es[3], satir)
+                for satir in dump.splitlines() if (es := SATIR.match(satir))]
+
+    def denetle(bas, son, satirlar):
+        sonuc, beklenen = [], bas
+        for a, boy, metin, satir in satirlar:
             # Linker nesneler arasına tek sayıda sıfır doldurabilir. Sonraki
             # fonksiyonun ilk baytını bu dolguya ekleyip sahte 'add' üretme.
             off = s.ofset + a - s.adres
@@ -271,10 +274,50 @@ def ayristir(m, baslar, veriler):
         if beklenen != son:
             raise ValueError(f"Eksik disassembly: {beklenen:#x}..{son:#x}")
         return sonuc
+
+    def coz(aralik):
+        return denetle(*aralik, dok(*aralik))
+
+    # Hız: bitişik aralıklar (arada kod içi veri yok) tek objdump çağrısıyla çözülür, sonra
+    # fonksiyon sınırlarından bölünür. Bir aralık tutarlı değilse (komut sınırı başlangıca
+    # denk gelmiyor, sınırı aşıyor, sıfır dolgu) yalnız o aralık ayrı çağrıyla yeniden çözülür.
+    obekler = []
+    for aralik in araliklar:
+        if obekler and obekler[-1][-1][1] == aralik[0] and len(obekler[-1]) < 400:
+            obekler[-1].append(aralik)
+        else:
+            obekler.append([aralik])
+
+    def obek_coz(obek):
+        satirlar = dok(obek[0][0], obek[-1][1])
+        adresler = [x[0] for x in satirlar]
+        sonuc = []
+        for bas, son in obek:
+            i, j = bisect.bisect_left(adresler, bas), bisect.bisect_left(adresler, son)
+            try:
+                sonuc.append(denetle(bas, son, satirlar[i:j]))
+            except ValueError:
+                sonuc.append(None)
+        return sonuc
+
     with ThreadPoolExecutor(8) as havuz:
-        sonuc = [k for grup in havuz.map(coz, araliklar) for k in grup]
+        toplu = [r for grup in havuz.map(obek_coz, obekler) for r in grup]
+    yeniden = [aralik for aralik, r in zip(araliklar, toplu) if r is None]
+    def coz_guvenli(aralik):
+        if bozuklar is None:
+            return coz(aralik)
+        try:
+            return coz(aralik)
+        except (ValueError, RuntimeError):
+            bozuklar.add(sinirlar[bisect.bisect_right(sinirlar, aralik[0]) - 1])
+            return []
+    with ThreadPoolExecutor(8) as havuz:
+        ek = dict(zip(yeniden, havuz.map(coz_guvenli, yeniden)))
+    sonuc = [k for aralik, r in zip(araliklar, toplu) for k in (ek[aralik] if r is None else r)]
     adresler = {k.adres for k in sonuc}
-    if set(baslar) - adresler:
+    if bozuklar is not None:
+        bozuklar |= set(baslar) - adresler
+    elif set(baslar) - adresler:
         raise ValueError("Fonksiyon başlangıcı komut sınırında değil veya veri içinde")
     return sonuc
 
@@ -352,6 +395,30 @@ class Gorunum:
         return "\n".join(satirlar).replace(EV, "~")
 
 
+def cift_semboller(hata, sira):
+    """ld 'duplicate symbol' bloklarında, link sırasında ilk gelen dışındaki nesneler."""
+    atilacak, blok = set(), None
+    def kapat():
+        if blok and len(blok) > 1:
+            blok.sort(key=lambda o: sira.index(o) if o in sira else len(sira))
+            atilacak.update(blok[1:])
+    for satir in hata.splitlines():
+        if re.match(r"^\s*duplicate symbol", satir):
+            kapat()
+            blok = []
+        elif blok is not None and re.match(r"^\s+\S+\.o\s*$", satir):
+            blok.append(satir.strip())
+        else:
+            kapat()
+            blok = None
+    kapat()
+    return atilacak
+
+
+def cozulmeyenler(hata):
+    return {csym(m) for m in re.findall(r'^\s+"(_[^"]+)", referenced from:', hata, re.M)}
+
+
 def kaynak_esle(harita, nesneler):
     """Link map yalnız dosya etiketi için; boy/sınır alanları kullanılmaz."""
     dosyalar, sonuc = {}, {}
@@ -386,109 +453,162 @@ def sizinti_kontrolu(satirlar, gercekler, exportlar, ithaller):
 
 
 def cikar(kok, cikti, dosyalar=("*.c",), haric=(), bayraklar=(), proje=None, surum=None,
-          en_az=6, en_cok=300, tohum=7, kipler=("yerel", "tam"), v3=False):
+          en_az=6, en_cok=300, tohum=7, kipler=("yerel", "tam"), v3=False, opts=OPTS,
+          lisans=None, hosgoru=False):
+    """hosgoru: toplu çıkarım kipi. Derlenemeyen dosya, çift sembol, çözülemeyen aralık ve
+    denetime takılan satır projeyi düşürmez; atlanır ve rapora yazılır. Projeye ait olup
+    linklenemeyen (derlenemeyen dosyadaki) adlar import gibi görünmesin diye ext_NNNN olur."""
     proje = proje or kok.name
-    kaynaklar = sorted({c for d in dosyalar for c in kok.glob(d)} - {c for h in haric for c in kok.glob(h)})
+    kaynaklar = sorted({c for d in dosyalar for c in kok.glob(d) if c.is_file()}
+                       - {c for h in haric for c in kok.glob(h)})
     if not kaynaklar:
         raise ValueError(f"Yerel C kaynağı bulunamadı: {kok}")
     hepsi, rapor = [], {"proje": proje, "surum": surum, "hedef": HEDEF,
         "clang": calistir(["clang", "--version"]).splitlines()[0],
         "bayraklar": list(bayraklar), "min": en_az, "max": en_cok, "tohum": tohum,
-        "optimizasyonlar": {}}
-    with tempfile.TemporaryDirectory(prefix="asm-bin-") as t:
-        for opt in OPTS:
-            dizin = Path(t) / opt[1:]
-            dizin.mkdir()
-            nesneler = {str((dizin / f"{i}.o").resolve()): c.relative_to(kok).as_posix()
-                        for i, c in enumerate(kaynaklar)}
-            def derle_tek(is_):
-                c, o = is_
-                return derle(c, opt, Path(o), list(bayraklar), kok)
-            with ThreadPoolExecutor(8) as havuz:
-                durum = list(havuz.map(derle_tek, zip(kaynaklar, nesneler)))
-            hatali = [c.relative_to(kok).as_posix() for c, iyi in zip(kaynaklar, durum) if not iyi]
-            if hatali:
-                raise RuntimeError(f"{proje} {opt}: derlenemeyenler: {', '.join(hatali)}; eksik dylib üretilmedi")
-            asil, stripped, harita = dizin / "asil.dylib", dizin / "stripped.dylib", dizin / "link.map"
-            link = ["clang", "-target", HEDEF, "-dynamiclib", *nesneler,
+        "lisans": lisans, "kaynak_dosya": len(kaynaklar), "optimizasyonlar": {}, "atlanan_opt": {}}
+
+    def tek_opt(opt, t):
+        dizin = Path(t) / opt[1:]
+        dizin.mkdir()
+        nesneler = {str((dizin / f"{i}.o").resolve()): c.relative_to(kok).as_posix()
+                    for i, c in enumerate(kaynaklar)}
+        def derle_tek(is_):
+            c, o = is_
+            return derle(c, opt, Path(o), list(bayraklar), kok)
+        with ThreadPoolExecutor(8) as havuz:
+            durum = list(havuz.map(derle_tek, zip(kaynaklar, nesneler)))
+        hatali = [c.relative_to(kok).as_posix() for c, iyi in zip(kaynaklar, durum) if not iyi]
+        if hatali and not hosgoru:
+            raise RuntimeError(f"{proje} {opt}: derlenemeyenler: {', '.join(hatali)}; eksik dylib üretilmedi")
+        linklenen = [o for o, iyi in zip(nesneler, durum) if iyi]
+        if not linklenen:
+            raise RuntimeError(f"{proje} {opt}: hiçbir dosya derlenmedi")
+        asil, stripped, harita = dizin / "asil.dylib", dizin / "stripped.dylib", dizin / "link.map"
+        dinamik, cift_atilan, gizli = False, [], {}
+        for _ in range(40):
+            link = ["clang", "-target", HEDEF, "-dynamiclib", *linklenen,
                     "-Wl,-no_deduplicate", f"-Wl,-map,{harita}", "-o", asil]
             # Aynı gövdeli farklı fonksiyonların etiketlerini tek adreste birleştirme.
-            r = subprocess.run([str(x) for x in link], capture_output=True, text=True)
-            dinamik = False
-            if r.returncode:
-                if "Undefined symbols" not in r.stderr:
-                    raise RuntimeError(r.stderr.strip())
-                calistir(link + ["-Wl,-undefined,dynamic_lookup"])
+            r = subprocess.run([str(x) for x in link + (["-Wl,-undefined,dynamic_lookup"] if dinamik else [])],
+                               capture_output=True, text=True)
+            if not r.returncode:
+                break
+            atilacak = cift_semboller(r.stderr, linklenen) if hosgoru else set()
+            if atilacak:
+                cift_atilan += [nesneler[o] for o in linklenen if o in atilacak]
+                linklenen = [o for o in linklenen if o not in atilacak]
+                continue
+            if "Undefined symbols" in r.stderr and not dinamik:
                 dinamik = True
-            calistir(["strip", "-x", "-o", stripped, asil])
-            m, dogru = MachO(stripped), MachO(asil)
-            lc, uw, veriler = m.baslangiclar(), m.unwind(), m.kod_verisi()
-            baslar = sorted(lc | uw)
-            if not baslar:
-                raise ValueError(f"{proje} {opt}: stripped binary'de başlangıç/unwind yok")
-            isimler = {}
-            for a, ad, _, b in dogru.tanimli():
-                if any(s.indis == b for s in dogru.kod):
-                    isimler.setdefault(a, []).append(ad)
-            dosya_adlari = kaynak_esle(harita, nesneler)
-            komutlar = ayristir(m, baslar, veriler)
-            gruplar = {a: [] for a in baslar}
-            for k in komutlar:
-                gruplar[baslar[bisect.bisect_right(baslar, k.adres) - 1]].append(k)
-            ithaller = m.ithaller()
-            refler = []
-            for k in komutlar:
-                if (r := RIP.search(k.metin)):
-                    fark = int(r[2], 0) if r[2] else 0
-                    refler.append(k.adres + k.boy + (-fark if r[1] == "-" else fark))
-                refler.extend(int(a, 16) for a in re.findall(r"\[0x([0-9a-f]+)\]", k.metin))
-            bilgi = {"lc_function_starts": len(lc), "unwind": len(uw), "unwind_ek": len(uw - lc),
-                     "sinir": len(baslar), "eslesen": len(set(baslar) & isimler.keys()),
-                     "adsiz_baslangiclar": [hex(a) for a in baslar if a not in isimler],
-                     "sinirsiz_semboller": [{"adres": hex(a), "adlar": ads} for a, ads in sorted(isimler.items()) if a not in gruplar],
-                     "cok_adli_adresler": [{"adres": hex(a), "adlar": ads} for a, ads in sorted(isimler.items()) if len(ads) > 1],
-                     "data_in_code": len(veriler), "atlanan_veri_bayti": sum(b - a for a, b, _ in veriler),
-                     "cozulen_komut": len(komutlar),
-                     "sifir_dolgu_bayti": m.kod[0].adres + m.kod[0].boy - baslar[0]
-                         - sum(k.boy for k in komutlar) - sum(b - a for a, b, _ in veriler),
-                     "dynamic_lookup": dinamik, "kipler": {}}
-            for kip in kipler:
-                gor = Gorunum(m, baslar, ithaller, proje, opt, kip, tohum)
-                gor.veri_adlari(refler, proje, opt, tohum)
-                asmler = {a: gor.anonimlestir(ks) for a, ks in gruplar.items()}
-                ozetler = {gor.kimlik[a]: fonksiyon_ozeti(gor.kimlik[a], len(gruplar[a]), asm)
-                           for a, asm in asmler.items()}
-                satirlar, elenen = [], Counter()
-                for a, asm in asmler.items():
-                    ads = sorted(isimler.get(a, []))
-                    if not ads:
-                        elenen["adsiz"] += 1
-                        continue
-                    if len(ads) > 1:
-                        elenen["cok_adli"] += 1           # belirsiz doğru cevap üretme
-                        continue
-                    ad, n = ads[0], len(gruplar[a])
-                    if "." in ad:
-                        elenen["derleyici_parcasi"] += 1
-                        continue
-                    if not en_az <= n <= en_cok:
-                        elenen["kisa" if n < en_az else "uzun"] += 1
-                        continue
-                    dosya = dosya_adlari.get((a, ad)) or "?"
-                    baglam = "\n".join(ozetler[h] for h in ic_cagrilar(asm) if h in ozetler)
-                    satirlar.append({"id": f"{proje}/{dosya}:{opt}:{kip}:{gor.kimlik[a]}:{ad}",
-                        "proje": proje, "surum": surum, "dosya": dosya, "opt": opt, "kip": kip,
-                        "ad": ad, "kimlik": gor.kimlik[a], "export": a in gor.exportlar,
-                        "komut_sayisi": n, "sizinti": sizar_mi(ad, asm) or sizar_mi(ad, baglam),
-                        "asm": asm, "baglam": baglam})
-                kontrol = sizinti_kontrolu(satirlar, [ad for _, ad, _, _ in dogru.tanimli()],
-                                          gor.exportlar.values(), ithaller.values())
-                bilgi["kipler"][kip] = {"satir": len(satirlar), "sizinti": sum(r["sizinti"] for r in satirlar),
-                    "export": sum(r["export"] for r in satirlar), "elenen": dict(elenen), **kontrol}
-                hepsi.extend(satirlar)
-            rapor["optimizasyonlar"][opt] = bilgi
-            print(f"{proje} {opt}: {len(baslar)} sınır, {bilgi['eslesen']} ad eşleşti; "
-                  f"{len(veriler)} veri bölgesi/{bilgi['atlanan_veri_bayti']} bayt atlandı", flush=True)
+                if hosgoru:
+                    # libSystem dışındaki çözülmeyenler çoğunlukla derlenemeyen proje dosyalarındaki
+                    # fonksiyonlardır; gerçek stripped binary'de bunlar adsızdır.
+                    adlar = sorted(cozulmeyenler(r.stderr))
+                    random.Random(f"{proje}-{opt}-{tohum}-ext").shuffle(adlar)
+                    gizli = {ad: f"ext_{i:04x}" for i, ad in enumerate(adlar)}
+                continue
+            raise RuntimeError(r.stderr.strip()[-1500:])
+        else:
+            raise RuntimeError("link 40 denemede tamamlanamadı")
+        calistir(["strip", "-x", "-o", stripped, asil])
+        m, dogru = MachO(stripped), MachO(asil)
+        lc, uw, veriler = m.baslangiclar(), m.unwind(), m.kod_verisi()
+        baslar = sorted(lc | uw)
+        if not baslar:
+            raise ValueError(f"{proje} {opt}: stripped binary'de başlangıç/unwind yok")
+        isimler = {}
+        for a, ad, _, b in dogru.tanimli():
+            if any(s.indis == b for s in dogru.kod):
+                isimler.setdefault(a, []).append(ad)
+        dosya_adlari = kaynak_esle(harita, nesneler)
+        bozuklar = set() if hosgoru else None
+        komutlar = ayristir(m, baslar, veriler, bozuklar)
+        gruplar = {a: [] for a in baslar}
+        for k in komutlar:
+            gruplar[baslar[bisect.bisect_right(baslar, k.adres) - 1]].append(k)
+        ithaller = {a: gizli.get(ad, ad) for a, ad in m.ithaller().items()}
+        refler = []
+        for k in komutlar:
+            if (r := RIP.search(k.metin)):
+                fark = int(r[2], 0) if r[2] else 0
+                refler.append(k.adres + k.boy + (-fark if r[1] == "-" else fark))
+            refler.extend(int(a, 16) for a in re.findall(r"\[0x([0-9a-f]+)\]", k.metin))
+        bilgi = {"lc_function_starts": len(lc), "unwind": len(uw), "unwind_ek": len(uw - lc),
+                 "sinir": len(baslar), "eslesen": len(set(baslar) & isimler.keys()),
+                 "adsiz_baslangiclar": [hex(a) for a in baslar if a not in isimler],
+                 "sinirsiz_semboller": [{"adres": hex(a), "adlar": ads} for a, ads in sorted(isimler.items()) if a not in gruplar],
+                 "cok_adli_adresler": [{"adres": hex(a), "adlar": ads} for a, ads in sorted(isimler.items()) if len(ads) > 1],
+                 "data_in_code": len(veriler), "atlanan_veri_bayti": sum(b - a for a, b, _ in veriler),
+                 "cozulen_komut": len(komutlar),
+                 "sifir_dolgu_bayti": m.kod[0].adres + m.kod[0].boy - baslar[0]
+                     - sum(k.boy for k in komutlar) - sum(b - a for a, b, _ in veriler),
+                 "dynamic_lookup": dinamik, "derlenemeyen": hatali, "cift_sembol_atilan": cift_atilan,
+                 "gizli_ithal": len(gizli), "cozulemeyen_fonksiyon": len(bozuklar or ()), "kipler": {}}
+        if hosgoru:                                    # dosya listeleri raporu şişirmesin
+            for k in ("adsiz_baslangiclar", "sinirsiz_semboller", "cok_adli_adresler"):
+                bilgi[k] = bilgi[k][:20] + ([f"... +{len(bilgi[k]) - 20}"] if len(bilgi[k]) > 20 else [])
+        gercekler = [ad for _, ad, _, _ in dogru.tanimli()] + list(gizli)
+        for kip in kipler:
+            gor = Gorunum(m, baslar, ithaller, proje, opt, kip, tohum)
+            gor.veri_adlari(refler, proje, opt, tohum)
+            asmler = {a: gor.anonimlestir(ks) for a, ks in gruplar.items()}
+            ozetler = {gor.kimlik[a]: fonksiyon_ozeti(gor.kimlik[a], len(gruplar[a]), asm)
+                       for a, asm in asmler.items()}
+            satirlar, elenen = [], Counter()
+            for a, asm in asmler.items():
+                ads = sorted(isimler.get(a, []))
+                if not ads:
+                    elenen["adsiz"] += 1
+                    continue
+                if len(ads) > 1:
+                    elenen["cok_adli"] += 1           # belirsiz doğru cevap üretme
+                    continue
+                if bozuklar and a in bozuklar:
+                    elenen["cozulemeyen"] += 1
+                    continue
+                ad, n = ads[0], len(gruplar[a])
+                if "." in ad:
+                    elenen["derleyici_parcasi"] += 1
+                    continue
+                if not en_az <= n <= en_cok:
+                    elenen["kisa" if n < en_az else "uzun"] += 1
+                    continue
+                dosya = dosya_adlari.get((a, ad)) or "?"
+                baglam = "\n".join(ozetler[h] for h in ic_cagrilar(asm) if h in ozetler)
+                satir = {"id": f"{proje}/{dosya}:{opt}:{kip}:{gor.kimlik[a]}:{ad}",
+                    "proje": proje, "surum": surum, "dosya": dosya, "opt": opt, "kip": kip,
+                    "ad": ad, "kimlik": gor.kimlik[a], "export": a in gor.exportlar,
+                    "komut_sayisi": n, "sizinti": sizar_mi(ad, asm) or sizar_mi(ad, baglam),
+                    "asm": asm, "baglam": baglam}
+                if lisans is not None:
+                    satir["lisans"] = lisans
+                satirlar.append(satir)
+            kontrol = sizinti_kontrolu(satirlar, gercekler, gor.exportlar.values(), ithaller.values())
+            if hosgoru:
+                # Denetime takılan satırlar çıkarılır; yeniden denetim temiz olmalı.
+                kotu = {x["id"] for x in kontrol["beklenmeyen_semboller"]} | set(kontrol["adres_bicim_ihlalleri"])
+                elenen["denetim"] += sum(r["id"] in kotu for r in satirlar)
+                satirlar = [r for r in satirlar if r["id"] not in kotu]
+                kontrol = {"elenen_ornek": kontrol["beklenmeyen_semboller"][:5],
+                           **sizinti_kontrolu(satirlar, gercekler, gor.exportlar.values(), ithaller.values())}
+            bilgi["kipler"][kip] = {"satir": len(satirlar), "sizinti": sum(r["sizinti"] for r in satirlar),
+                "export": sum(r["export"] for r in satirlar), "elenen": dict(elenen), **kontrol}
+            hepsi.extend(satirlar)
+        rapor["optimizasyonlar"][opt] = bilgi
+        print(f"{proje} {opt}: {len(baslar)} sınır, {bilgi['eslesen']} ad eşleşti; "
+              f"{len(veriler)} veri bölgesi/{bilgi['atlanan_veri_bayti']} bayt atlandı"
+              + (f"; derlenemeyen {len(hatali)}/{len(kaynaklar)}" if hatali else ""), flush=True)
+
+    with tempfile.TemporaryDirectory(prefix="asm-bin-") as t:
+        for opt in opts:
+            try:
+                tek_opt(opt, t)
+            except Exception as e:                      # hoşgörüde yalnız bu opt atlanır
+                if not hosgoru:
+                    raise
+                rapor["atlanan_opt"][opt] = f"{type(e).__name__}: {str(e)[:600]}"
+                print(f"{proje} {opt}: atlandı: {type(e).__name__}: {str(e)[:200]}", flush=True)
     cikti.parent.mkdir(parents=True, exist_ok=True)
     if v3:
         v3_yolu = cikti.parent / "v3" / cikti.name
@@ -539,7 +659,7 @@ def karsilastir(eski, yeni):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("kaynak", nargs="*", help="yerel kaynak dizini veya --projeler ile adlar")
-    ap.add_argument("--projeler", type=Path)
+    ap.add_argument("--projeler", type=Path, action="append", help="birden çok kez verilebilir")
     ap.add_argument("-o", "--cikti", type=Path)
     ap.add_argument("--veri", type=Path, default=Path("veri/bin"))
     ap.add_argument("-b", "--bayrak", action="append", default=[])
@@ -547,12 +667,14 @@ def main():
     ap.add_argument("--min", type=int, default=6)
     ap.add_argument("--max", type=int, default=300)
     ap.add_argument("--tohum", type=int, default=7)
+    ap.add_argument("--opts", default=",".join(OPTS), help="virgüllü: -O0,-O1,-O2,-O3,-Os")
+    ap.add_argument("--hosgoru", action="store_true", help="toplu kip: derlenemeyen dosya/aralık/satır atlanır")
     ap.add_argument("--v3-karsilastir", action="store_true", help="aynı kaynak/bayraklarla v3'ü yerelde yeniden üret")
     a = ap.parse_args()
     if a.min < 1 or a.max < a.min:
         ap.error("1 <= min <= max olmalı")
     if a.projeler:
-        projeler = json.loads(a.projeler.read_text())
+        projeler = [p for yol in a.projeler for p in json.loads(yol.read_text())]
         eksik = set(a.kaynak) - {p["ad"] for p in projeler}
         if eksik:
             ap.error(f"Bilinmeyen projeler: {', '.join(sorted(eksik))}")
@@ -569,7 +691,8 @@ def main():
             ap.error(f"Yerel kaynak yok: {kok}; ağdan indirme yapılmaz")
         cikar(kok, a.cikti or a.veri / f"{p['ad']}.jsonl", p.get("dosyalar", ["*.c"]),
               p.get("haric", []), p.get("bayraklar", []) + a.bayrak, p["ad"], p.get("surum"),
-              a.min, a.max, a.tohum, ("yerel", "tam") if a.kip == "ikisi" else (a.kip,), a.v3_karsilastir)
+              a.min, a.max, a.tohum, ("yerel", "tam") if a.kip == "ikisi" else (a.kip,), a.v3_karsilastir,
+              tuple(a.opts.split(",")), p.get("lisans"), a.hosgoru)
 
 
 if __name__ == "__main__":

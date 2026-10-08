@@ -31,11 +31,15 @@ def csym(ham: str) -> str:
     return ham[1:] if ham.startswith("_") else ham
 
 
-def derle(c: Path, opt: str, cikti: Path, bayraklar: list[str], kok: Path = Path(".")) -> bool:
+def derle(c: Path, opt: str, cikti: Path, bayraklar: list[str], kok: Path = Path("."), sure: int = 300) -> bool:
     # Göreli -I/-D yolları proje kökünden çözülsün diye clang proje dizininde çalışır.
     # Kaynak yolu göreli verilir: __FILE__ string'lerine yerel dizin (kullanıcı adı) girmesin.
-    r = subprocess.run(["clang", "-target", HEDEF, opt, "-w", "-c", str(c.resolve().relative_to(kok.resolve())),
-                        "-o", str(cikti.resolve()), *bayraklar], capture_output=True, text=True, cwd=kok)
+    try:
+        r = subprocess.run(["clang", "-target", HEDEF, opt, "-w", "-c", str(c.resolve().relative_to(kok.resolve())),
+                            "-o", str(cikti.resolve()), *bayraklar], capture_output=True, text=True, cwd=kok,
+                           timeout=sure)
+    except subprocess.TimeoutExpired:
+        return False
     return r.returncode == 0
 
 
