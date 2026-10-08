@@ -161,7 +161,7 @@ def tekil(liste: list[str], deger: str, sinir: int):
         liste.append(deger)
 
 
-def ic_cagrilar(asm: str) -> list[str]:
+def ic_cagrilar(asm: str, sinir: int = 8) -> list[str]:
     """call/jmp ile çağrılan anonim iç fonksiyonlar."""
     sonuc = []
     for satir in asm.splitlines():
@@ -171,7 +171,7 @@ def ic_cagrilar(asm: str) -> list[str]:
         if not m:
             m = re.match(r"^\s*(?:call|jmp)\w*\s+(sub_[0-9a-f]+)\b", satir)
         if m:
-            tekil(sonuc, m.group(1), 8)
+            tekil(sonuc, m.group(1), sinir)
     return sonuc
 
 
@@ -203,6 +203,36 @@ def fonksiyon_ozeti(kimlik: str, komut_sayisi: int, asm: str) -> str:
         parcalar.append("string " + ", ".join(stringler))
     bas = f"{kimlik} ({komut_sayisi} komut)"
     return bas + (": " + "; ".join(parcalar) if parcalar else "")
+
+
+def baglam_derin_uret(dosya: str, opt: str, asm: str, dosya_bilgileri: dict, genel_bilgiler: dict) -> str:
+    """Doğrudan çağrılanların asm'sini ya da iki seviyeli özetini üret."""
+    satirlar = []
+
+    def bilgi_bul(kaynak_dosya: str, hedef: str):
+        return dosya_bilgileri.get((kaynak_dosya, opt, hedef)) or genel_bilgiler[(opt, hedef)]
+
+    for hedef in ic_cagrilar(asm, 6):
+        hedef_dosya, komut_sayisi, hedef_asm, ozet = bilgi_bul(dosya, hedef)
+        if komut_sayisi <= 40:
+            satirlar.append(f"; {hedef} ({komut_sayisi} komut):")
+            satirlar.extend(hedef_asm.splitlines())
+        else:
+            satirlar.append(ozet)
+            for alt_hedef in ic_cagrilar(hedef_asm, 4):
+                satirlar.append("  " + bilgi_bul(hedef_dosya, alt_hedef)[3])
+
+    if len(satirlar) > 150:
+        satirlar = satirlar[:149] + ["; ... kesildi"]
+    return "\n".join(satirlar)
+
+
+def gercek_sembol_deseni(adlar: set[str]):
+    """Derin bağlamdaki anonimleştirilmemiş iç sembolleri doğrulamak için desen."""
+    uzun = sorted((ad for ad in adlar if len(ad) >= 5), key=lambda ad: (-len(ad), ad))
+    if not uzun:
+        return None
+    return re.compile(r"(?<![A-Za-z0-9_])(?:" + "|".join(map(re.escape, uzun)) + r")(?![A-Za-z0-9_])", re.I)
 
 
 def cikar(kok: Path, cikti: Path, dosyalar=("*.c",), haric=(), bayraklar=(), proje=None, surum=None,
@@ -239,18 +269,20 @@ def cikar(kok: Path, cikti: Path, dosyalar=("*.c",), haric=(), bayraklar=(), pro
         adlar[opt] |= {ad: f"dat_{i:04x}" for i, ad in enumerate(veri_adlari)}
 
     # Bağlam özeti kısa/uzun diye elenecek fonksiyonları da görebilsin.
-    anonim_ham, dosya_ozetleri, genel_ozetler = [], {}, {}
+    anonim_ham, dosya_bilgileri, genel_bilgiler = [], {}, {}
     for dosya, opt, ad, s, strs in ham:
         komut = [x for x in s if not x.split(":", 1)[-1].strip().startswith(("X86_64_RELOC",))]
         asm = anonimlestir(s, adlar[opt], strs, ad)
         kimlik = adlar[opt][ad]
         ozet = fonksiyon_ozeti(kimlik, len(komut), asm)
         anonim_ham.append((dosya, opt, ad, komut, asm))
-        dosya_ozetleri.setdefault((dosya, opt, kimlik), ozet)
-        genel_ozetler.setdefault((opt, kimlik), ozet)
+        bilgi = (dosya, len(komut), asm, ozet)
+        dosya_bilgileri.setdefault((dosya, opt, kimlik), bilgi)
+        genel_bilgiler.setdefault((opt, kimlik), bilgi)
 
     cikti.parent.mkdir(parents=True, exist_ok=True)
-    n = sizan = 0
+    n = sizan = sembol_sizintili = sembol_eslesmesi = 0
+    sembol_deseni = gercek_sembol_deseni(tanimli_fonk | tanimli_veri)
     gorulen = set()
     with cikti.open("w") as f:
         for dosya, opt, ad, komut, asm in anonim_ham:
@@ -261,15 +293,22 @@ def cikar(kok: Path, cikti: Path, dosyalar=("*.c",), haric=(), bayraklar=(), pro
             if (opt, ad, asm) in gorulen:                   # aynı static yardımcı birden çok dosyada
                 continue
             gorulen.add((opt, ad, asm))
-            baglam = "\n".join(dosya_ozetleri.get((dosya, opt, hedef)) or genel_ozetler[(opt, hedef)]
+            baglam = "\n".join((dosya_bilgileri.get((dosya, opt, hedef)) or genel_bilgiler[(opt, hedef)])[3]
                                 for hedef in ic_cagrilar(asm))
-            sizinti = sizar_mi(ad, asm) or sizar_mi(ad, baglam)
+            baglam_derin = baglam_derin_uret(dosya, opt, asm, dosya_bilgileri, genel_bilgiler)
+            sizinti = sizar_mi(ad, asm) or sizar_mi(ad, baglam) or sizar_mi(ad, baglam_derin)
+            if sembol_deseni:
+                eslesmeler = sembol_deseni.findall(baglam_derin)
+                sembol_sizintili += bool(eslesmeler)
+                sembol_eslesmesi += len(eslesmeler)
             sizan += sizinti
             f.write(json.dumps({"id": f"{proje}/{dosya}:{opt}:{ad}", "proje": proje, "surum": surum,
                                 "dosya": dosya, "opt": opt, "ad": ad, "komut_sayisi": len(komut),
-                                "sizinti": sizinti, "asm": asm, "baglam": baglam}, ensure_ascii=False) + "\n")
+                                "sizinti": sizinti, "asm": asm, "baglam": baglam,
+                                "baglam_derin": baglam_derin}, ensure_ascii=False) + "\n")
             n += 1
     print(f"{proje}: {n} fonksiyon ({sizan} sızıntılı) → {cikti}"
+          f"  [derin bağlam gerçek sembol: {sembol_sizintili} kayıt, {sembol_eslesmesi} eşleşme]"
           + (f"  [derlenemeyen: {len(basarisiz)}: {', '.join(basarisiz[:6])}…]" if basarisiz else ""))
     return n
 
