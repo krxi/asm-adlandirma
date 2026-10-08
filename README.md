@@ -97,12 +97,28 @@ Düşünme, zlib'de tam isabeti üç katına çıkarıyor; az bilinen kodda hiç
 
 ![Fonksiyon türüne göre F1](grafik/test-hata.png)
 
-- **Sarmalayıcılar: bütün modellerde 0.** Tek bir iç fonksiyonu çağıran kısa fonksiyonun adı, çağrılanı bilmeden bulunamıyor. Çağrı bağlamı eklemek bir sonraki deney.
+- **Sarmalayıcılar: bütün modellerde 0.** Tek bir iç fonksiyonu çağıran kısa fonksiyonun adı, çağrılanı bilmeden bulunamıyor (çağrı bağlamıyla da düzelmedi, bkz. 4).
 - **String'ler en güçlü ipucu.** String sabiti olan fonksiyonlarda F1 belirgin şekilde yüksek (mimo 0.27'ye karşı 0.15).
 - **-O2 daha zor.** Hemen her modelde -O2 F1'i -O0'dan düşük.
 - **Uzun fonksiyonlar kolay değil.** zlib'de en kolay grup uzun fonksiyonlar (mimo düşünmeli 0.58, [grafik](grafik/zlib-hata.png)); az bilinen kodda aynı grup 0.15. Yine ezberin izi.
 
-### 4. Küçük model, ilk LoRA denemesi (MacBook Air M4)
+### 4. Çağrı bağlamı
+
+Fonksiyonun assembly'sine, çağırdığı iç fonksiyonlar hakkında bilgi eklendi (düşünmesiz, öneksiz F1):
+
+- **özet**: çağrılanların importları, iç çağrıları ve string'leri
+- **derin**: ayrıca kısa çağrılanların tam assembly'si ve iki seviye özet
+
+| Model | bağlamsız | özet | derin | uzun fonksiyonlar (bağlamsız → derin) |
+|---|---|---|---|---|
+| mimo-v2.6-pro | 0.20 | 0.22 | **0.24** | 0.12 → 0.25 |
+| deepseek-v4.1-flash | 0.12 | 0.17 | 0.17 | 0.10 → 0.18 |
+| qwen3.8-flash-next | 0.11 | 0.15 | 0.16 | 0.06 → 0.18 |
+| gemma-4-31b | 0.10 | 0.09 | 0.10 | 0.04 → 0.11 |
+
+Bağlam en çok uzun ve iç fonksiyon çağıran fonksiyonlarda işe yarıyor. Derin bağlam özetin üstüne az şey katıyor. **Sarmalayıcılar derin bağlamla da 0'da kalıyor** (test setinde yalnız 6 tane; çağrılanın tam assembly'si bile modeli doğru ada götürmüyor).
+
+### 5. Küçük model, ilk LoRA denemesi (MacBook Air M4)
 
 Qwen2.5-Coder-0.5B (4-bit), 1.500 adım (~1 saat 40 dk, 4,8 GB bellek). İki deneme de **işe yaramadı**:
 
@@ -127,7 +143,7 @@ Qwen2.5-Coder-0.5B (4-bit), 1.500 adım (~1 saat 40 dk, 4,8 GB bellek). İki den
 
 **2. Girdiyi zenginleştirmek**
 - [x] Çağrı bağlamı (çağrılan fonksiyonların importları ve string'leri): büyük modellerde F1 belirgin arttı
-- [ ] Derin bağlam: kısa çağrılanların tam assembly'si, iki seviye özet (sarmalayıcılar için)
+- [x] Derin bağlam: kısa çağrılanların tam assembly'si, iki seviye özet: özetin üstüne küçük kazanç, sarmalayıcılar hâlâ 0
 - [ ] Gerçek link + strip ile veri hattı (şu an `.o` dosyalarından)
 
 **3. Küçük model**
