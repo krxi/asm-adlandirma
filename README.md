@@ -185,6 +185,7 @@ Damıtma (kaynak kodu gören öğretmen modelden tek cümlelik açıklama):
 ```bash
 python3 kaynak_kod.py -j 6                       # fonksiyon → C gövdesi, veri/kaynak/
 python3 aciklama.py -m <model> -j 6 --devam      # → veri/aciklama/
+python3 aciklama_puan.py sonuc/<koşu>.jsonl -m <hakem>   # açıklamaları kaynağa göre 0-2 puanla
 ```
 
 LoRA (Apple Silicon, mlx-lm):
