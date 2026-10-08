@@ -55,6 +55,8 @@ jne     loc_6
 | Eğitim | zlib, libpng, sqlite, lua, mbedtls, zstd, libsodium, expat, brotli, jansson, lz4, libyaml, xxhash, cJSON | 16.804 |
 | Test (ezbere dayanıklı) | tomlc17, cyaml, mu_json_x, sajs, picomatch | 777 → ölçüm seti 115 |
 
+Veri seti Hugging Face'te: [krxi123/asm-adlandirma](https://huggingface.co/datasets/krxi123/asm-adlandirma) (eğitim 16.804, test 777, `eval_115` ölçüm seti, lisans metinleri dahil).
+
 Eğitim/test ayrımı **proje bazındadır**: bir projenin hiçbir fonksiyonu iki tarafa birden düşmez. Test projeleri bilerek az bilinen (2-190 yıldız), çoğu 2024-2025'te başlamış projelerden seçildi; büyük modellerin bunları eğitimde görmüş olma ihtimali zlib'e göre çok düşük. Lisanslar: [veri/LISANSLAR.md](veri/LISANSLAR.md).
 
 ## Sonuçlar
@@ -126,7 +128,8 @@ Qwen2.5-Coder-0.5B (4-bit), 1.500 adım (~1 saat 40 dk, 4,8 GB bellek). İki den
 - [ ] Gerçek link + strip ile veri hattı (şu an `.o` dosyalarından)
 - [ ] Çağrı bağlamı: çağrılan ve çağıran fonksiyonların bilgisini girdiye eklemek
 - [ ] Küçük modele LoRA eğitimi ve karşılaştırma (ilk deneme yapıldı, işe yaramadı)
-- [ ] Veri seti ve modelin açık yayını
+- [x] Veri setinin açık yayını ([Hugging Face](https://huggingface.co/datasets/krxi123/asm-adlandirma))
+- [ ] Modelin açık yayını
 
 ## Kendiniz çalıştırın
 
