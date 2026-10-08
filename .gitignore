@@ -11,3 +11,5 @@ lora/adaptor/
 veri/egitim/
 sonuc/*.ara
 sonuc/*BITTI
+lora/veri-*/
+lora/adaptor-*/

@@ -1,1 +1,65 @@
-41 satır korundu, 19 soruluyor
+53 satır korundu, 7 soruluyor
+0.00  -O2  deflateEnd                   ← free_node
+1.00  -O2  inflateReset                 ← inflate_reset
+0.00  -O0  adler32_combine              ← memcpy_wrapper
+0.00  -O0  deflateBound_z               ← estimate_encoded_size
+1.00  -O2  deflateSetDictionary         ← deflate_set_dictionary
+0.50  -O0  zlibVersion                  ← get_version
+1.00  -O2  adler32_combine              ← adler32_combine
+1.00  -O0  deflateSetDictionary         ← deflate_set_dictionary
+0.50  -O0  inflate_fixed                ← fixed_tables
+0.00  -O2  inflate_fixed                ← fixedtables
+0.50  -O0  crc_word                     ← crc64_word
+1.00  -O0  tr_align                     ← tr_align
+1.00  -O2  crc32_combine                ← crc32_combine
+0.00  -O2  crc32                        ← set_size
+0.80  -O2  tr_flush_bits                ← flush_bits
+0.00  -O2  zcalloc                      ← alloc_matrix
+1.00  -O2  inflateSync                  ← inflate_sync
+0.00  -O2  deflateCopy                  ← 
+0.00  -O2  crc32_combine_gen64          ← x_pow_n
+0.00  -O2  inflatePrime                 ← put_bits
+0.00  -O2  deflateTune                  ← 
+1.00  -O2  tr_tally                     ← tr_tally
+1.00  -O0  deflateParams                ← deflate_params
+1.00  -O2  inflateCopy                  ← inflate_copy
+0.00  -O0  adler32                      ← copy_data
+1.00  -O0  inflateCopy                  ← inflate_copy
+1.00  -O0  inflateReset2                ← inflate_reset2
+1.00  -O0  inflateSyncPoint             ← inflate_sync_point
+0.67  -O2  adler32_z                    ← adler32
+0.33  -O0  deflateGetDictionary         ← get_pending_data
+1.00  -O0  inflateEnd                   ← inflate_end
+0.40  -O0  inflateBackInit_             ← inflate_init2_
+0.00  -O2  uncompress                   ← insert_value
+1.00  -O0  tr_init                      ← tr_init
+1.00  -O0  inflateResetKeep             ← inflate_reset_keep
+0.00  -O2  inflateValidate              ← set_option_enabled
+1.00  -O2  longest_match                ← longest_match
+0.00  -O0  deflateReset                 ← destroy_context
+0.40  -O0  crc32_combine_op             ← hash_combine
+0.00  -O0  deflatePrime                 ← send_bits
+0.67  -O0  uncompress2_z                ← uncompress2
+0.40  -O2  crc32_combine_op             ← crc32_masked
+0.00  -O0  deflateUsed                  ← get_status
+0.00  -O0  multmodp                     ← crc32_update
+1.00  -O2  inflateGetDictionary         ← inflate_get_dictionary
+0.40  -O2  inflateBackInit_             ← inflate_init2
+1.00  -O0  pqdownheap                   ← pqdownheap
+1.00  -O0  tr_stored_block              ← tr_stored_block
+0.00  -O0  x2nmodp                      ← x_pow
+0.00  -O0  inflatePrime                 ← put_bits
+1.00  -O0  lm_init                      ← lm_init
+0.00  -O2  deflatePending               ← 
+0.00  -O0  zcfree                       ← free_value
+0.00  -O0  detect_data_type             ← 
+0.00  -O0  compressBound                ← validate_pointer
+0.00  -O0  adler32_combine64            ← process_data
+0.00  -O0  inflateMark                  ← 
+1.00  -O2  deflateSetHeader             ← deflate_set_header
+0.00  -O2  inflateSyncPoint             ← is_context_ready
+0.00  -O0  inflateValidate              ← set_option_flag
+-O0: ortalama F1 0.45  (n=34, tam isabet 12)
+-O2: ortalama F1 0.47  (n=26, tam isabet 10)
+yeni token: 72972
+ayrıntı → sonuc/zlib-mimo-v2.6-pro-dusunme.jsonl

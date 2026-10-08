@@ -35,12 +35,15 @@ def sor(model: str, asm: str, dusunme: bool = False, tavan: int = 4096) -> dict:
     if dusunme:
         govde["max_tokens"] = tavan
     else:
+        # glm-5.3 düşünme kapalıyken de cevaptan önce uzun gerekçe yazabiliyor: tavansız istek
+        # dakikalarca sürüp zaman aşımına düşüyor.
         govde["chat_template_kwargs"] = {"enable_thinking": False}
+        govde["max_tokens"] = 2048
     for deneme in range(6):
         try:
             istek = urllib.request.Request(BASE + "/chat/completions", data=json.dumps(govde).encode(),
                                            headers={"X-API-Key": anahtar(), "Content-Type": "application/json"})
-            yanit = json.load(urllib.request.urlopen(istek, timeout=180))
+            yanit = json.load(urllib.request.urlopen(istek, timeout=900))
             secim = yanit["choices"][0]
             metin = secim["message"].get("content") or ""
             token = yanit.get("usage", {}).get("total_tokens", 0)

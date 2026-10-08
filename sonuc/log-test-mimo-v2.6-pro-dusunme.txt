@@ -1,1 +1,120 @@
 0 satır korundu, 115 soruluyor
+0.25  -O0  toml_parse_file_ex           ← load_config_from_file
+0.00  -O2  pm_expsize                   ← 
+0.00  -O2  toml_seek                    ← find_node_by_path
+0.00  -O2  eat_mem_next                 ← lex_quoted_string_start
+0.67  -O0  cyaml_strndup                ← strndup
+0.00  -O2  mu_str_ltrim                 ← skip_while
+0.40  -O2  ypath_lex_number             ← parse_number
+0.00  -O2  matches_class                ← 
+0.50  -O0  emit_op                      ← emit_byte
+0.00  -O0  dump_scalar                  ← 
+0.00  -O0  pm_geterror                  ← get_value
+0.00  -O0  toml_merge                   ← 
+0.40  -O0  matches_class                ← match_char_class
+0.00  -O2  pm_match                     ← find_first
+0.00  -O2  eat_num_int_start            ← 
+0.00  -O2  cyaml_span_eq                ← str_slice_equals
+1.00  -O0  memrchr                      ← memrchr
+0.00  -O2  event_anchor                 ← 
+0.00  -O0  scan_literal                 ← lex_identifier
+0.00  -O0  match_loop_lazy              ← 
+0.50  -O0  pm_compile                   ← regex_compile
+0.00  -O2  mu_json_token_prev_sibling   ← 
+0.00  -O2  mu_str_parse_uint64          ← 
+0.00  -O0  top_frame                    ← buffer_end
+0.00  -O0  eat_mem_next                 ← handle_quoted_char
+0.40  -O0  cyaml_parse_hex64            ← parse_hex
+0.00  -O0  mu_json_token_depth          ← elf_get_machine
+0.00  -O0  emit_scalar                  ← parse_option_value
+0.00  -O2  pm_getgroups                 ← get_size
+0.00  -O2  scan_literal                 ← 
+0.50  -O0  pm_match                     ← find_match
+0.00  -O2  datum_equiv                  ← value_equal
+0.33  -O2  mu_str_find_subcstr          ← find_substring
+0.00  -O0  parse_doc_end                ← handle_next_event
+0.00  -O0  mu_str_parse_int32           ← 
+0.00  -O0  mu_str_rfind_substr          ← send_iovec
+0.00  -O2  emit_quantifier              ← 
+0.00  -O0  parse_val                    ← get_format_arg
+0.50  -O2  pool_destroy                 ← pool_free
+0.00  -O2  eat_start                    ← atoi
+0.40  -O2  cyaml_map_merge              ← deep_merge
+0.50  -O2  pm_compile                   ← compile_regex
+0.00  -O0  mu_json_parse_c_str          ← 
+0.00  -O2  eat_num_exp_int_start        ← parse_digit
+0.00  -O2  mu_json_parse_c_str          ← set_value
+0.00  -O0  do_change_if                 ← conditional_store_byte
+0.00  -O0  emit_quantifier              ← 
+0.67  -O2  mu_str_rfind                 ← str_rfind_char
+0.00  -O0  process_numstr               ← validate_number_literal
+0.00  -O0  eat_num_exp_start            ← parse_number
+0.00  -O2  scan_float                   ← parse_number
+0.00  -O2  eat_string_esc_lo            ← 
+0.00  -O0  scan_value                   ← 
+0.67  -O0  sajs_strerror                ← strerror
+0.00  -O0  mu_json_token_next_sibling   ← 
+0.00  -O2  emit_tag                     ← append_word
+0.00  -O0  compile_body                 ← 
+0.67  -O0  is_valid_char                ← is_printable_char
+0.00  -O0  mu_str_rfind                 ← string_equals_ignore_case
+0.00  -O2  mu_json_token_depth          ← 
+0.00  -O0  mu_json_token_prev           ← get_base_object
+0.00  -O2  check_overflow               ← update_nesting_depth
+1.00  -O0  is_valid_date                ← is_valid_date
+0.00  -O2  eat_elem_next                ← set_default_value
+0.00  -O0  toml_get                     ← lookup_entry_by_name
+0.33  -O2  toml_parse_file_ex           ← load_file
+0.40  -O2  mu_str_init                  ← init_pair
+0.00  -O0  mu_json_token_root           ← find_last_node
+0.00  -O2  ypath_lex_ident              ← parse_keyword
+0.40  -O2  cyaml_stream_free            ← free_list
+0.00  -O2  mu_str_buf                   ← get_value
+0.33  -O2  sajs_lexer_init              ← init_parser_context
+0.00  -O0  eat_num_exp_int_start        ← verify_and_process
+0.40  -O2  cyaml_map_sort               ← insertion_sort
+0.00  -O0  copystring                   ← safe_strcpy
+0.67  -O2  mu_str_rfind_subcstr         ← str_rfind
+0.00  -O2  cyaml_as_bool                ← parse_boolean_literal
+0.00  -O0  eat_elem_sep                 ← handle_array_delimiter
+0.40  -O0  parse_document_internal      ← parse_declaration
+0.29  -O2  eat_num_frac_start           ← start_number_token
+0.40  -O2  toml_set_option              ← set_context
+0.00  -O2  toml_default_option          ← init_uuid
+0.67  -O2  sajs_strerror                ← strerror
+1.00  -O0  is_digit                     ← is_digit
+0.00  -O0  check_overflow               ← update_nesting_depth
+0.67  -O2  toml_parse_file_named        ← parse_file
+0.00  -O2  eat_num_frac_cont            ← parse_number_char
+0.50  -O2  eat_true                     ← parse_true
+0.50  -O0  is_container                 ← is_open
+0.40  -O2  grow_tokens                  ← ring_buffer_grow
+0.00  -O0  eat_elem_first               ← parse_char_class
+0.00  -O2  toml_get                     ← find_entry_by_name
+0.00  -O0  pm_expsize                   ← parse_u64_from_string
+0.00  -O0  eat_elem_next                ← encode_char
+0.50  -O0  scan_next                    ← next_token
+0.00  -O0  mu_str_ltrim                 ← safe_strncpy
+0.33  -O0  ypath_str_null               ← is_null_value
+0.33  -O0  is_class_char                ← is_in_charset
+0.00  -O0  emit_exact                   ← 
+0.00  -O0  cyaml_node_new               ← set_int_value
+0.57  -O0  cyaml_is_nb_char             ← is_visible_char
+0.00  -O0  mu_str_parse_int             ← 
+0.00  -O2  pm_geterror                  ← get_value
+0.50  -O0  grow_indents                 ← grow_buffer
+0.00  -O0  eat_mem_value_start          ← load_file
+0.50  -O2  mu_str_parse_unsigned_int    ← str_to_int
+0.00  -O2  cyaml_json                   ← object_to_string
+0.00  -O0  eat_num_exp_int_cont         ← 
+0.00  -O2  datum_merge                  ← 
+0.40  -O0  ypath_lex_init               ← lexer_init
+0.33  -O0  cyaml_as_bool                ← parse_bool_literal
+0.00  -O2  eat_string_esc               ← lex_escape_sequence
+0.50  -O0  match_loop                   ← match_repeat
+0.40  -O2  push_state                   ← int_vec_push
+0.33  -O2  mu_str_rfind_substr          ← string_rfind
+-O0: ortalama F1 0.20  (n=60, tam isabet 3)
+-O2: ortalama F1 0.17  (n=55, tam isabet 0)
+yeni token: 413432
+ayrıntı → sonuc/test-mimo-v2.6-pro-dusunme.jsonl
