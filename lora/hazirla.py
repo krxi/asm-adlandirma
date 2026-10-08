@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """veri/*.jsonl → mlx-lm sohbet biçimi (lora/veri/{train,valid,test}.jsonl).
 
-  python3 lora/hazirla.py --egitim zlib --test zlib --duman      # yalnız duman testi
-  python3 lora/hazirla.py --egitim p1,p2,p3 --test p4
+  .venv/bin/python lora/hazirla.py                                # rol'e göre: veri/egitim → train, veri/test.jsonl → test
+  .venv/bin/python lora/hazirla.py --egitim zlib --test zlib --duman      # yalnız duman testi
 
 Bölme PROJE bazlı: bir proje ya tamamen eğitimde ya tamamen testte.
 Proje = satırdaki "proje" alanı, yoksa dosya adının gövdesi (veri/zlib.jsonl → zlib).
@@ -18,7 +18,7 @@ SISTEM = ("Sen deneyimli bir tersine mühendissin. Sana sembolleri silinmiş bir
 
 def oku(veri: Path) -> dict[str, list[dict]]:
     projeler: dict[str, list[dict]] = {}
-    for yol in sorted(veri.glob("*.jsonl")):
+    for yol in sorted(veri.glob("*/*.jsonl")):            # veri/egitim/<proje>.jsonl, veri/test/<proje>.jsonl
         for l in yol.open():
             if l.strip():
                 r = json.loads(l)
@@ -65,8 +65,10 @@ def yaz(yol: Path, satirlar: list[dict], tavan: int, token_tavan: int = 0):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--egitim", required=True, help="virgüllü proje adları")
-    ap.add_argument("--test", required=True, help="virgüllü proje adları")
+    ap.add_argument("--egitim", default="", help="virgüllü proje adları (vars. veri/egitim/ altındakiler)")
+    ap.add_argument("--test", default="", help="virgüllü proje adları (vars. veri/test/ altındakiler)")
+    ap.add_argument("--test-dosyasi", type=Path, default=Path("veri/test.jsonl"),
+                    help="test satırları bu dosyadaki fonksiyonlarla sınırlanır (büyük modellerle aynı set)")
     ap.add_argument("--veri", type=Path, default=Path("veri"))
     ap.add_argument("--cikti", type=Path, default=Path("lora/veri"))
     ap.add_argument("--satir-tavan", type=int, default=200, help="asm en çok bu kadar satır")
@@ -78,8 +80,8 @@ def main():
     ap.add_argument("--duman", action="store_true", help="eğitim ve test aynı projeyse izin ver (YALNIZ duman testi)")
     a = ap.parse_args()
 
-    egitim = [p for p in a.egitim.split(",") if p]
-    test = [p for p in a.test.split(",") if p]
+    egitim = [p for p in a.egitim.split(",") if p] or sorted(x.stem for x in (a.veri / "egitim").glob("*.jsonl"))
+    test = [p for p in a.test.split(",") if p] or sorted(x.stem for x in (a.veri / "test").glob("*.jsonl"))
     ortak = set(egitim) & set(test)
     if ortak and not a.duman:
         sys.exit(f"sızıntı: {sorted(ortak)} hem eğitimde hem testte (duman testiyse --duman ver)")
@@ -97,6 +99,9 @@ def main():
     rng = random.Random(a.tohum)
     tr = tekil([r for p in egitim for r in projeler[p]])
     te = tekil([r for p in test for r in projeler[p]])
+    if a.test_dosyasi and a.test_dosyasi.exists() and not a.duman:
+        secili = {json.loads(l)["id"] for l in a.test_dosyasi.open()}
+        te = [r for r in te if r["id"] in secili]
     rng.shuffle(tr)
     nv = max(1, round(len(tr) * a.valid_oran))
     va, tr = tr[:nv], tr[nv:]

@@ -29,9 +29,33 @@ Bunu ölçmek için üç katman aynı test setinde karşılaştırılıyor:
 
 ## Nasıl çalışıyor
 
-1. **Veri üretimi (`cikar.py`):** Açık kaynak C projeleri farklı optimizasyon seviyelerinde (`-O0`, `-O2`) x86-64 için derlenir. Her fonksiyonun assembly kodu çıkarılır. Doğru cevap, yani gerçek fonksiyon adı, kaynak koddan bedavaya gelir; elle etiketleme gerekmez.
-2. **Stripped binary taklidi:** Projenin kendi fonksiyon adları assembly içinde `sub_0004` gibi gizlenir. Dış kütüphane çağrıları (`memcpy` vb.) gerçek bir binary'de olduğu gibi görünür kalır. Gerçek adın assembly içine sızmadığı otomatik kontrol edilir.
-3. **Ölçüm (`taban.py`):** Modele fonksiyon verilir, ad tahmini istenir. Tahmin kelime örtüşmesiyle (F1) puanlanır. Böylece `crc32_update` ile `update_crc` gibi yakın tahminler de kısmen doğru sayılır.
+1. **Veri üretimi (`cikar.py`):** Açık kaynak C projeleri farklı optimizasyon seviyelerinde (`-O0`, `-O2`) x86-64 için derlenir. Her fonksiyonun assembly kodu çıkarılır. Doğru cevap, yani gerçek fonksiyon adı, kaynak koddan bedavaya gelir; elle etiketleme gerekmez. Hangi projenin hangi commit'le, hangi bayraklarla derlendiği `projeler.json`'da durur.
+2. **Stripped binary taklidi:** Çıktı, Ghidra'da stripped bir fonksiyona bakınca görülene benzer:
+   - projenin kendi fonksiyonları `sub_01a3`, global verileri `dat_0042` olur (numaralar karıştırılır, `-O0` ve `-O2` ayrı ad uzayıdır),
+   - dal hedefleri fonksiyon içi `loc_1`, `loc_2` etiketleridir,
+   - dış kütüphane çağrıları (`memcpy`, `__stack_chk_fail`) ve string sabitleri (`; -> "out of memory"`) görünür kalır, çünkü gerçek bir binary'de de görünürler.
+   
+   Fonksiyonun gerçek adı kendi assembly'sinde geçiyorsa (ör. bir hata mesajında) satır `sizinti` olarak işaretlenir ve test setine alınmaz.
+3. **Ölçüm (`taban.py`):** Modele yalnız assembly verilir, ad tahmini istenir. Tahmin kelime örtüşmesiyle (F1) puanlanır. Böylece `crc32_update` ile `update_crc` gibi yakın tahminler de kısmen doğru sayılır.
+
+```
+loc_6:
+movzx   r9d, byte ptr [rsi + rdx]
+add     rdi, r9                 ← adler32_z (-O2), modelin gördüğü hâli
+add     rcx, rdi
+inc     rdx
+cmp     rax, rdx
+jne     loc_6
+```
+
+## Veri
+
+| | projeler | fonksiyon (-O0 + -O2) |
+|---|---|---|
+| Eğitim | zlib, libpng, sqlite, lua, mbedtls, zstd, libsodium, expat, brotli, jansson, lz4, libyaml, xxhash, cJSON | 16.804 |
+| Test (ezbere dayanıklı) | tomlc17, cyaml, mu_json_x, sajs, picomatch | 777 → ölçüm seti 115 |
+
+Eğitim/test ayrımı **proje bazındadır**: bir projenin hiçbir fonksiyonu iki tarafa birden düşmez. Test projeleri bilerek az bilinen (2-190 yıldız), çoğu 2024-2025'te başlamış projelerden seçildi; büyük modellerin bunları eğitimde görmüş olma ihtimali zlib'e göre çok düşük. Lisanslar: [veri/LISANSLAR.md](veri/LISANSLAR.md).
 
 ## İlk sonuçlar
 

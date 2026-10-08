@@ -193,6 +193,8 @@ def cikar(kok: Path, cikti: Path, dosyalar=("*.c",), haric=(), bayraklar=(), pro
     gorulen = set()
     with cikti.open("w") as f:
         for dosya, opt, ad, s, strs in ham:
+            if "." in ad:                                   # foo.cold.1: derleyicinin ayırdığı parça, kaynak fonksiyonu değil
+                continue
             komut = [x for x in s if not x.split(":", 1)[-1].strip().startswith(("X86_64_RELOC",))]
             if not (en_az <= len(komut) <= en_cok):
                 continue
