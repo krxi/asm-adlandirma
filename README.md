@@ -57,6 +57,18 @@ jne     loc_6
 
 Veri seti Hugging Face'te: [krxi123/asm-adlandirma](https://huggingface.co/datasets/krxi123/asm-adlandirma) (eğitim 16.804, test 777, `eval_115` ölçüm seti, lisans metinleri dahil).
 
+### Ölçeklenmiş veri (v4 hattı, 5 optimizasyon seviyesi)
+
+`olcekle.py` ile GitHub'dan seçilen izin verici lisanslı (MIT, BSD, Apache-2.0, ISC, zlib) C projeleri `cikar_bin.py` (gerçek dylib + `strip -x`) ile `-O0/-O1/-O2/-O3/-Os` seviyelerinde derlendi. Proje derleme betikleri çalıştırılmadı, dosyalar tek tek clang ile derlendi; derlenemeyen dosya ve proje atlandı. Normalize assembly hash'iyle tekilleştirildi; doğrulama/test ile aynı assembly'yi taşıyan satırlar eğitimden, eğitimdeki (dosya, ad) çiftini taşıyan vendored kopyalar doğrulama/testten çıkarıldı. Her satırda `lisans` alanı var.
+
+| ayrım | proje | satır | benzersiz kaynak fonksiyon |
+|---|---:|---:|---:|
+| eğitim | 290 | 196.117 | 72.179 |
+| doğrulama | 23 | 19.770 | 6.667 |
+| test (az bilinen, ≤200 yıldız, 2024+) | 28 | 12.290 | 4.685 |
+
+473 projeden 352'si satır üretti, 120'si derlenemedi (çekirdek, gömülü, platforma bağlı kod). Yalnız clang kullanıldı. Veri git dışında; `python3 aday_bul.py` ve `python3 olcekle.py hepsi` ile yeniden üretilir.
+
 Eğitim/test ayrımı **proje bazındadır**: bir projenin hiçbir fonksiyonu iki tarafa birden düşmez. Test projeleri bilerek az bilinen (2-190 yıldız), çoğu 2024-2025'te başlamış projelerden seçildi; büyük modellerin bunları eğitimde görmüş olma ihtimali zlib'e göre çok düşük. Lisanslar: [veri/LISANSLAR.md](veri/LISANSLAR.md).
 
 ## Sonuçlar
