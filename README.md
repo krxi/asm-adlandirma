@@ -154,7 +154,7 @@ Qwen2.5-Coder-0.5B (4-bit), 1.500 adım (~1 saat 40 dk, 4,8 GB bellek). İki den
 - [ ] Küçük model ad + açıklama birlikte üretsin
 
 **4. Araç**
-- [ ] Ghidra betiği: `FUN_…` fonksiyonlarını yerel modelle adlandırıp açıklama yazar (betik hazır: [ghidra/](ghidra/README.md); gerçek Ghidra'da henüz denenmedi)
+- [ ] Ghidra betiği: `FUN_…` fonksiyonlarını yerel modelle adlandırıp açıklama yazar (betik hazır: [ghidra/](ghidra/README.md); Ghidra 12 headless'ta uçtan uca çalıştı, kuru kip)
 
 **5. Yayın**
 - [ ] Modelin açık yayını ve karşılaştırma yazısı

@@ -11,6 +11,7 @@ ANAHTAR_DEGISKENI = "OPENAI_API_KEY"
 KURU_CALIS = True
 EN_COK = 20
 BAGLAM = False
+ISTEM = "taban"   # taban: büyük modeller; lora: ad+açıklama LoRA'sı (v4); lora-ad: yalnız ad LoRA'sı (v3)
 ZAMAN_ASIMI = 300
 # --------------------------------------------------------------------------
 
@@ -39,6 +40,9 @@ SISTEM = ("Sen deneyimli bir tersine mühendissin. Sana sembolleri silinmiş bir
           "kütüphane çağrıları görünür. Fonksiyonun asıl kaynak koddaki adını tahmin et. "
           'Yalnız JSON dön: {"ad": "snake_case_tahmin", "aciklama": "tek cümle Türkçe"}')
 SISTEM_BAGLAM = SISTEM + " Çağrılan iç fonksiyonların özetleri asm'nin altında verildi."
+# lora/hazirla.py ile aynı tutulur: LoRA bu istemlerle, bağlam cümlesi olmadan eğitildi.
+SISTEM_LORA_AD = SISTEM.rsplit("Yalnız JSON", 1)[0] + 'Yalnız JSON dön: {"ad": "fonksiyon_adi"}'
+SISTEM_LORA = SISTEM_LORA_AD[:-1] + ', "aciklama": "tek cümle Türkçe"}'
 YORUM_ON_EKI = "[asm-adlandirma] "
 
 
@@ -50,6 +54,7 @@ def yineleyici(java_yineleyici):
 
 def ayarlar(ham):
     """Script argümanlarıyla üstteki güvenli varsayılanları değiştir."""
+    global ISTEM, MODEL
     kuru, en_cok, baglam = KURU_CALIS, EN_COK, BAGLAM
     i = 0
     while i < len(ham):
@@ -67,6 +72,12 @@ def ayarlar(ham):
             if i >= len(ham):
                 raise ValueError("--en-cok için sayı eksik")
             en_cok = int(ham[i])
+        elif secenek.startswith("--model="):
+            MODEL = secenek.split("=", 1)[1]
+        elif secenek.startswith("--istem="):
+            ISTEM = secenek.split("=", 1)[1]
+            if ISTEM not in ("taban", "lora", "lora-ad"):
+                raise ValueError("--istem taban|lora|lora-ad")
         elif secenek.startswith("--en-cok="):
             en_cok = int(secenek.split("=", 1)[1])
         else:
@@ -194,12 +205,20 @@ def baglam_uret(program, cagrilanlar, sub_adlari):
     return "\n".join(satirlar)
 
 
+def sistem_istemi(baglam):
+    if ISTEM == "lora":
+        return SISTEM_LORA
+    if ISTEM == "lora-ad":
+        return SISTEM_LORA_AD
+    return SISTEM_BAGLAM if baglam else SISTEM
+
+
 def modele_sor(asm, baglam):
     girdi = asm
     if baglam:
         girdi += "\n\n; --- çağrılan fonksiyonlar ---\n" + baglam
     govde = {"model": MODEL, "temperature": 0, "max_tokens": 2048,
-             "messages": [{"role": "system", "content": SISTEM_BAGLAM if baglam else SISTEM},
+             "messages": [{"role": "system", "content": sistem_istemi(baglam)},
                           {"role": "user", "content": girdi}]}
     veri = json.dumps(govde, ensure_ascii=False).encode("utf-8")
     basliklar = {"Content-Type": "application/json"}
