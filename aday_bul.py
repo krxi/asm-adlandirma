@@ -27,6 +27,19 @@ HARIC_DOSYA = re.compile(r"(^test|_test\.c$|_tests\.c$|^bench|_bench\.c$|^exampl
 UYGUNSUZ_AD = re.compile(r"(awesome|tutorial|leetcode|homework|exercise|course|kernel|bootloader|"
                          r"firmware|linux|bsd$|-os$|^os|interview|cheat|learn|book|ctf|exploit|"
                          r"malware|rootkit|keylogger|ransom|cracker)", re.I)
+# Ad + açıklamada: saldırı aracı ya da macOS'ta derlenmeyecek platforma bağlı proje.
+UYGUNSUZ_ACIKLAMA = re.compile(r"\b(keygen|crack(ed|er)?|cheats?|game ?hack|c2|command[- ]and[- ]control|implant|"
+    r"beacon|shellcode|payload|injector|injection|bypass|edr|evasion|lateral|malware|stealer|exploit|"
+    r"rootkit|ransomware|red ?team|offensive|pentest)\b", re.I)
+# Yalnız test seçiminde: macOS'ta dosya dosya derlenmesi beklenmeyen platforma bağlı projeler.
+PLATFORM = re.compile(r"\b(flipper|esp32|esp8266|esp-idf|arduino|stm32|rp2040|"
+    r"pico|nrf5\d|zephyr|freertos|firmware|kernel|bootloader|operating system|\bos\b|windows|win32|"
+    r"winapi|android|ios|ndk|psp|nintendo|switch homebrew|wii|3ds|gameboy|playstation|xbox|dreamcast|"
+    r"uefi|bios|microcontroller|mcu|fpga|embedded)\b", re.I)
+KUTUPHANE = re.compile(r"\b(librar(y|ies)|lib|parser|parsing|json|yaml|toml|ini|csv|xml|hash(map|ing)?|"
+    r"compress\w*|encod\w*|decod\w*|allocator|arena|regex|string|data structures?|vector|containers?|"
+    r"math|crypto\w*|base64|utf-?8|unicode|serializ\w*|interpreter|virtual machine|vm|tokenizer|lexer|"
+    r"header|format|protocol|codec|algorithm|bignum|matrix|tree|queue|buffer|logging|test framework)\b", re.I)
 
 
 def gh(yol, sayfa_basina=None):
@@ -115,32 +128,46 @@ def main():
     ap.add_argument("--test", type=int, default=28)
     ap.add_argument("--dogrulama-orani", type=float, default=0.08)
     ap.add_argument("--mevcut", type=Path, default=Path("projeler.json"))
+    ap.add_argument("--yalniz-test", action="store_true",
+                    help="var olan çıktıdaki test adaylarını yeniden seç; eğitim/doğrulama korunur")
     a = ap.parse_args()
+    eski = json.loads(a.cikti.read_text()) if a.yalniz_test else []
+    korunan = [p for p in eski if p["rol"] != "test"
+               and not UYGUNSUZ_ACIKLAMA.search(f"{p['ad']} {p.get('not', '')}".replace("-", " ").replace("_", " "))]
 
     mevcut = {p["url"].lower().rstrip("/") for p in json.loads(a.mevcut.read_text())}
     gorulen, havuz_e, havuz_t = set(mevcut), [], []
+    gorulen |= {p["url"].lower() for p in korunan}
     for key in LISANSLAR:
-        for it in ara(f"language:C+license:{key}+stars:>=300+size:<150000+archived:false",
-                      5 if key in ("mit", "bsd-3-clause", "apache-2.0") else 3):
-            havuz_e.append(it)
-        for it in ara(f"language:C+license:{key}+stars:20..200+created:>=2024-01-01+pushed:>=2025-01-01"
-                      f"+size:<30000+archived:false", 2):
-            havuz_t.append(it)
+        if not a.yalniz_test:
+            for it in ara(f"language:C+license:{key}+stars:>=300+size:<150000+archived:false",
+                          5 if key in ("mit", "bsd-3-clause", "apache-2.0") else 3):
+                havuz_e.append(it)
+        for yildiz in ("20..60", "61..200"):
+            for it in ara(f"language:C+license:{key}+stars:{yildiz}+created:>=2024-01-01+pushed:>=2025-01-01"
+                          f"+size:<30000+archived:false", 3 if key == "mit" else 1):
+                havuz_t.append(it)
         print(f"{key}: eğitim havuzu {len(havuz_e)}, test havuzu {len(havuz_t)}", flush=True)
 
     def uygun(it):
         u = it["html_url"].lower()
-        if u in gorulen or it.get("fork") or UYGUNSUZ_AD.search(it["name"]) or not it.get("license"):
+        metin = f"{it['name']} {it.get('description') or ''} {' '.join(it.get('topics') or [])}"
+        if u in gorulen or it.get("fork") or UYGUNSUZ_AD.search(it["name"]) or not it.get("license") \
+                or UYGUNSUZ_ACIKLAMA.search(metin.replace("-", " ").replace("_", " ")):
+            return False
+        if rol_su_an == "test" and (not KUTUPHANE.search(metin.replace("-", " ").replace("_", " "))
+                                    or PLATFORM.search(metin.replace("-", " ").replace("_", " "))):
             return False
         gorulen.add(u)
         return True
 
-    adlar, secilen, elenen = set(p["ad"] for p in json.loads(a.mevcut.read_text())), [], []
+    adlar = {p["ad"] for p in json.loads(a.mevcut.read_text())} | {p["ad"] for p in korunan}
+    secilen, elenen, rol_su_an = list(korunan), [], None
     havuz_e = sorted({it["html_url"]: it for it in havuz_e}.values(), key=lambda x: -x["stargazers_count"])
     havuz_t = sorted({it["html_url"]: it for it in havuz_t}.values(), key=lambda x: -x["stargazers_count"])
-    for rol, havuz, hedef, en_az, en_cok in (("test", havuz_t, a.test, 2, 150),
-                                              ("egitim", havuz_e, a.egitim, 3, 900)):
-        n = 0
+    for rol, havuz, hedef, en_az, en_cok in (("test", havuz_t, a.test, 3, 150),
+                                              ("egitim", havuz_e, 0 if a.yalniz_test else a.egitim, 3, 900)):
+        n, rol_su_an = 0, rol
         for it in havuz:
             if n >= hedef:
                 break

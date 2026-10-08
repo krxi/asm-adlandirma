@@ -195,13 +195,65 @@ def birlestir(rol_sirasi=("test", "dogrulama", "egitim"), alt=None):
     return rapor
 
 
+def md_rapor(projeler, alt, yol):
+    """Proje bazlı durum, derleme oranı, elenen nedenleri, denetim ve örnek asm."""
+    durum = json.loads((OLCEK / "durum.json").read_text())
+    birlesik = json.loads(((OLCEK / alt) if alt else OLCEK).joinpath("rapor.json").read_text())
+    s = [f"# Ölçekleme raporu{' — pilot' if alt else ''}", "",
+         f"Projeler: {len(projeler)}; opt: {OPTS}; kip: tam; hedef x86_64-apple-macos12, Apple clang. "
+         "gcc: sistemde gerçek gcc yok (/usr/bin/gcc = clang), x86-64 Mach-O hedefleyen gcc kurulmadı.", "",
+         "| proje | rol | lisans | durum | sn | .c | derlenemeyen | çift | satır | O0/O1/O2/O3/Os | elenen (denetim) | atlanan opt |",
+         "|---|---|---|---|---:|---:|---:|---:|---:|---|---:|---|"]
+    toplam = Counter()
+    for p in projeler:
+        rol = p.get("rol", "egitim")
+        r_yol = OLCEK / "ham" / rol / f"{p['ad']}.rapor.json"
+        d = durum.get(p["ad"], {})
+        if not r_yol.exists():
+            s.append(f"| {p['ad']} | {rol} | {p.get('lisans')} | {d.get('indir', '')} {d.get('cikar', 'yok')} | "
+                     f"{d.get('sure_sn', '')} | | | | 0 | | | |")
+            toplam["basarisiz"] += 1
+            continue
+        r = json.loads(r_yol.read_text())
+        o = r["optimizasyonlar"]
+        satir = {k: v["kipler"].get("tam", {}).get("satir", 0) for k, v in o.items()}
+        derlenemeyen = max((len(v["derlenemeyen"]) for v in o.values()), default=r["kaynak_dosya"])
+        cift = max((len(v["cift_sembol_atilan"]) for v in o.values()), default=0)
+        denetim = sum(v["kipler"].get("tam", {}).get("elenen", {}).get("denetim", 0) for v in o.values())
+        toplam["satir"] += sum(satir.values())
+        toplam["denetim"] += denetim
+        toplam["basarili" if satir else "bos"] += 1
+        s.append(f"| {p['ad']} | {rol} | {p.get('lisans')} | {d.get('cikar', '')} | {d.get('sure_sn', '')} | "
+                 f"{r['kaynak_dosya']} | {derlenemeyen} | {cift} | {sum(satir.values())} | "
+                 + "/".join(str(satir.get(k, '-')) for k in OPTS.split(",")) + f" | {denetim} | "
+                 + ", ".join(f"{k}: {v[:60]}" for k, v in r["atlanan_opt"].items()) + " |")
+    s += ["", f"Toplam ham satır {toplam['satir']}, denetimle elenen {toplam['denetim']}; "
+          f"satır üreten {toplam['basarili']}, boş {toplam['bos']}, başarısız {toplam['basarisiz']}.", "",
+          "## Birleştirme (tekilleştirme + ayrım)", "", "```json",
+          json.dumps(birlesik, ensure_ascii=False, indent=1), "```", "", "## Örnek satırlar", ""]
+    for rol in ("egitim", "test"):
+        f = ((OLCEK / alt) if alt else OLCEK) / f"{rol}.jsonl"
+        if not f.exists():
+            continue
+        ornek = [json.loads(x) for x in f.open()]
+        ornek = [x for x in ornek if 15 <= x["komut_sayisi"] <= 40 and x["proje"] not in ("zlib", "lua")]
+        for x in ornek[:: max(1, len(ornek) // 2)][:2]:
+            s += [f"**{x['id']}** ({x['lisans'] if 'lisans' in x else '?'}; {x['komut_sayisi']} komut; "
+                  f"sızıntı={x['sizinti']})", "", "```asm", x["asm"], "```",
+                  *(["bağlam:", "```", x["baglam"], "```"] if x["baglam"] else []), ""]
+    yol.parent.mkdir(parents=True, exist_ok=True)
+    yol.write_text("\n".join(s) + "\n")
+    print(f"rapor → {yol}")
+
+
 def alt_projeler(alt):
     return set(json.loads((OLCEK / alt / "projeler.json").read_text()))
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("adim", choices=("indir", "cikar", "birlestir", "hepsi"))
+    ap.add_argument("adim", choices=("indir", "cikar", "birlestir", "rapor", "hepsi"))
+    ap.add_argument("--rapor", type=Path, default=Path(".notlar/olcek/rapor.md"))
     ap.add_argument("--liste", nargs="+", default=["projeler.json", ".notlar/aday-projeler.json"])
     ap.add_argument("--ad", nargs="*")
     ap.add_argument("--pilot", type=int)
@@ -248,6 +300,8 @@ def main():
                 kaydet()
     if a.adim in ("birlestir", "hepsi"):
         print(json.dumps(birlestir(alt=alt), ensure_ascii=False, indent=1))
+    if a.adim in ("rapor", "hepsi"):
+        md_rapor(projeler, alt, a.rapor)
 
 
 if __name__ == "__main__":
