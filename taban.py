@@ -15,6 +15,7 @@ SISTEM = ("Sen deneyimli bir tersine mühendissin. Sana sembolleri silinmiş bir
           "(Intel sözdizimi) verilecek. Projenin iç fonksiyonları sub_XXXX diye gizlendi; dış "
           "kütüphane çağrıları görünür. Fonksiyonun asıl kaynak koddaki adını tahmin et. "
           'Yalnız JSON dön: {"ad": "snake_case_tahmin", "aciklama": "tek cümle Türkçe"}')
+SISTEM_BAGLAM = SISTEM + " Çağrılan iç fonksiyonların özetleri asm'nin altında verildi."
 
 
 def anahtar() -> str:
@@ -27,11 +28,12 @@ def anahtar() -> str:
     sys.exit("anahtar yok")
 
 
-def sor(model: str, asm: str, dusunme: bool = False, tavan: int = 4096) -> dict:
+def sor(model: str, asm: str, dusunme: bool = False, tavan: int = 4096, baglam: bool = False) -> dict:
     # Düşünme açıkken bazı modeller 16K token'lık döngüye girip dakikalarca bekletiyor:
     # varsayılan kapalı, açıkken max_tokens tavanı var. Tavana çarpan cevap "kesik" sayılır.
     govde = {"model": model, "temperature": 0,
-             "messages": [{"role": "system", "content": SISTEM}, {"role": "user", "content": asm}]}
+             "messages": [{"role": "system", "content": SISTEM_BAGLAM if baglam else SISTEM},
+                          {"role": "user", "content": asm}]}
     if dusunme:
         govde["max_tokens"] = tavan
     else:
@@ -82,6 +84,7 @@ def main():
     ap.add_argument("--tohum", type=int, default=7)
     ap.add_argument("--dusunme", action="store_true", help="modelin düşünmesini aç (yavaş, pahalı)")
     ap.add_argument("--tavan", type=int, default=4096, help="düşünmede max_tokens")
+    ap.add_argument("--baglam", action="store_true", help="çağrılan iç fonksiyonların özetlerini asm'ye ekle")
     ap.add_argument("--devam", action="store_true",
                     help="var olan sonuç dosyasındaki sağlam satırları koru, yalnız eksik/HATA olanları sor")
     ap.add_argument("--kesik-de", action="store_true", help="--devam ile: tavana çarpıp boş kalanları da yeniden sor")
@@ -91,7 +94,7 @@ def main():
     random.Random(a.tohum).shuffle(satirlar)
     ornek = satirlar[: a.n]
 
-    sonuc = Path("sonuc") / f"{a.veri.stem}-{a.model}{'-dusunme' if a.dusunme else ''}.jsonl"
+    sonuc = Path("sonuc") / f"{a.veri.stem}-{a.model}{'-dusunme' if a.dusunme else ''}{'-baglam' if a.baglam else ''}.jsonl"
     sonuc.parent.mkdir(exist_ok=True)
     eski = {}
     if a.devam and sonuc.exists():
@@ -116,7 +119,12 @@ def main():
         yeni = {r["id"]: r for r in map(json.loads, ara.open()) if not str(r.get("aciklama", "")).startswith("HATA")}
         sorulacak = [r for r in sorulacak if r["id"] not in yeni]
     with ThreadPoolExecutor(a.j) as havuz, ara.open("a") as f:
-        isler = {havuz.submit(sor, a.model, r["asm"], a.dusunme, a.tavan): r for r in sorulacak}
+        def girdi(r):
+            if not a.baglam or not r.get("baglam"):
+                return r["asm"]
+            return r["asm"] + "\n\n; --- çağrılan fonksiyonlar ---\n" + r["baglam"]
+
+        isler = {havuz.submit(sor, a.model, girdi(r), a.dusunme, a.tavan, a.baglam): r for r in sorulacak}
         for gelen in as_completed(isler):
             r = isler[gelen]
             yeni[r["id"]] = satir(r, gelen.result())

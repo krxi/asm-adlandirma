@@ -155,6 +155,56 @@ def sizar_mi(ad: str, asm: str) -> bool:
     return re.search(rf"(?<![A-Za-z0-9_]){re.escape(ad)}(?![A-Za-z0-9_])", asm, re.I) is not None
 
 
+def tekil(liste: list[str], deger: str, sinir: int):
+    """Sırayı koruyarak benzersiz ve sınırlı ekle."""
+    if deger not in liste and len(liste) < sinir:
+        liste.append(deger)
+
+
+def ic_cagrilar(asm: str) -> list[str]:
+    """call/jmp ile çağrılan anonim iç fonksiyonlar."""
+    sonuc = []
+    for satir in asm.splitlines():
+        if not re.match(r"^\s*(?:call|jmp)\w*\s", satir):
+            continue
+        m = re.search(r";\s*->\s*(sub_[0-9a-f]+)\s*$", satir)
+        if not m:
+            m = re.match(r"^\s*(?:call|jmp)\w*\s+(sub_[0-9a-f]+)\b", satir)
+        if m:
+            tekil(sonuc, m.group(1), 8)
+    return sonuc
+
+
+def string_kisalt(hedef: str) -> str:
+    """Tırnaklar dahil en çok 60 karakterlik string gösterimi."""
+    if len(hedef) <= 60:
+        return hedef
+    icerik = hedef[1:-1][:57].rstrip("\\")
+    return f'"{icerik}…"'
+
+
+def fonksiyon_ozeti(kimlik: str, komut_sayisi: int, asm: str) -> str:
+    """Anonim asm'den tek satırlık çağrı özeti çıkar."""
+    ithaller, stringler = [], []
+    for satir in asm.splitlines():
+        m = re.search(r";\s*->\s*(.+?)\s*$", satir)
+        if not m:
+            continue
+        hedef = m.group(1)
+        if hedef.startswith('"'):
+            tekil(stringler, string_kisalt(hedef), 4)
+        elif hedef != "veri" and not hedef.startswith(("sub_", "dat_")):
+            tekil(ithaller, hedef, 6)
+    cagrilar = ic_cagrilar(asm)[:4]
+    parcalar = []
+    if ithaller or cagrilar:
+        parcalar.append("çağırır " + ", ".join(ithaller + cagrilar))
+    if stringler:
+        parcalar.append("string " + ", ".join(stringler))
+    bas = f"{kimlik} ({komut_sayisi} komut)"
+    return bas + (": " + "; ".join(parcalar) if parcalar else "")
+
+
 def cikar(kok: Path, cikti: Path, dosyalar=("*.c",), haric=(), bayraklar=(), proje=None, surum=None,
           en_az=6, en_cok=300, tohum=7) -> int:
     proje = proje or kok.name
@@ -188,25 +238,36 @@ def cikar(kok: Path, cikti: Path, dosyalar=("*.c",), haric=(), bayraklar=(), pro
         adlar[opt] = {ad: f"sub_{i:04x}" for i, ad in enumerate(fonk_adlari)}
         adlar[opt] |= {ad: f"dat_{i:04x}" for i, ad in enumerate(veri_adlari)}
 
+    # Bağlam özeti kısa/uzun diye elenecek fonksiyonları da görebilsin.
+    anonim_ham, dosya_ozetleri, genel_ozetler = [], {}, {}
+    for dosya, opt, ad, s, strs in ham:
+        komut = [x for x in s if not x.split(":", 1)[-1].strip().startswith(("X86_64_RELOC",))]
+        asm = anonimlestir(s, adlar[opt], strs, ad)
+        kimlik = adlar[opt][ad]
+        ozet = fonksiyon_ozeti(kimlik, len(komut), asm)
+        anonim_ham.append((dosya, opt, ad, komut, asm))
+        dosya_ozetleri.setdefault((dosya, opt, kimlik), ozet)
+        genel_ozetler.setdefault((opt, kimlik), ozet)
+
     cikti.parent.mkdir(parents=True, exist_ok=True)
     n = sizan = 0
     gorulen = set()
     with cikti.open("w") as f:
-        for dosya, opt, ad, s, strs in ham:
+        for dosya, opt, ad, komut, asm in anonim_ham:
             if "." in ad:                                   # foo.cold.1: derleyicinin ayırdığı parça, kaynak fonksiyonu değil
                 continue
-            komut = [x for x in s if not x.split(":", 1)[-1].strip().startswith(("X86_64_RELOC",))]
             if not (en_az <= len(komut) <= en_cok):
                 continue
-            asm = anonimlestir(s, adlar[opt], strs, ad)
             if (opt, ad, asm) in gorulen:                   # aynı static yardımcı birden çok dosyada
                 continue
             gorulen.add((opt, ad, asm))
-            sizinti = sizar_mi(ad, asm)
+            baglam = "\n".join(dosya_ozetleri.get((dosya, opt, hedef)) or genel_ozetler[(opt, hedef)]
+                                for hedef in ic_cagrilar(asm))
+            sizinti = sizar_mi(ad, asm) or sizar_mi(ad, baglam)
             sizan += sizinti
             f.write(json.dumps({"id": f"{proje}/{dosya}:{opt}:{ad}", "proje": proje, "surum": surum,
                                 "dosya": dosya, "opt": opt, "ad": ad, "komut_sayisi": len(komut),
-                                "sizinti": sizinti, "asm": asm}, ensure_ascii=False) + "\n")
+                                "sizinti": sizinti, "asm": asm, "baglam": baglam}, ensure_ascii=False) + "\n")
             n += 1
     print(f"{proje}: {n} fonksiyon ({sizan} sızıntılı) → {cikti}"
           + (f"  [derlenemeyen: {len(basarisiz)}: {', '.join(basarisiz[:6])}…]" if basarisiz else ""))
