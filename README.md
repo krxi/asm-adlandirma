@@ -150,7 +150,8 @@ Qwen2.5-Coder-0.5B (4-bit), 1.500 adım (~1 saat 40 dk, 4,8 GB bellek). İki den
 **3. Küçük model**
 - [x] İlk LoRA denemeleri (0.5B): işe yaramadı, önek ezberi ve mod çöküşü
 - [ ] 1.5B model, bağlamlı veri, daha uzun eğitim
-- [ ] Damıtma: kaynak kodu gören büyük modelden her fonksiyona kısa açıklama; model ad + açıklama üretsin
+- [x] Damıtma verisi: kaynak kodu gören öğretmen model (mimo-v2.6-pro) 17.581 fonksiyonun hepsine tek cümlelik Türkçe açıklama yazdı (ort. 12,5 kelime)
+- [ ] Küçük model ad + açıklama birlikte üretsin
 
 **4. Araç**
 - [ ] Ghidra betiği: `FUN_…` fonksiyonlarını yerel modelle adlandırıp açıklama yazar (betik hazır: [ghidra/](ghidra/README.md); gerçek Ghidra'da henüz denenmedi)
