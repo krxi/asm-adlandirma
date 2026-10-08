@@ -101,7 +101,15 @@ Düşünme, zlib'de tam isabeti üç katına çıkarıyor; az bilinen kodda hiç
 
 ### 4. Küçük model, ilk LoRA denemesi (MacBook Air M4)
 
-Qwen2.5-Coder-0.5B (4-bit), 14 eğitim projesinden 14.710 fonksiyon, 1.500 adım (~1 saat 40 dk, 4,8 GB bellek): **F1 0.01, yani işe yaramadı.** Model anlam yerine eğitim projelerinin ad öneklerini öğrendi: 112 tahminin 54'ü `mbedtls_` ile başlıyor. İkinci deneme (hedeflerden proje öneki atılmış, projeler dengelenmiş) sürüyor.
+Qwen2.5-Coder-0.5B (4-bit), 1.500 adım (~1 saat 40 dk, 4,8 GB bellek). İki deneme de **işe yaramadı**:
+
+| deneme | veri | F1 | tam isabet | ne oldu |
+|---|---|---|---|---|
+| eğitimsiz | — | 0.01 | 0 / 112 | çoğu cevap anlamsız |
+| LoRA v1 | 14.710 fonksiyon, gerçek adlar | 0.01 | 0 / 112 | proje öneklerini ezberledi: 112 tahminin 54'ü `mbedtls_…` |
+| LoRA v2 | 10.360 fonksiyon, önek atılmış, proje başına ≤1.500 | 0.02 | 0 / 112 | mod çöküşü: 112 tahminin 56'sı iki ad |
+
+0.5B model ve yarım epoch bu iş için yetersiz görünüyor. Sıradaki denemeler: daha büyük taban (1.5B-3B), daha uzun eğitim, girdiye çağrı bağlamı.
 
 ### Not: zlib ısınma turu ve veri hattındaki sızıntılar
 
