@@ -242,6 +242,7 @@ def _(
     SECILEN_MODEL,
     TOHUM,
     get_peft_model,
+    os,
     prepare_model_for_kbit_training,
     set_seed,
     torch,
@@ -252,12 +253,14 @@ def _(
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
 
+    # NICELEME=0: 96 GB'lık kartta 4-bit'e gerek yok; bf16 taban + aynı LoRA çok daha hızlı.
+    NICELEME = os.environ.get("NICELEME", "1") == "1"
     niceleme = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
         bnb_4bit_use_double_quant=True,
         bnb_4bit_compute_dtype=torch.bfloat16,
-    )
+    ) if NICELEME else None
     model = AutoModelForCausalLM.from_pretrained(
         SECILEN_MODEL,
         quantization_config=niceleme,
@@ -266,11 +269,16 @@ def _(
         attn_implementation=ATTN_IMPLEMENTATION,
     )
     model.config.use_cache = False
-    model = prepare_model_for_kbit_training(
-        model,
-        use_gradient_checkpointing=GRAD_CKPT,
-        gradient_checkpointing_kwargs={"use_reentrant": False},
-    )
+    if NICELEME:
+        model = prepare_model_for_kbit_training(
+            model,
+            use_gradient_checkpointing=GRAD_CKPT,
+            gradient_checkpointing_kwargs={"use_reentrant": False},
+        )
+    elif GRAD_CKPT:
+        model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+        model.enable_input_require_grads()
+    print(f"4-bit niceleme: {NICELEME}")
     model = get_peft_model(
         model,
         LoraConfig(
