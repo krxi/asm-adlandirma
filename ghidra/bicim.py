@@ -143,6 +143,10 @@ def cevap_ayristir(yanit):
             "aciklama": metin(sonuc.get("aciklama", ""))}
 
 
+# Modelin girdiden kopyaladığı yer tutucular ve komut adları ad sayılmaz.
+ANLAMSIZ = re.compile(r"^(sub|fun|dat|loc|lab)_[0-9a-f?]+$|^(fonksiyon_adi|snake_case_tahmin)$|^(push|mov|sub|call)_r")
+
+
 def gecerli_ad(ad, sinir=80):
     """Model tahminini taşınabilir bir ASCII tanımlayıcıya indirger."""
     ad = "".join(TURKCE.get(harf, harf) for harf in metin(ad).strip())
@@ -154,4 +158,6 @@ def gecerli_ad(ad, sinir=80):
         ad = "fonk_" + ad
     if keyword.iskeyword(ad):
         ad = "fonk_" + ad
+    if ANLAMSIZ.search(ad):
+        return ""
     return ad

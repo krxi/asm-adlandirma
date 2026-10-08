@@ -44,6 +44,9 @@ class BicimTesti(unittest.TestCase):
         self.assertEqual(gecerli_ad("12 giriş"), "fonk_12_giris")
         self.assertEqual(gecerli_ad("class"), "fonk_class")
         self.assertEqual(gecerli_ad("---"), "")
+        for ad in ("sub_0016", "sub_401000", "FUN_00001050", "fonksiyon_adi", "push_rbp"):
+            self.assertEqual(gecerli_ad(ad), "")
+        self.assertEqual(gecerli_ad("subscribe_event"), "subscribe_event")
 
     def test_json_olmayan_cevap(self):
         ham = {"choices": [{"message": {"content": "paket_ayristir"}}]}
