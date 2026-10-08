@@ -1,0 +1,20 @@
+# mlx_lm LoRA ayarı (16 GB MacBook Air M4 için temkinli başlangıç).
+model: mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit
+train: true
+fine_tune_type: lora
+data: lora/veri
+adapter_path: lora/adaptor-1.5b
+num_layers: 16
+batch_size: 1
+grad_accumulation_steps: 4   # etkin batch 4; 16 GB'de bellek payı bırakır
+# ~10 bin örnek, etkin batch 4: bir epoch ~2.500 iter; 2--3 epoch ~5.000--7.500 iter.
+iters: 6000
+learning_rate: 1.0e-4
+max_seq_length: 3072
+grad_checkpoint: true
+mask_prompt: true
+steps_per_report: 10
+steps_per_eval: 250
+val_batches: 25
+save_every: 250
+seed: 7
