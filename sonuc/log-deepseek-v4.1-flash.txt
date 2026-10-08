@@ -1,3 +1,4 @@
+55 satır korundu, 5 soruluyor
 0.00  -O2  deflateEnd                   ← free_ssl_session
 0.50  -O2  inflateReset                 ← reset_decoder
 0.00  -O0  adler32_combine              ← wrapper_call
@@ -22,13 +23,13 @@
 0.00  -O2  tr_tally                     ← put_byte
 0.40  -O0  deflateParams                ← deflate_set_level
 0.00  -O2  inflateCopy                  ← clone_context
-0.00  -O0  adler32                      ← 
-0.00  -O0  inflateCopy                  ← 
+0.00  -O0  adler32                      ← wrapper_call
+0.00  -O0  inflateCopy                  ← png_create_read_struct_2
 0.00  -O0  inflateReset2                ← set_quality
 0.00  -O0  inflateSyncPoint             ← check_connection_state
 0.67  -O2  adler32_z                    ← adler32
 0.00  -O0  deflateGetDictionary         ← avcodec_receive_frame
-0.00  -O0  inflateEnd                   ← 
+0.00  -O0  inflateEnd                   ← close_codec_context
 0.40  -O0  inflateBackInit_             ← inflateInit2_
 0.00  -O2  uncompress                   ← swap_uint64
 0.50  -O0  tr_init                      ← deflate_init
@@ -41,14 +42,14 @@
 0.00  -O0  uncompress2_z                ← inflate_state_init
 0.40  -O2  crc32_combine_op             ← crc32_update
 0.00  -O0  deflateUsed                  ← get_connection_state
-0.00  -O0  multmodp                     ← 
+0.00  -O0  multmodp                     ← crc32_combine_
 0.00  -O2  inflateGetDictionary         ← buffer_ring_read
 0.40  -O2  inflateBackInit_             ← inflateInit2_
 0.00  -O0  pqdownheap                   ← sift_down
 0.00  -O0  tr_stored_block              ← deflate_huff
 0.00  -O0  x2nmodp                      ← gf2_matrix_square
 0.00  -O0  inflatePrime                 ← bit_writer_put_bits
-0.00  -O0  lm_init                      ← 
+0.00  -O0  lm_init                      ← deflate_reset
 0.00  -O2  deflatePending               ← get_character_animation_state
 0.00  -O0  zcfree                       ← free_wrapper
 0.00  -O0  detect_data_type             ← check_register_usage
@@ -60,5 +61,5 @@
 0.00  -O0  inflateValidate              ← set_nonblocking
 -O0: ortalama F1 0.10  (n=34, tam isabet 0)
 -O2: ortalama F1 0.13  (n=26, tam isabet 0)
-toplam token: 59455
+yeni token: 5247
 ayrıntı → sonuc/zlib-deepseek-v4.1-flash.jsonl

@@ -1,3 +1,4 @@
+54 satır korundu, 6 soruluyor
 0.00  -O2  deflateEnd                   ← process_event_callbacks
 0.40  -O2  inflateReset                 ← reset_object_state
 0.00  -O0  adler32_combine              ← wrapper_function
@@ -10,17 +11,17 @@
 0.00  -O2  inflate_fixed                ← init_config_offsets
 0.00  -O0  crc_word                     ← calculate_crc8
 0.00  -O0  tr_align                     ← huffman_encode_bitstream
-0.00  -O2  crc32_combine                ← 
+0.00  -O2  crc32_combine                ← x2n_hash_function
 0.00  -O2  crc32                        ← wrapper_function
 0.00  -O2  tr_flush_bits                ← append_buffer_data
 0.00  -O2  zcalloc                      ← calculate_malloc_size
 0.00  -O2  inflateSync                  ← validate_and_update_buffer
-0.00  -O2  deflateCopy                  ← 
+0.00  -O2  deflateCopy                  ← clone_object
 0.40  -O2  crc32_combine_gen64          ← calculate_crc32
 0.00  -O2  inflatePrime                 ← set_bit_flag
 0.00  -O2  deflateTune                  ← update_object_properties
 0.00  -O2  tr_tally                     ← deflate_encode_symbol
-0.00  -O0  deflateParams                ← 
+0.00  -O0  deflateParams                ← set_configuration_mode
 0.00  -O2  inflateCopy                  ← clone_object
 0.00  -O0  adler32                      ← wrapper_function
 0.00  -O0  inflateCopy                  ← clone_object
@@ -33,7 +34,7 @@
 0.00  -O2  uncompress                   ← update_value
 0.40  -O0  tr_init                      ← init_object_descriptors
 0.00  -O0  inflateResetKeep             ← init_struct_fields
-0.00  -O2  inflateValidate              ← 
+0.00  -O2  inflateValidate              ← update_buffer_flags
 0.00  -O2  longest_match                ← find_pattern_in_buffer
 0.00  -O0  deflateReset                 ← get_or_create_resource
 0.00  -O0  crc32_combine_op             ← calculate_hash_or_checksum
@@ -50,15 +51,15 @@
 0.00  -O0  inflatePrime                 ← append_bitstream
 0.40  -O0  lm_init                      ← init_device_configuration
 0.00  -O2  deflatePending               ← validate_and_copy_state
-0.00  -O0  zcfree                       ← 
+0.00  -O0  zcfree                       ← free_buffer
 0.00  -O0  detect_data_type             ← check_device_capabilities
 0.00  -O0  compressBound                ← validate_pointer
 0.00  -O0  adler32_combine64            ← wrapper_function
-0.00  -O0  inflateMark                  ← 
+0.00  -O0  inflateMark                  ← calculate_offset_address
 0.00  -O2  deflateSetHeader             ← validate_and_update_state
 0.00  -O2  inflateSyncPoint             ← is_valid_session_or_token
 0.00  -O0  inflateValidate              ← set_flag_status
 -O0: ortalama F1 0.05  (n=34, tam isabet 0)
 -O2: ortalama F1 0.04  (n=26, tam isabet 0)
-toplam token: 61973
+yeni token: 7948
 ayrıntı → sonuc/zlib-gemma-4-31b.jsonl

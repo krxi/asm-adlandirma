@@ -2,7 +2,7 @@
 {"id": "inflate.c:-O2:inflateReset", "gercek": "inflateReset", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4880}
 {"id": "adler32.c:-O0:adler32_combine", "gercek": "adler32_combine", "tahmin": "forward_call", "aciklama": "Üç argümanı değiştirmeden başka bir fonksiyona ileten basit bir thunk/sarıcı fonksiyon.", "f1": 0.0, "opt": "-O0", "token": 1032}
 {"id": "deflate.c:-O0:deflateBound_z", "gercek": "deflateBound_z", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 7451}
-{"id": "deflate.c:-O2:deflateSetDictionary", "gercek": "deflateSetDictionary", "tahmin": "", "aciklama": "HATA: HTTP Error 503: Service Unavailable", "f1": 0.0, "opt": "-O2", "token": 0}
+{"id": "deflate.c:-O2:deflateSetDictionary", "gercek": "deflateSetDictionary", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 6096, "bitis": "length"}
 {"id": "zutil.c:-O0:zlibVersion", "gercek": "zlibVersion", "tahmin": "what", "aciklama": "Fonksiyon sabit bir string literal'inin adresini döndürüyor; bu pattern C++ exception sınıflarında what() metodunun override edilmesiyle oluşur.", "f1": 0.0, "opt": "-O0", "token": 890}
 {"id": "adler32.c:-O2:adler32_combine", "gercek": "adler32_combine", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4709}
 {"id": "deflate.c:-O0:deflateSetDictionary", "gercek": "deflateSetDictionary", "tahmin": "lzw_decode", "aciklama": "Bu fonksiyon, bir LZW sıkıştırma açma (dekompresyon) algoritmasıdır; içsel durum makinesi, sözlük tabloları ve değişken genişlikli kod işleme özellikleriyle veriyi akış halinde çözer.", "f1": 0.0, "opt": "-O0", "token": 6084}

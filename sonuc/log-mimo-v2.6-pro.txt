@@ -1,3 +1,4 @@
+52 satır korundu, 8 soruluyor
 0.00  -O2  deflateEnd                   ← free_context
 1.00  -O2  inflateReset                 ← inflate_reset
 0.00  -O0  adler32_combine              ← wrapper_forward_three_args
@@ -5,18 +6,18 @@
 0.00  -O2  deflateSetDictionary         ← inflate_prime
 0.40  -O0  zlibVersion                  ← get_version_string
 1.00  -O2  adler32_combine              ← adler32_combine
-0.00  -O0  deflateSetDictionary         ← 
+1.00  -O0  deflateSetDictionary         ← deflate_set_dictionary
 0.67  -O0  inflate_fixed                ← inflate_table_fixed_init
 0.40  -O2  inflate_fixed                ← inflate_table_init
-0.00  -O0  crc_word                     ← 
-0.00  -O0  tr_align                     ← 
+0.00  -O0  crc_word                     ← crc64_update
+0.40  -O0  tr_align                     ← _tr_stored_block
 0.50  -O2  crc32_combine                ← crc32_compute
 0.00  -O2  crc32                        ← wrapper_function
 0.57  -O2  tr_flush_bits                ← flush_bits_to_output
-0.00  -O2  zcalloc                      ← 
+0.00  -O2  zcalloc                      ← alloc_matrix
 0.40  -O2  inflateSync                  ← inflate_read_header
 0.29  -O2  deflateCopy                  ← zstd_create_cctx_from_copy
-0.00  -O2  crc32_combine_gen64          ← 
+0.00  -O2  crc32_combine_gen64          ← gf2_32_multiply
 0.00  -O2  inflatePrime                 ← set_bitfield
 0.00  -O2  deflateTune                  ← set_video_format_params
 0.80  -O2  tr_tally                     ← _tr_tally_dist
@@ -32,14 +33,14 @@
 0.40  -O0  inflateBackInit_             ← inflate_init2
 0.00  -O2  uncompress                   ← swap_values
 0.50  -O0  tr_init                      ← init_block
-0.00  -O0  inflateResetKeep             ← 
+0.80  -O0  inflateResetKeep             ← inflate_reset
 0.00  -O2  inflateValidate              ← set_flag
 1.00  -O2  longest_match                ← longest_match
 0.00  -O0  deflateReset                 ← close_and_free
 0.00  -O0  crc32_combine_op             ← xor_cipher_block
 0.00  -O0  deflatePrime                 ← put_bits
-0.00  -O0  uncompress2_z                ← 
-0.00  -O2  crc32_combine_op             ← 
+0.00  -O0  uncompress2_z                ← uncompress
+0.40  -O2  crc32_combine_op             ← crc32_compute
 0.00  -O0  deflateUsed                  ← get_error_code
 0.00  -O0  multmodp                     ← crc32_update
 0.33  -O2  inflateGetDictionary         ← get_pending_data
@@ -58,7 +59,7 @@
 0.33  -O2  deflateSetHeader             ← set_callback_handler
 0.00  -O2  inflateSyncPoint             ← is_valid_state
 0.00  -O0  inflateValidate              ← set_binary_mode
--O0: ortalama F1 0.17  (n=34, tam isabet 3)
--O2: ortalama F1 0.31  (n=26, tam isabet 3)
-toplam token: 55415
+-O0: ortalama F1 0.24  (n=34, tam isabet 4)
+-O2: ortalama F1 0.33  (n=26, tam isabet 3)
+yeni token: 10847
 ayrıntı → sonuc/zlib-mimo-v2.6-pro.jsonl

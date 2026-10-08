@@ -1,3 +1,4 @@
+56 satır korundu, 4 soruluyor
 0.00  -O2  deflateEnd                   ← free_event
 0.40  -O2  inflateReset                 ← reset_stream_state
 0.00  -O0  adler32_combine              ← wrapper_call_sub_0003
@@ -6,7 +7,7 @@
 0.40  -O0  zlibVersion                  ← get_version_string
 0.00  -O2  adler32_combine              ← modmul
 0.00  -O0  deflateSetDictionary         ← process_audio_frame
-0.00  -O0  inflate_fixed                ← 
+0.00  -O0  inflate_fixed                ← init_huffman_tables
 0.00  -O2  inflate_fixed                ← init_huffman_tables
 0.00  -O0  crc_word                     ← crc64_compute
 0.00  -O0  tr_align                     ← deflate_stored_block
@@ -15,7 +16,7 @@
 0.33  -O2  tr_flush_bits                ← flush_output_buffer
 0.00  -O2  zcalloc                      ← allocate_buffer
 0.00  -O2  inflateSync                  ← decode_utf8_char
-0.00  -O2  deflateCopy                  ← 
+0.00  -O2  deflateCopy                  ← ssl_new
 0.00  -O2  crc32_combine_gen64          ← crc32c_hw
 0.00  -O2  inflatePrime                 ← set_bitmask
 0.00  -O2  deflateTune                  ← set_socket_option
@@ -35,7 +36,7 @@
 0.00  -O0  inflateResetKeep             ← init_audio_context
 0.00  -O2  inflateValidate              ← set_object_type
 0.40  -O2  longest_match                ← lzma_decode_match
-0.00  -O0  deflateReset                 ← 
+0.00  -O0  deflateReset                 ← check_and_process_object
 0.00  -O0  crc32_combine_op             ← compute_hash
 0.00  -O0  deflatePrime                 ← write_bits_to_buffer
 0.00  -O0  uncompress2_z                ← copy_file_range
@@ -47,7 +48,7 @@
 0.00  -O0  pqdownheap                   ← heapify_down
 0.00  -O0  tr_stored_block              ← encode_huffman_symbol
 0.00  -O0  x2nmodp                      ← pow_mod
-0.00  -O0  inflatePrime                 ← 
+0.00  -O0  inflatePrime                 ← set_bitmask
 0.40  -O0  lm_init                      ← init_audio_context
 0.00  -O2  deflatePending               ← get_socket_type
 0.00  -O0  zcfree                       ← free_buffer
@@ -60,5 +61,5 @@
 0.00  -O0  inflateValidate              ← set_object_flag
 -O0: ortalama F1 0.06  (n=34, tam isabet 0)
 -O2: ortalama F1 0.17  (n=26, tam isabet 0)
-toplam token: 63927
+yeni token: 4241
 ayrıntı → sonuc/zlib-qwen3.8-flash-next.jsonl

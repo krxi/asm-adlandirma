@@ -1,6 +1,6 @@
 {"id": "deflate.c:-O2:deflateEnd", "gercek": "deflateEnd", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 5178}
 {"id": "inflate.c:-O2:inflateReset", "gercek": "inflateReset", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4923}
-{"id": "adler32.c:-O0:adler32_combine", "gercek": "adler32_combine", "tahmin": "", "aciklama": "HATA: HTTP Error 503: Service Unavailable", "f1": 0.0, "opt": "-O0", "token": 0}
+{"id": "adler32.c:-O0:adler32_combine", "gercek": "adler32_combine", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4410, "bitis": "length"}
 {"id": "deflate.c:-O0:deflateBound_z", "gercek": "deflateBound_z", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 7542}
 {"id": "deflate.c:-O2:deflateSetDictionary", "gercek": "deflateSetDictionary", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 6152}
 {"id": "zutil.c:-O0:zlibVersion", "gercek": "zlibVersion", "tahmin": "get_version", "aciklama": "Sabit bir sürüm dizesinin adresini döndüren basit bir alıcı fonksiyon.", "f1": 0.5, "opt": "-O0", "token": 1546}
@@ -9,7 +9,7 @@
 {"id": "inftrees.c:-O0:inflate_fixed", "gercek": "inflate_fixed", "tahmin": "fixedtables", "aciklama": "zlib inflate için sabit Huffman kod tablolarını (lenfix/distfix) ve bit uzunluklarını ayarlayan fixedtables fonksiyonu.", "f1": 0.0, "opt": "-O0", "token": 1048}
 {"id": "inftrees.c:-O2:inflate_fixed", "gercek": "inflate_fixed", "tahmin": "fixedtables", "aciklama": "zlib inflate için sabit Huffman tablolarını (lenfix/distfix) ayarlayan fonksiyon.", "f1": 0.0, "opt": "-O2", "token": 1451}
 {"id": "crc32.c:-O0:crc_word", "gercek": "crc_word", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4529}
-{"id": "trees.c:-O0:tr_align", "gercek": "tr_align", "tahmin": "", "aciklama": "HATA: HTTP Error 503: Service Unavailable", "f1": 0.0, "opt": "-O0", "token": 0}
+{"id": "trees.c:-O0:tr_align", "gercek": "tr_align", "tahmin": "_tr_align", "aciklama": "zlib'de boş bir statik Huffman bloğu göndererek çıktı akışını hizalar.", "f1": 1.0, "opt": "-O0", "token": 4155, "bitis": "stop"}
 {"id": "crc32.c:-O2:crc32_combine", "gercek": "crc32_combine", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4969}
 {"id": "crc32.c:-O2:crc32", "gercek": "crc32", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4298}
 {"id": "trees.c:-O2:tr_flush_bits", "gercek": "tr_flush_bits", "tahmin": "bi_flush", "aciklama": "zlib'deki bit tamponunu pending_buf'a boşaltan bi_flush fonksiyonu.", "f1": 0.4, "opt": "-O2", "token": 2700}

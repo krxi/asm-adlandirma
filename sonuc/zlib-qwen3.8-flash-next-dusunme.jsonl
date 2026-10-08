@@ -12,7 +12,7 @@
 {"id": "trees.c:-O0:tr_align", "gercek": "tr_align", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 6327}
 {"id": "crc32.c:-O2:crc32_combine", "gercek": "crc32_combine", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 5057}
 {"id": "crc32.c:-O2:crc32", "gercek": "crc32", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4300}
-{"id": "trees.c:-O2:tr_flush_bits", "gercek": "tr_flush_bits", "tahmin": "", "aciklama": "HATA: HTTP Error 503: Service Unavailable", "f1": 0.0, "opt": "-O2", "token": 0}
+{"id": "trees.c:-O2:tr_flush_bits", "gercek": "tr_flush_bits", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4770, "bitis": "length"}
 {"id": "zutil.c:-O2:zcalloc", "gercek": "zcalloc", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4296}
 {"id": "inflate.c:-O2:inflateSync", "gercek": "inflateSync", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 6498}
 {"id": "deflate.c:-O2:deflateCopy", "gercek": "deflateCopy", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 6417}

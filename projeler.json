@@ -1,0 +1,368 @@
+[
+ {
+  "ad": "zlib",
+  "rol": "egitim",
+  "url": "https://github.com/madler/zlib",
+  "surum": "767c4c9",
+  "lisans": "zlib",
+  "dosyalar": [
+   "*.c"
+  ],
+  "haric": [],
+  "bayraklar": [
+   "-DZ_HAVE_UNISTD_H"
+  ],
+  "hazirlik": [],
+  "not": "ısınma turu; çok ünlü, yalnız eğitimde"
+ },
+ {
+  "ad": "libpng",
+  "rol": "egitim",
+  "url": "https://github.com/pnggroup/libpng",
+  "surum": "18ea3e9",
+  "lisans": "libpng-2.0 (PNG Reference Library License)",
+  "dosyalar": [
+   "*.c"
+  ],
+  "haric": [
+   "example.c",
+   "pngtest.c",
+   "pngsimd.c"
+  ],
+  "bayraklar": [
+   "-I."
+  ],
+  "hazirlik": [
+   "cp pnglibconf.h.prebuilt pnglibconf.h"
+  ],
+  "not": "pngsimd.c haric (bos); pnglibconf.h prebuilt kopyalanir"
+ },
+ {
+  "ad": "sqlite",
+  "rol": "egitim",
+  "url": "https://github.com/azadkuh/sqlite-amalgamation",
+  "surum": "15d0ff1",
+  "lisans": "Public domain (SQLite); mirror yalniz CMake sarmalayicisini BSD-3 lisanslar",
+  "dosyalar": [
+   "sqlite3.c"
+  ],
+  "haric": [
+   "shell.c"
+  ],
+  "bayraklar": [
+   "-DSQLITE_THREADSAFE=0"
+  ],
+  "hazirlik": [],
+  "not": "amalgamation tek dosya; tek dev .o, shell.c main icerir"
+ },
+ {
+  "ad": "lua",
+  "rol": "egitim",
+  "url": "https://github.com/lua/lua",
+  "surum": "0b29f40",
+  "lisans": "MIT",
+  "dosyalar": [
+   "*.c"
+  ],
+  "haric": [
+   "lua.c",
+   "luac.c",
+   "onelua.c",
+   "ltests.c"
+  ],
+  "bayraklar": [
+   "-DLUA_USE_POSIX"
+  ],
+  "hazirlik": [],
+  "not": "main() iceren lua.c/luac.c ve tekil-birlestirme onelua.c haric"
+ },
+ {
+  "ad": "mbedtls",
+  "rol": "egitim",
+  "url": "https://github.com/Mbed-TLS/mbedtls",
+  "surum": "068ff08",
+  "lisans": "Apache-2.0 (Apache-2.0 OR GPL-2.0+ ikili lisansin Apache secenegi)",
+  "dosyalar": [
+   "library/*.c"
+  ],
+  "haric": [],
+  "bayraklar": [
+   "-Iinclude",
+   "-Ilibrary"
+  ],
+  "hazirlik": [],
+  "not": "v3.6.7 etiketi (git clone --depth 1 --branch v3.6.7); main'deki tf-psa-crypto submodule gerektirmez; bazi dosyalar varsayilan config ile bos"
+ },
+ {
+  "ad": "lz4",
+  "rol": "egitim",
+  "url": "https://github.com/lz4/lz4",
+  "surum": "4bca497",
+  "lisans": "BSD-2-Clause (lib/ dizini; programs/ GPL, kullanilmaz)",
+  "dosyalar": [
+   "lib/lz4.c",
+   "lib/lz4hc.c",
+   "lib/lz4frame.c",
+   "lib/lz4file.c",
+   "lib/xxhash.c"
+  ],
+  "haric": [],
+  "bayraklar": [
+   "-Ilib"
+  ],
+  "hazirlik": [],
+  "not": "yalniz lib/ (BSD); programs/tests/examples GPL olabilir, dahil degil"
+ },
+ {
+  "ad": "cjson",
+  "rol": "egitim",
+  "url": "https://github.com/DaveGamble/cJSON",
+  "surum": "6d9f244",
+  "lisans": "MIT",
+  "dosyalar": [
+   "cJSON.c",
+   "cJSON_Utils.c"
+  ],
+  "haric": [],
+  "bayraklar": [],
+  "hazirlik": [],
+  "not": "test.c haric"
+ },
+ {
+  "ad": "jansson",
+  "rol": "egitim",
+  "url": "https://github.com/akheron/jansson",
+  "surum": "851a214",
+  "lisans": "MIT",
+  "dosyalar": [
+   "src/*.c"
+  ],
+  "haric": [],
+  "bayraklar": [
+   "-Isrc",
+   "-DHAVE_STDINT_H=1",
+   "-DHAVE_STRTOLL=1",
+   "-DHAVE_LOCALE_H=1",
+   "-DHAVE_SETLOCALE=1",
+   "-DHAVE_SYS_TIME_H=1",
+   "-DHAVE_GETTIMEOFDAY=1",
+   "-DHAVE_UNISTD_H=1",
+   "-DHAVE_SCHED_H=1",
+   "-DHAVE_SCHED_YIELD=1"
+  ],
+  "hazirlik": [
+   "sed -e 's/@json_inline@/inline/;s/@json_have_long_long@/1/;s/@json_have_atomic_builtins@/1/;s/@json_have_sync_builtins@/1/' src/jansson_config.h.in > src/jansson_config.h"
+  ],
+  "not": "jansson_config.h sed ile uretilir; config.h yerine -DHAVE_* bayraklari"
+ },
+ {
+  "ad": "expat",
+  "rol": "egitim",
+  "url": "https://github.com/libexpat/libexpat",
+  "surum": "56ce0c3",
+  "lisans": "MIT",
+  "dosyalar": [
+   "expat/lib/xmlparse.c",
+   "expat/lib/xmlrole.c",
+   "expat/lib/xmltok.c"
+  ],
+  "haric": [],
+  "bayraklar": [
+   "-Iexpat/lib",
+   "-DXML_GE=1",
+   "-DXML_DTD",
+   "-DXML_NS",
+   "-DXML_CONTEXT_BYTES=1024",
+   "-DHAVE_ARC4RANDOM_BUF",
+   "-DXML_DEV_URANDOM"
+  ],
+  "hazirlik": [],
+  "not": "xmltok_impl.c/xmltok_ns.c/random_*.c dosyalari include edilir veya kosullu, dahil degil; xmlwf/tests haric"
+ },
+ {
+  "ad": "libyaml",
+  "rol": "egitim",
+  "url": "https://github.com/yaml/libyaml",
+  "surum": "90a56d4",
+  "lisans": "MIT",
+  "dosyalar": [
+   "src/*.c"
+  ],
+  "haric": [],
+  "bayraklar": [
+   "-Iinclude",
+   "-DYAML_VERSION_MAJOR=0",
+   "-DYAML_VERSION_MINOR=2",
+   "-DYAML_VERSION_PATCH=5",
+   "-DYAML_VERSION_STRING=\"0.2.5\""
+  ],
+  "hazirlik": [],
+  "not": "surum makrolari bayrakla verilir"
+ },
+ {
+  "ad": "libsodium",
+  "rol": "egitim",
+  "url": "https://github.com/jedisct1/libsodium",
+  "surum": "42cf89b",
+  "lisans": "ISC",
+  "dosyalar": [
+   "src/libsodium/**/*.c"
+  ],
+  "haric": [],
+  "bayraklar": [
+   "-Isrc/libsodium/include",
+   "-Isrc/libsodium/include/sodium",
+   "-DCONFIGURED=1",
+   "-DDEV_MODE=0"
+  ],
+  "hazirlik": [
+   "sed -e 's/@VERSION@/1.0.21/;s/@SODIUM_LIBRARY_VERSION_MAJOR@/26/;s/@SODIUM_LIBRARY_VERSION_MINOR@/3/;s/@SODIUM_LIBRARY_MINIMAL_DEF@//' src/libsodium/include/sodium/version.h.in > src/libsodium/include/sodium/version.h"
+  ],
+  "not": "version.h sed ile uretilir; SIMD (aesni/avx/neon vb.) dosyalari HAVE_* tanimsiz oldugundan bos .o verir (zararsiz)"
+ },
+ {
+  "ad": "zstd",
+  "rol": "egitim",
+  "url": "https://github.com/facebook/zstd",
+  "surum": "49cf517",
+  "lisans": "BSD-3-Clause (BSD/GPLv2 ikili lisansin BSD secenegi)",
+  "dosyalar": [
+   "lib/common/*.c",
+   "lib/compress/*.c",
+   "lib/decompress/*.c",
+   "lib/dictBuilder/*.c",
+   "lib/legacy/*.c"
+  ],
+  "haric": [],
+  "bayraklar": [
+   "-Ilib",
+   "-Ilib/common",
+   "-DZSTD_LEGACY_SUPPORT=5",
+   "-DZSTD_DISABLE_ASM=1"
+  ],
+  "hazirlik": [],
+  "not": "yalniz lib/; huf_decompress_amd64.S derlenmez (ASM kapali)"
+ },
+ {
+  "ad": "brotli",
+  "rol": "egitim",
+  "url": "https://github.com/google/brotli",
+  "surum": "392b261",
+  "lisans": "MIT",
+  "dosyalar": [
+   "c/common/*.c",
+   "c/dec/*.c",
+   "c/enc/*.c"
+  ],
+  "haric": [],
+  "bayraklar": [
+   "-Ic/include",
+   "-Ic"
+  ],
+  "hazirlik": [],
+  "not": "c/tools/brotli.c (main) ve fuzz haric"
+ },
+ {
+  "ad": "xxhash",
+  "rol": "egitim",
+  "url": "https://github.com/Cyan4973/xxHash",
+  "surum": "680bf46",
+  "lisans": "BSD-2-Clause (kutuphane; cli/ GPL, kullanilmaz)",
+  "dosyalar": [
+   "xxhash.c",
+   "xxh_x86dispatch.c"
+  ],
+  "haric": [],
+  "bayraklar": [],
+  "hazirlik": [],
+  "not": "yalniz kutuphane dosyalari; cli/ dahil degil"
+ },
+ {
+  "ad": "tomlc17",
+  "rol": "test",
+  "url": "https://github.com/cktan/tomlc17",
+  "surum": "fba134d",
+  "lisans": "MIT",
+  "dosyalar": [
+   "src/tomlc17.c"
+  ],
+  "haric": [],
+  "bayraklar": [],
+  "hazirlik": [],
+  "not": "TOML v1.1 parser (tek dosya, ~3300 satir): lexer, ayristirici, tarih/saat, sayi ve UTF-8 dogrulama.",
+  "yildiz": 190,
+  "ilk_commit": "2025-04"
+ },
+ {
+  "ad": "cyaml",
+  "rol": "test",
+  "url": "https://github.com/andrewmd5/cyaml",
+  "surum": "7fb5b32",
+  "lisans": "MIT",
+  "dosyalar": [
+   "src/*.c"
+  ],
+  "haric": [],
+  "bayraklar": [],
+  "hazirlik": [],
+  "not": "YAML ayristirici/yayici kutuphanesi: olay akisi, emitter, JSON, yol sorgulari, UTF-8 yardimcilari.",
+  "yildiz": 16,
+  "ilk_commit": "2025-12"
+ },
+ {
+  "ad": "mu_json_x",
+  "rol": "test",
+  "url": "https://github.com/rdpoor/mu_json_x",
+  "surum": "a059047",
+  "lisans": "MIT",
+  "dosyalar": [
+   "src/*.c"
+  ],
+  "haric": [],
+  "bayraklar": [
+   "-Isrc"
+  ],
+  "hazirlik": [],
+  "not": "Gomulu sistemler icin kucuk JSON ayristirici/yazici ve mu_str dizge arabellegi yardimcilari.",
+  "yildiz": 27,
+  "ilk_commit": "2024-02"
+ },
+ {
+  "ad": "sajs",
+  "rol": "test",
+  "url": "https://github.com/drobilla/sajs",
+  "surum": "00f5d11",
+  "lisans": "ISC",
+  "dosyalar": [
+   "src/lexer.c",
+   "src/writer.c",
+   "src/status.c"
+  ],
+  "haric": [
+   "tools/sajs-pipe.c"
+  ],
+  "bayraklar": [
+   "-Iinclude"
+  ],
+  "hazirlik": [],
+  "not": "Akisli (streaming) JSON lexer ve yazici, SAX tarzi; 'Simple Atomic JSON Stream'.",
+  "yildiz": 2,
+  "ilk_commit": "2023-11"
+ },
+ {
+  "ad": "picomatch",
+  "rol": "test",
+  "url": "https://github.com/Beariish/picomatch",
+  "surum": "b1af721",
+  "lisans": "MIT",
+  "dosyalar": [
+   "picomatch.c"
+  ],
+  "haric": [],
+  "bayraklar": [],
+  "hazirlik": [],
+  "not": "Duzenli ifadelerin kucuk, mantikli bir alt kumesini derleyen/eslestiren motor.",
+  "yildiz": 31,
+  "ilk_commit": "2025-06"
+ }
+]

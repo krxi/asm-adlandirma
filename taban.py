@@ -7,7 +7,7 @@ Skor: tahmin ve gerçek adı kelimelere böl (snake/camel), kelime örtüşmesin
 Tam doğruluk nadir olur; F1 "yakın mı" sorusunu ölçer (crc32_update ~ update_crc).
 """
 import argparse, json, os, random, re, sys, time, urllib.request
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 BASE = os.environ.get("EVREN_BASE_URL", "https://evren-llmapi.ssyz.org.tr/v1")
@@ -113,8 +113,10 @@ def main():
         yeni = {r["id"]: r for r in map(json.loads, ara.open()) if not str(r.get("aciklama", "")).startswith("HATA")}
         sorulacak = [r for r in sorulacak if r["id"] not in yeni]
     with ThreadPoolExecutor(a.j) as havuz, ara.open("a") as f:
-        for r, c in zip(sorulacak, havuz.map(lambda r: sor(a.model, r["asm"], a.dusunme, a.tavan), sorulacak)):
-            yeni[r["id"]] = satir(r, c)
+        isler = {havuz.submit(sor, a.model, r["asm"], a.dusunme, a.tavan): r for r in sorulacak}
+        for gelen in as_completed(isler):
+            r = isler[gelen]
+            yeni[r["id"]] = satir(r, gelen.result())
             f.write(json.dumps(yeni[r["id"]], ensure_ascii=False) + "\n")
             f.flush()
 

@@ -9,7 +9,7 @@ Stripped binary'yi taklit eder:
 Fonksiyonun gerçek adı kendi asm'sinde (ör. bir hata mesajında) geçiyorsa satır "sizinti" ile işaretlenir.
 
   python3 cikar.py kaynak/zlib -o veri/zlib.jsonl -b -DZ_HAVE_UNISTD_H
-  python3 cikar.py --projeler projeler.json            # hepsi → veri/<ad>.jsonl
+  python3 cikar.py --projeler projeler.json            # hepsi → veri/<rol>/<ad>.jsonl
   python3 cikar.py --projeler projeler.json lua sqlite # yalnız bunlar
 """
 import argparse, json, random, re, subprocess, tempfile
@@ -196,10 +196,11 @@ def main():
             continue
         kok = Path("kaynak") / p["ad"]
         if not kok.exists():
-            subprocess.run(["git", "clone", "--depth", "1", p["url"], str(kok)], check=True)
+            subprocess.run(["git", "clone", "--filter=blob:none", p["url"], str(kok)], check=True)
+            subprocess.run(["git", "-C", str(kok), "checkout", "-q", p["surum"]], check=True)
         for komut in p.get("hazirlik", []):
             subprocess.run(komut, shell=True, cwd=kok, check=True)
-        cikar(kok, a.veri / f"{p['ad']}.jsonl", p.get("dosyalar", ["*.c"]), p.get("haric", []),
+        cikar(kok, a.veri / p.get("rol", "egitim") / f"{p['ad']}.jsonl", p.get("dosyalar", ["*.c"]), p.get("haric", []),
               p.get("bayraklar", []), p["ad"], p.get("surum"), a.min, a.max)
 
 

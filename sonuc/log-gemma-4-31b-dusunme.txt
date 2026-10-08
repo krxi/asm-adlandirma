@@ -1,3 +1,4 @@
+60 satır korundu, 0 soruluyor
 0.00  -O2  deflateEnd                   ← release_resources
 0.40  -O2  inflateReset                 ← reset_context_state
 0.00  -O0  adler32_combine              ← wrapper
@@ -7,7 +8,7 @@
 0.00  -O2  adler32_combine              ← calculate_hash
 0.00  -O0  deflateSetDictionary         ← process_data_block
 0.00  -O0  inflate_fixed                ← init_fix_params
-0.00  -O2  inflate_fixed                ← 
+0.00  -O2  inflate_fixed                ← init_fix_params
 0.00  -O0  crc_word                     ← calculate_crc64
 0.00  -O0  tr_align                     ← decode_huffman_symbol
 0.00  -O2  crc32_combine                ← compute_x2n_hash
@@ -19,7 +20,7 @@
 0.00  -O2  crc32_combine_gen64          ← calc_x2n
 0.00  -O2  inflatePrime                 ← update_bitfield
 0.00  -O2  deflateTune                  ← update_object_properties
-0.00  -O2  tr_tally                     ← 
+0.00  -O2  tr_tally                     ← deflate_update_stats
 0.00  -O0  deflateParams                ← set_configuration
 0.00  -O2  inflateCopy                  ← clone_context
 0.00  -O0  adler32                      ← wrapper_function
@@ -60,5 +61,5 @@
 0.00  -O0  inflateValidate              ← set_status_flag
 -O0: ortalama F1 0.05  (n=34, tam isabet 0)
 -O2: ortalama F1 0.09  (n=26, tam isabet 0)
-toplam token: 135172
+yeni token: 0
 ayrıntı → sonuc/zlib-gemma-4-31b-dusunme.jsonl
