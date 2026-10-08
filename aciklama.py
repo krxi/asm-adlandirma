@@ -112,13 +112,18 @@ def projeyi_isle(proje: str, satirlar: list[dict], veri: Path, model: str, is_sa
     print(f"{proje}: {len(eski)} satır korundu, {len(yeni)} ara/yerel, {len(sorulacak)} soruluyor",
           file=sys.stderr)
 
+    # -O0 ve -O2 kopyaları aynı kaynağı paylaşır: öğretmene bir kez sor.
+    gruplar = {}
+    for r in sorulacak:
+        gruplar.setdefault((r["kaynak"], adini_bul(r["id"])), []).append(r)
     with ThreadPoolExecutor(max_workers=is_sayisi) as havuz, ara.open("a") as f:
-        isler = {havuz.submit(sor, model, r): r for r in sorulacak}
+        isler = {havuz.submit(sor, model, grup[0]): grup for grup in gruplar.values()}
         for gelen in as_completed(isler):
-            r = isler[gelen]
-            sonuc = {"id": r["id"], "aciklama": gelen.result(), "model": model}
-            yeni[r["id"]] = sonuc
-            f.write(json.dumps(sonuc, ensure_ascii=False) + "\n")
+            aciklama = gelen.result()
+            for r in isler[gelen]:
+                sonuc = {"id": r["id"], "aciklama": aciklama, "model": model}
+                yeni[r["id"]] = sonuc
+                f.write(json.dumps(sonuc, ensure_ascii=False) + "\n")
             f.flush()
 
     with cikti.open("w") as f:
