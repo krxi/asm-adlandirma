@@ -5,3 +5,6 @@ __pycache__/
 CLAUDE.md
 .env
 *.env
+.venv/
+lora/veri/
+lora/adaptor/

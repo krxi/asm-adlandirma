@@ -1,24 +1,60 @@
 #!/usr/bin/env python3
 """Açık kaynak C kodunu x86-64'e derle, her fonksiyonu (isim, assembly) çiftine çevir.
 
-Stripped binary'yi taklit eder: projenin kendi fonksiyon adları asm içinden
-silinir (sub_N), dış kütüphane çağrıları (memcpy vb.) görünür kalır — gerçek
-binary'de de import adları görünür.
+Stripped binary'yi taklit eder:
+- projenin kendi fonksiyon adları sub_XXXX, global veri adları dat_XXXX olur
+  (numaralar karıştırılır; alfabetik sıra ipucu vermesin),
+- dış kütüphane çağrıları (memcpy vb.) görünür kalır — gerçek binary'de de import adları görünür,
+- string sabitleri Ghidra'daki gibi yorum olarak eklenir: ; "out of memory".
+Fonksiyonun gerçek adı kendi asm'sinde (ör. bir hata mesajında) geçiyorsa satır "sizinti" ile işaretlenir.
 
-  python3 cikar.py kaynak/zlib -o veri/zlib.jsonl
+  python3 cikar.py kaynak/zlib -o veri/zlib.jsonl -b -DZ_HAVE_UNISTD_H
+  python3 cikar.py --projeler projeler.json            # hepsi → veri/<ad>.jsonl
+  python3 cikar.py --projeler projeler.json lua sqlite # yalnız bunlar
 """
-import argparse, json, re, subprocess, tempfile
+import argparse, json, random, re, subprocess, tempfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 OPTS = ["-O0", "-O2"]
 HEDEF = "x86_64-apple-macos12"
 FONK = re.compile(r"^[0-9a-f]+ <(_?[A-Za-z_][\w.$]*)>:$")
+ADRES_YORUMU = re.compile(r"##\s*0x([0-9a-f]+)")
 
 
-def derle(c: Path, opt: str, cikti: Path) -> bool:
-    r = subprocess.run(["clang", "-target", HEDEF, opt, "-w", "-c", str(c), "-o", str(cikti)],
+def derle(c: Path, opt: str, cikti: Path, bayraklar: list[str]) -> bool:
+    r = subprocess.run(["clang", "-target", HEDEF, opt, "-w", "-c", str(c), "-o", str(cikti), *bayraklar],
                        capture_output=True, text=True)
     return r.returncode == 0
+
+
+def semboller(o: Path) -> tuple[set[str], set[str]]:
+    """.o içinde tanımlı (fonksiyon, veri) sembolleri."""
+    fonk, veri = set(), set()
+    for satir in subprocess.run(["nm", str(o)], capture_output=True, text=True).stdout.splitlines():
+        p = satir.split()
+        if len(p) == 3 and p[1] != "U":
+            ad = p[2].lstrip("_")
+            (fonk if p[1] in "Tt" else veri).add(ad)
+    return fonk, veri
+
+
+def stringler(o: Path) -> dict[int, str]:
+    """__cstring bölümü: adres → string."""
+    dump = subprocess.run(["objdump", "-s", "--section=__cstring", str(o)], capture_output=True, text=True).stdout
+    bayt, bas = bytearray(), None
+    for satir in dump.splitlines():
+        m = re.match(r"^ ([0-9a-f]{4,}) ((?:[0-9a-f]{2,8} ?){1,4})", satir)
+        if m:
+            bas = int(m.group(1), 16) if bas is None else bas
+            bayt += bytes.fromhex(m.group(2).replace(" ", ""))
+    sonuc, i = {}, 0
+    while i < len(bayt):
+        j = bayt.find(b"\0", i)
+        j = len(bayt) if j < 0 else j
+        sonuc[bas + i] = bayt[i:j].decode("utf-8", "replace")
+        i = j + 1
+    return sonuc
 
 
 def ayristir(o: Path) -> dict[str, list[str]]:
@@ -35,53 +71,136 @@ def ayristir(o: Path) -> dict[str, list[str]]:
     return fonklar
 
 
-def anonimlestir(satirlar: list[str], ic_adlar: dict[str, str]) -> str:
-    out = []
+def string_bul(strs: dict[int, str], adres) -> "str | None":
+    """Adres bir string'in başına ya da ortasına (derleyici kuyruk paylaşımı) düşebilir."""
+    if adres is None:
+        return None
+    if adres in strs:
+        return strs[adres]
+    for bas, st in strs.items():
+        if bas <= adres < bas + len(st.encode()):
+            return st.encode()[adres - bas:].decode("utf-8", "replace")
+    return None
+
+
+def string_goster(s: str) -> str:
+    s = s.encode("unicode_escape").decode("ascii").replace('"', '\\"')
+    return f'"{s[:80]}{"…" if len(s) > 80 else ""}"'
+
+
+def anonimlestir(satirlar: list[str], adlar: dict[str, str], strs: dict[int, str]) -> str:
+    out, son_adres = [], None
     for s in satirlar:
         s = re.sub(r"^[0-9a-f]+:\s*", "", s)                  # adres sütunu
         if s.startswith(("X86_64_RELOC", "0000")):          # relokasyon satırı → hedefi yorum olarak ekle
-            hedef = s.split()[-1].lstrip("_")
-            if "." in hedef:                                # fonk.static_degisken → veri (ad sızmasın)
+            ham_hedef = s.split()[-1]
+            hedef = ham_hedef.lstrip("_").split("@")[0]
+            if ham_hedef == "__cstring" and (st := string_bul(strs, son_adres)) is not None:
+                hedef = string_goster(st)
+            elif ham_hedef.startswith("__"):                # başka bölüm (__const, __data): sabit tablo
                 hedef = "veri"
-            hedef = ic_adlar.get(hedef, hedef)
+            elif "." in hedef:                              # fonk.static_degisken → veri (ad sızmasın)
+                hedef = "veri"
+            else:
+                hedef = adlar.get(hedef, hedef)
             if out:                                         # .o'da çözülmemiş hedef adresi yanıltıcı, sil
                 out[-1] = re.sub(r"\s*(0x[0-9a-f]+ )?<[^>]*>", "", out[-1]).rstrip() + f"    ; -> {hedef}"
             continue
+        m = ADRES_YORUMU.search(s)
+        son_adres = int(m.group(1), 16) if m else None
         s = re.sub(r"\s*##.*$", "", s)                       # objdump'ın rip yorumları
-        s = re.sub(r"<_?([\w.$]+)(\+0x[0-9a-f]+)?>", lambda m: f"<{ic_adlar.get(m.group(1), 'loc')}{m.group(2) or ''}>", s)
+        s = re.sub(r"<_?([\w.$]+)(\+0x[0-9a-f]+)?>", lambda m: f"<{adlar.get(m.group(1), 'loc')}{m.group(2) or ''}>", s)
         out.append(s)
     return "\n".join(out)
 
 
+def sizar_mi(ad: str, asm: str) -> bool:
+    """Gerçek ad (ya da camel/snake gövdesi) asm metninde geçiyor mu? Kısa adlar (≤3) sayılmaz."""
+    if len(ad) <= 3:
+        return False
+    alt = asm.lower()
+    return ad.lower() in alt or ad.lower().replace("_", "") in alt.replace("_", "")
+
+
+def cikar(kok: Path, cikti: Path, dosyalar=("*.c",), haric=(), bayraklar=(), proje=None, surum=None,
+          en_az=6, en_cok=300, tohum=7) -> int:
+    proje = proje or kok.name
+    kaynaklar = sorted({c for d in dosyalar for c in kok.glob(d)} - {c for h in haric for c in kok.glob(h)})
+    bayraklar = [b.replace("{kok}", str(kok)) for b in bayraklar]
+    ham, tanimli_fonk, tanimli_veri, basarisiz = [], set(), set(), []
+    with tempfile.TemporaryDirectory() as t:
+        def is_(ck):
+            c, opt = ck
+            o = Path(t) / f"{c.relative_to(kok).as_posix().replace('/', '__')}{opt}.o"
+            if not derle(c, opt, o, list(bayraklar)):
+                return c, opt, None
+            return c, opt, (semboller(o), stringler(o), ayristir(o))
+        with ThreadPoolExecutor(8) as havuz:
+            for c, opt, r in havuz.map(is_, [(c, opt) for c in kaynaklar for opt in OPTS]):
+                if r is None:
+                    basarisiz.append(f"{c.relative_to(kok)}{opt}")
+                    continue
+                (f, v), strs, fonklar = r
+                tanimli_fonk |= f
+                tanimli_veri |= v
+                ham += [(c.relative_to(kok).as_posix(), opt, ad, s, strs) for ad, s in fonklar.items()]
+
+    rnd = random.Random(f"{proje}-{tohum}")
+    fonk_adlari = sorted(tanimli_fonk | {ad for _, _, ad, _, _ in ham})
+    veri_adlari = sorted(tanimli_veri - set(fonk_adlari))
+    rnd.shuffle(fonk_adlari)
+    rnd.shuffle(veri_adlari)
+    adlar = {ad: f"sub_{i:04x}" for i, ad in enumerate(fonk_adlari)}
+    adlar |= {ad: f"dat_{i:04x}" for i, ad in enumerate(veri_adlari)}
+
+    cikti.parent.mkdir(parents=True, exist_ok=True)
+    n = sizan = 0
+    gorulen = set()
+    with cikti.open("w") as f:
+        for dosya, opt, ad, s, strs in ham:
+            komut = [x for x in s if not x.split(":", 1)[-1].strip().startswith(("X86_64_RELOC",))]
+            if not (en_az <= len(komut) <= en_cok):
+                continue
+            asm = anonimlestir(s, adlar, strs)
+            if (opt, ad, asm) in gorulen:                   # aynı static yardımcı birden çok dosyada
+                continue
+            gorulen.add((opt, ad, asm))
+            sizinti = sizar_mi(ad, asm)
+            sizan += sizinti
+            f.write(json.dumps({"id": f"{proje}/{dosya}:{opt}:{ad}", "proje": proje, "surum": surum,
+                                "dosya": dosya, "opt": opt, "ad": ad, "komut_sayisi": len(komut),
+                                "sizinti": sizinti, "asm": asm}, ensure_ascii=False) + "\n")
+            n += 1
+    print(f"{proje}: {n} fonksiyon ({sizan} sızıntılı) → {cikti}"
+          + (f"  [derlenemeyen: {len(basarisiz)}: {', '.join(basarisiz[:6])}…]" if basarisiz else ""))
+    return n
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("kaynak", type=Path)
-    ap.add_argument("-o", "--cikti", type=Path, required=True)
+    ap.add_argument("kaynak", nargs="*", help="kaynak dizini (ya da --projeler ile proje adları)")
+    ap.add_argument("-o", "--cikti", type=Path)
+    ap.add_argument("-b", "--bayrak", action="append", default=[], help="derleyici bayrağı (-I, -D)")
+    ap.add_argument("--projeler", type=Path, help="projeler.json: ad, url, surum, dosyalar, haric, bayraklar")
+    ap.add_argument("--veri", type=Path, default=Path("veri"))
     ap.add_argument("--min", type=int, default=6)
     ap.add_argument("--max", type=int, default=300)
     a = ap.parse_args()
 
-    ham = []  # (dosya, opt, ad, satirlar)
-    with tempfile.TemporaryDirectory() as t:
-        for c in sorted(a.kaynak.glob("*.c")):
-            for opt in OPTS:
-                o = Path(t) / f"{c.stem}{opt}.o"
-                if derle(c, opt, o):
-                    ham += [(c.name, opt, ad, s) for ad, s in ayristir(o).items()]
-
-    tum_adlar = sorted({ad for _, _, ad, _ in ham})
-    ic_adlar = {ad: f"sub_{i:04d}" for i, ad in enumerate(tum_adlar)}
-    a.cikti.parent.mkdir(parents=True, exist_ok=True)
-    n = 0
-    with a.cikti.open("w") as f:
-        for dosya, opt, ad, s in ham:
-            komut = [x for x in s if not x.split(":", 1)[-1].strip().startswith(("X86_64_RELOC",))]
-            if not (a.min <= len(komut) <= a.max):
-                continue
-            f.write(json.dumps({"id": f"{dosya}:{opt}:{ad}", "dosya": dosya, "opt": opt, "ad": ad,
-                                "komut_sayisi": len(komut), "asm": anonimlestir(s, ic_adlar)}) + "\n")
-            n += 1
-    print(f"{n} fonksiyon → {a.cikti}")
+    if not a.projeler:
+        kok = Path(a.kaynak[0])
+        cikar(kok, a.cikti or a.veri / f"{kok.name}.jsonl", bayraklar=a.bayrak, en_az=a.min, en_cok=a.max)
+        return
+    for p in json.loads(a.projeler.read_text()):
+        if a.kaynak and p["ad"] not in a.kaynak:
+            continue
+        kok = Path("kaynak") / p["ad"]
+        if not kok.exists():
+            subprocess.run(["git", "clone", "--depth", "1", p["url"], str(kok)], check=True)
+        for komut in p.get("hazirlik", []):
+            subprocess.run(komut, shell=True, cwd=kok, check=True)
+        cikar(kok, a.veri / f"{p['ad']}.jsonl", p.get("dosyalar", ["*.c"]), p.get("haric", []),
+              p.get("bayraklar", []), p["ad"], p.get("surum"), a.min, a.max)
 
 
 if __name__ == "__main__":

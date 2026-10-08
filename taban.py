@@ -27,28 +27,32 @@ def anahtar() -> str:
     sys.exit("anahtar yok")
 
 
-def sor(model: str, asm: str, dusunme: bool = False) -> dict:
+def sor(model: str, asm: str, dusunme: bool = False, tavan: int = 4096) -> dict:
     # Düşünme açıkken bazı modeller 16K token'lık döngüye girip dakikalarca bekletiyor:
-    # varsayılan kapalı, açıkken tavan 4096.
+    # varsayılan kapalı, açıkken max_tokens tavanı var. Tavana çarpan cevap "kesik" sayılır.
     govde = {"model": model, "temperature": 0,
              "messages": [{"role": "system", "content": SISTEM}, {"role": "user", "content": asm}]}
     if dusunme:
-        govde["max_tokens"] = 4096
+        govde["max_tokens"] = tavan
     else:
         govde["chat_template_kwargs"] = {"enable_thinking": False}
-    for deneme in range(4):
+    for deneme in range(6):
         try:
             istek = urllib.request.Request(BASE + "/chat/completions", data=json.dumps(govde).encode(),
                                            headers={"X-API-Key": anahtar(), "Content-Type": "application/json"})
             yanit = json.load(urllib.request.urlopen(istek, timeout=180))
-            metin = yanit["choices"][0]["message"].get("content") or ""
+            secim = yanit["choices"][0]
+            metin = secim["message"].get("content") or ""
             token = yanit.get("usage", {}).get("total_tokens", 0)
             m = re.findall(r"\{[^{}]*\}", metin)
-            cevap = json.loads(m[-1]) if m else {"ad": metin.strip()[:60], "aciklama": ""}
-            return {**cevap, "token": token}
+            try:
+                cevap = json.loads(m[-1]) if m else {"ad": metin.strip()[:60], "aciklama": ""}
+            except json.JSONDecodeError:
+                cevap = {"ad": "", "aciklama": metin.strip()[:200]}
+            return {**cevap, "token": token, "bitis": secim.get("finish_reason")}
         except Exception as hata:
             son = hata
-            time.sleep(2 ** deneme)
+            time.sleep(2 ** deneme + random.random())
     return {"ad": "", "aciklama": f"HATA: {son}", "token": 0}
 
 
@@ -74,29 +78,58 @@ def main():
     ap.add_argument("-j", type=int, default=6)
     ap.add_argument("--tohum", type=int, default=7)
     ap.add_argument("--dusunme", action="store_true", help="modelin düşünmesini aç (yavaş, pahalı)")
+    ap.add_argument("--tavan", type=int, default=4096, help="düşünmede max_tokens")
+    ap.add_argument("--devam", action="store_true",
+                    help="var olan sonuç dosyasındaki sağlam satırları koru, yalnız eksik/HATA olanları sor")
+    ap.add_argument("--kesik-de", action="store_true", help="--devam ile: tavana çarpıp boş kalanları da yeniden sor")
     a = ap.parse_args()
 
     satirlar = [json.loads(l) for l in a.veri.open()]
     random.Random(a.tohum).shuffle(satirlar)
     ornek = satirlar[: a.n]
-    with ThreadPoolExecutor(a.j) as havuz:
-        cevaplar = list(havuz.map(lambda r: sor(a.model, r["asm"], a.dusunme), ornek))
 
     sonuc = Path("sonuc") / f"{a.veri.stem}-{a.model}{'-dusunme' if a.dusunme else ''}.jsonl"
     sonuc.parent.mkdir(exist_ok=True)
-    skorlar = {"-O0": [], "-O2": []}
+    eski = {}
+    if a.devam and sonuc.exists():
+        for l in sonuc.open():
+            r = json.loads(l)
+            hatali = str(r.get("aciklama", "")).startswith("HATA")
+            kesik = not r.get("tahmin") and (r.get("bitis") == "length" or r.get("bitis") is None)
+            if not hatali and not (a.kesik_de and kesik):
+                eski[r["id"]] = r
+    sorulacak = [r for r in ornek if r["id"] not in eski]
+    print(f"{len(eski)} satır korundu, {len(sorulacak)} soruluyor", file=sys.stderr)
+
+    def satir(r, c):
+        s = f1(str(c.get("ad", "")), r["ad"])
+        return {"id": r["id"], "gercek": r["ad"], "tahmin": c.get("ad"), "aciklama": c.get("aciklama"),
+                "f1": round(s, 3), "opt": r["opt"], "token": c.get("token", 0), "bitis": c.get("bitis")}
+
+    # Satırlar geldikçe ara dosyaya yazılır; koşu yarıda kesilse de --devam kaldığı yerden alır.
+    ara = sonuc.with_suffix(".ara")
+    yeni = {}
+    if ara.exists():
+        yeni = {r["id"]: r for r in map(json.loads, ara.open()) if not str(r.get("aciklama", "")).startswith("HATA")}
+        sorulacak = [r for r in sorulacak if r["id"] not in yeni]
+    with ThreadPoolExecutor(a.j) as havuz, ara.open("a") as f:
+        for r, c in zip(sorulacak, havuz.map(lambda r: sor(a.model, r["asm"], a.dusunme, a.tavan), sorulacak)):
+            yeni[r["id"]] = satir(r, c)
+            f.write(json.dumps(yeni[r["id"]], ensure_ascii=False) + "\n")
+            f.flush()
+
+    hepsi = [eski.get(r["id"]) or yeni[r["id"]] for r in ornek]
     with sonuc.open("w") as f:
-        for r, c in zip(ornek, cevaplar):
-            s = f1(str(c.get("ad", "")), r["ad"])
-            skorlar[r["opt"]].append(s)
-            f.write(json.dumps({"id": r["id"], "gercek": r["ad"], "tahmin": c.get("ad"),
-                                "aciklama": c.get("aciklama"), "f1": round(s, 3), "opt": r["opt"],
-                                "token": c.get("token", 0)}, ensure_ascii=False) + "\n")
-            print(f"{s:.2f}  {r['opt']}  {r['ad']:<28} ← {c.get('ad')}")
-    for opt, l in skorlar.items():
-        if l:
-            print(f"{opt}: ortalama F1 {sum(l) / len(l):.2f}  (n={len(l)}, tam isabet {sum(x == 1 for x in l)})")
-    print(f"toplam token: {sum(c.get('token', 0) for c in cevaplar)}")
+        for r in hepsi:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+    ara.unlink(missing_ok=True)
+    skorlar = {}
+    for r in hepsi:
+        skorlar.setdefault(r["opt"], []).append(r["f1"])
+        print(f"{r['f1']:.2f}  {r['opt']}  {r['gercek']:<28} ← {r['tahmin']}")
+    for opt, l in sorted(skorlar.items()):
+        print(f"{opt}: ortalama F1 {sum(l) / len(l):.2f}  (n={len(l)}, tam isabet {sum(x == 1 for x in l)})")
+    print(f"yeni token: {sum(r.get('token', 0) for r in yeni.values())}")
     print(f"ayrıntı → {sonuc}")
 
 
