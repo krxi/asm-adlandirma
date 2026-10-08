@@ -1,4 +1,4 @@
-0 satır korundu, 115 soruluyor
+115 satır korundu, 0 soruluyor
 0.25  -O0  toml_parse_file_ex           ← load_file_to_buffer
 0.00  -O2  pm_expsize                   ← string_compare_or_search
 0.00  -O2  toml_seek                    ← resolve_dns_name
@@ -116,5 +116,5 @@
 0.00  -O2  mu_str_rfind_substr          ← string_find_last
 -O0: ortalama F1 0.11  (n=60, tam isabet 0)
 -O2: ortalama F1 0.07  (n=55, tam isabet 0)
-yeni token: 110415
+yeni token: 0
 ayrıntı → sonuc/test-gemma-4-31b.jsonl

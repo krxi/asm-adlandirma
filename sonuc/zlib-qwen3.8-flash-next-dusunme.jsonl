@@ -1,60 +1,60 @@
-{"id": "deflate.c:-O2:deflateEnd", "gercek": "deflateEnd", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 5295}
-{"id": "inflate.c:-O2:inflateReset", "gercek": "inflateReset", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4963}
+{"id": "deflate.c:-O2:deflateEnd", "gercek": "deflateEnd", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 13487, "bitis": "length"}
+{"id": "inflate.c:-O2:inflateReset", "gercek": "inflateReset", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 13155, "bitis": "length"}
 {"id": "adler32.c:-O0:adler32_combine", "gercek": "adler32_combine", "tahmin": "three_arg_wrapper", "aciklama": "Bu fonksiyon, üç argümanı yığına kaydedip aynı argümanlarla sub_0003'e yönlendiren bir sarmalayıcıdır.", "f1": 0.0, "opt": "-O0", "token": 2347}
-{"id": "deflate.c:-O0:deflateBound_z", "gercek": "deflateBound_z", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 7856}
-{"id": "deflate.c:-O2:deflateSetDictionary", "gercek": "deflateSetDictionary", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 6349}
+{"id": "deflate.c:-O0:deflateBound_z", "gercek": "deflateBound_z", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 16048, "bitis": "length"}
+{"id": "deflate.c:-O2:deflateSetDictionary", "gercek": "deflateSetDictionary", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 14541, "bitis": "length"}
 {"id": "zutil.c:-O0:zlibVersion", "gercek": "zlibVersion", "tahmin": "get_string", "aciklama": "Fonksiyon yalnızca bir C dizisinin adresini rax'e yükleyip döndürdüğü için sabit bir metin döndüren bir getter olarak görünüyor.", "f1": 0.0, "opt": "-O0", "token": 663}
-{"id": "adler32.c:-O2:adler32_combine", "gercek": "adler32_combine", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4761}
-{"id": "deflate.c:-O0:deflateSetDictionary", "gercek": "deflateSetDictionary", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 7390}
-{"id": "inftrees.c:-O0:inflate_fixed", "gercek": "inflate_fixed", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4455}
-{"id": "inftrees.c:-O2:inflate_fixed", "gercek": "inflate_fixed", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4372}
+{"id": "adler32.c:-O2:adler32_combine", "gercek": "adler32_combine", "tahmin": "adler32_combine64", "aciklama": "Bu fonksiyon, iki Adler-32 değerini ve ikinci verinin uzunluğunu alarak mod 65521 ile birleştirir.", "f1": 0.5, "opt": "-O2", "token": 6876, "bitis": "stop"}
+{"id": "deflate.c:-O0:deflateSetDictionary", "gercek": "deflateSetDictionary", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 15582, "bitis": "length"}
+{"id": "inftrees.c:-O0:inflate_fixed", "gercek": "inflate_fixed", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 12647, "bitis": "length"}
+{"id": "inftrees.c:-O2:inflate_fixed", "gercek": "inflate_fixed", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 12564, "bitis": "length"}
 {"id": "crc32.c:-O0:crc_word", "gercek": "crc_word", "tahmin": "crc32_64", "aciklama": "Bu fonksiyon, 64 bitlik girdiyi bayt bayt işleyerek crc_table üzerinden 8 adımda CRC32 değerini hesaplıyor.", "f1": 0.0, "opt": "-O0", "token": 1294}
-{"id": "trees.c:-O0:tr_align", "gercek": "tr_align", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 6327}
-{"id": "crc32.c:-O2:crc32_combine", "gercek": "crc32_combine", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 5057}
-{"id": "crc32.c:-O2:crc32", "gercek": "crc32", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4300}
-{"id": "trees.c:-O2:tr_flush_bits", "gercek": "tr_flush_bits", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4770, "bitis": "length"}
-{"id": "zutil.c:-O2:zcalloc", "gercek": "zcalloc", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4296}
-{"id": "inflate.c:-O2:inflateSync", "gercek": "inflateSync", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 6498}
-{"id": "deflate.c:-O2:deflateCopy", "gercek": "deflateCopy", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 6417}
-{"id": "crc32.c:-O2:crc32_combine_gen64", "gercek": "crc32_combine_gen64", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4836}
-{"id": "inflate.c:-O2:inflatePrime", "gercek": "inflatePrime", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4827}
-{"id": "deflate.c:-O2:deflateTune", "gercek": "deflateTune", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4764}
-{"id": "trees.c:-O2:tr_tally", "gercek": "tr_tally", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4830}
-{"id": "deflate.c:-O0:deflateParams", "gercek": "deflateParams", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 6676}
-{"id": "inflate.c:-O2:inflateCopy", "gercek": "inflateCopy", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 5808}
+{"id": "trees.c:-O0:tr_align", "gercek": "tr_align", "tahmin": "tr_align", "aciklama": "Sabit Huffman blok başlığı ve blok sonu kodunu bit tamponuna yazıp bit tamponunu boşaltan zlib _tr_align fonksiyonudur.", "f1": 1.0, "opt": "-O0", "token": 12214, "bitis": "stop"}
+{"id": "crc32.c:-O2:crc32_combine", "gercek": "crc32_combine", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 13249, "bitis": "length"}
+{"id": "crc32.c:-O2:crc32", "gercek": "crc32", "tahmin": "tail_call_sub_0024", "aciklama": "Bu fonksiyon, üçüncü tam sayı argümanını sıfır genişleterek sub_0024'e kuyruk çağrısı yapan bir sarmalayıcıdır.", "f1": 0.0, "opt": "-O2", "token": 4582, "bitis": "stop"}
+{"id": "trees.c:-O2:tr_flush_bits", "gercek": "tr_flush_bits", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 12962, "bitis": "length"}
+{"id": "zutil.c:-O2:zcalloc", "gercek": "zcalloc", "tahmin": "malloc_array", "aciklama": "İkinci ve üçüncü argümanları çarparak dizi boyutunu hesaplayıp malloc ile bellek ayıran bir sarmalayıcı gibi görünüyor.", "f1": 0.0, "opt": "-O2", "token": 3204, "bitis": "stop"}
+{"id": "inflate.c:-O2:inflateSync", "gercek": "inflateSync", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 14690, "bitis": "length"}
+{"id": "deflate.c:-O2:deflateCopy", "gercek": "deflateCopy", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 14609, "bitis": "length"}
+{"id": "crc32.c:-O2:crc32_combine_gen64", "gercek": "crc32_combine_gen64", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 13028, "bitis": "length"}
+{"id": "inflate.c:-O2:inflatePrime", "gercek": "inflatePrime", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 13019, "bitis": "length"}
+{"id": "deflate.c:-O2:deflateTune", "gercek": "deflateTune", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 12956, "bitis": "length"}
+{"id": "trees.c:-O2:tr_tally", "gercek": "tr_tally", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 13022, "bitis": "length"}
+{"id": "deflate.c:-O0:deflateParams", "gercek": "deflateParams", "tahmin": "set_mode", "aciklama": "Bu fonksiyon, doğrulanan mod ve derinlik değerlerini configuration_table üzerinden görüntü nesnesine uygulayarak modu ayarlıyor.", "f1": 0.0, "opt": "-O0", "token": 7900, "bitis": "stop"}
+{"id": "inflate.c:-O2:inflateCopy", "gercek": "inflateCopy", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 14000, "bitis": "length"}
 {"id": "adler32.c:-O0:adler32", "gercek": "adler32", "tahmin": "wrapper_sub_0004", "aciklama": "Fonksiyon, aldığı üç argümanı olduğu gibi sub_0004'e ileten bir sarmalayıcıdır.", "f1": 0.0, "opt": "-O0", "token": 2838}
-{"id": "inflate.c:-O0:inflateCopy", "gercek": "inflateCopy", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 6347}
-{"id": "inflate.c:-O0:inflateReset2", "gercek": "inflateReset2", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 5429}
-{"id": "inflate.c:-O0:inflateSyncPoint", "gercek": "inflateSyncPoint", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4676}
-{"id": "adler32.c:-O2:adler32_z", "gercek": "adler32_z", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 7194}
-{"id": "deflate.c:-O0:deflateGetDictionary", "gercek": "deflateGetDictionary", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 5115}
-{"id": "inflate.c:-O0:inflateEnd", "gercek": "inflateEnd", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4824}
-{"id": "infback.c:-O0:inflateBackInit_", "gercek": "inflateBackInit_", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 5674}
-{"id": "uncompr.c:-O2:uncompress", "gercek": "uncompress", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4428}
-{"id": "trees.c:-O0:tr_init", "gercek": "tr_init", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4793}
-{"id": "inflate.c:-O0:inflateResetKeep", "gercek": "inflateResetKeep", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 5323}
-{"id": "inflate.c:-O2:inflateValidate", "gercek": "inflateValidate", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4642}
-{"id": "deflate.c:-O2:longest_match", "gercek": "longest_match", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 6339}
-{"id": "deflate.c:-O0:deflateReset", "gercek": "deflateReset", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4463}
-{"id": "crc32.c:-O0:crc32_combine_op", "gercek": "crc32_combine_op", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4559}
-{"id": "deflate.c:-O0:deflatePrime", "gercek": "deflatePrime", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 5385}
-{"id": "uncompr.c:-O0:uncompress2_z", "gercek": "uncompress2_z", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 6518}
-{"id": "crc32.c:-O2:crc32_combine_op", "gercek": "crc32_combine_op", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4547}
-{"id": "deflate.c:-O0:deflateUsed", "gercek": "deflateUsed", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4597}
-{"id": "crc32.c:-O0:multmodp", "gercek": "multmodp", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4885}
-{"id": "inflate.c:-O2:inflateGetDictionary", "gercek": "inflateGetDictionary", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4876}
-{"id": "infback.c:-O2:inflateBackInit_", "gercek": "inflateBackInit_", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4984}
-{"id": "trees.c:-O0:pqdownheap", "gercek": "pqdownheap", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 6200}
-{"id": "trees.c:-O0:tr_stored_block", "gercek": "tr_stored_block", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 6261}
-{"id": "crc32.c:-O0:x2nmodp", "gercek": "x2nmodp", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4684}
-{"id": "inflate.c:-O0:inflatePrime", "gercek": "inflatePrime", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 5208}
-{"id": "deflate.c:-O0:lm_init", "gercek": "lm_init", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 5365}
-{"id": "deflate.c:-O2:deflatePending", "gercek": "deflatePending", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4885}
+{"id": "inflate.c:-O0:inflateCopy", "gercek": "inflateCopy", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 14539, "bitis": "length"}
+{"id": "inflate.c:-O0:inflateReset2", "gercek": "inflateReset2", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 13621, "bitis": "length"}
+{"id": "inflate.c:-O0:inflateSyncPoint", "gercek": "inflateSyncPoint", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 12868, "bitis": "length"}
+{"id": "adler32.c:-O2:adler32_z", "gercek": "adler32_z", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 15386, "bitis": "length"}
+{"id": "deflate.c:-O0:deflateGetDictionary", "gercek": "deflateGetDictionary", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 13307, "bitis": "length"}
+{"id": "inflate.c:-O0:inflateEnd", "gercek": "inflateEnd", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 13016, "bitis": "length"}
+{"id": "infback.c:-O0:inflateBackInit_", "gercek": "inflateBackInit_", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 13866, "bitis": "length"}
+{"id": "uncompr.c:-O2:uncompress", "gercek": "uncompress", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 12620, "bitis": "length"}
+{"id": "trees.c:-O0:tr_init", "gercek": "tr_init", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 12985, "bitis": "length"}
+{"id": "inflate.c:-O0:inflateResetKeep", "gercek": "inflateResetKeep", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 13515, "bitis": "length"}
+{"id": "inflate.c:-O2:inflateValidate", "gercek": "inflateValidate", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 12834, "bitis": "length"}
+{"id": "deflate.c:-O2:longest_match", "gercek": "longest_match", "tahmin": "longest_match", "aciklama": "Bu fonksiyon, deflate sıkıştırmasında hash zincirini tarayarak en uzun LZ77 eşleşme uzunluğunu bulur.", "f1": 1.0, "opt": "-O2", "token": 13852, "bitis": "stop"}
+{"id": "deflate.c:-O0:deflateReset", "gercek": "deflateReset", "tahmin": "check_and_cleanup", "aciklama": "Nesne üzerinde bir durum kontrolü yapıp kontrol sıfır dönerse nesnenin 0x38 alanındaki kaynağı temizliyor.", "f1": 0.0, "opt": "-O0", "token": 4409, "bitis": "stop"}
+{"id": "crc32.c:-O0:crc32_combine_op", "gercek": "crc32_combine_op", "tahmin": "hash32", "aciklama": "Üçüncü argüman sıfırsa sıfır döndürür, aksi halde alt hash fonksiyonunun sonucunu ikinci argümanın 32 bitlik değeriyle XOR'layarak 32 bitlik hash üretir.", "f1": 0.0, "opt": "-O0", "token": 11528, "bitis": "stop"}
+{"id": "deflate.c:-O0:deflatePrime", "gercek": "deflatePrime", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 13577, "bitis": "length"}
+{"id": "uncompr.c:-O0:uncompress2_z", "gercek": "uncompress2_z", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 14710, "bitis": "length"}
+{"id": "crc32.c:-O2:crc32_combine_op", "gercek": "crc32_combine_op", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 12739, "bitis": "length"}
+{"id": "deflate.c:-O0:deflateUsed", "gercek": "deflateUsed", "tahmin": "get_int_value", "aciklama": "Fonksiyon, doğrulanan bir nesneden bir tam sayı değerini isteğe bağlı çıktı işaretçisine yazan bir getter gibi görünüyor.", "f1": 0.0, "opt": "-O0", "token": 3185, "bitis": "stop"}
+{"id": "crc32.c:-O0:multmodp", "gercek": "multmodp", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 13077, "bitis": "length"}
+{"id": "inflate.c:-O2:inflateGetDictionary", "gercek": "inflateGetDictionary", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 13068, "bitis": "length"}
+{"id": "infback.c:-O2:inflateBackInit_", "gercek": "inflateBackInit_", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 13176, "bitis": "length"}
+{"id": "trees.c:-O0:pqdownheap", "gercek": "pqdownheap", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 14392, "bitis": "length"}
+{"id": "trees.c:-O0:tr_stored_block", "gercek": "tr_stored_block", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 14453, "bitis": "length"}
+{"id": "crc32.c:-O0:x2nmodp", "gercek": "x2nmodp", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 12876, "bitis": "length"}
+{"id": "inflate.c:-O0:inflatePrime", "gercek": "inflatePrime", "tahmin": "bitstream_write_bits", "aciklama": "Fonksiyon, doğrulanan bir bit akışına belirtilen genişlikte bitleri ekleyip bit sayacını güncellediği için bitstream_write_bits olarak adlandırılabilir.", "f1": 0.0, "opt": "-O0", "token": 8732, "bitis": "stop"}
+{"id": "deflate.c:-O0:lm_init", "gercek": "lm_init", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 13557, "bitis": "length"}
+{"id": "deflate.c:-O2:deflatePending", "gercek": "deflatePending", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 13077, "bitis": "length"}
 {"id": "zutil.c:-O0:zcfree", "gercek": "zcfree", "tahmin": "free_pointer", "aciklama": "İkinci parametre olarak gelen bellek işaretçisini serbest bırakır.", "f1": 0.0, "opt": "-O0", "token": 1013}
-{"id": "trees.c:-O0:detect_data_type", "gercek": "detect_data_type", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 5217}
-{"id": "compress.c:-O0:compressBound", "gercek": "compressBound", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 4515}
+{"id": "trees.c:-O0:detect_data_type", "gercek": "detect_data_type", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 13409, "bitis": "length"}
+{"id": "compress.c:-O0:compressBound", "gercek": "compressBound", "tahmin": "safe_call", "aciklama": "sub_0015 çağrısını yapıp sonucu kontrol eder ve başarısızlık durumunda -1, başarıda sonucu döndürür.", "f1": 0.0, "opt": "-O0", "token": 8729, "bitis": "stop"}
 {"id": "adler32.c:-O0:adler32_combine64", "gercek": "adler32_combine64", "tahmin": "wrapper_sub_0003", "aciklama": "Bu fonksiyon, üç argümanı olduğu gibi sub_0003'e ileten bir sarmalayıcıdır.", "f1": 0.0, "opt": "-O0", "token": 1489}
-{"id": "inflate.c:-O0:inflateMark", "gercek": "inflateMark", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 5002}
-{"id": "deflate.c:-O2:deflateSetHeader", "gercek": "deflateSetHeader", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4723}
-{"id": "inflate.c:-O2:inflateSyncPoint", "gercek": "inflateSyncPoint", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 4619}
+{"id": "inflate.c:-O0:inflateMark", "gercek": "inflateMark", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O0", "token": 13194, "bitis": "length"}
+{"id": "deflate.c:-O2:deflateSetHeader", "gercek": "deflateSetHeader", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 12915, "bitis": "length"}
+{"id": "inflate.c:-O2:inflateSyncPoint", "gercek": "inflateSyncPoint", "tahmin": "", "aciklama": "", "f1": 0.0, "opt": "-O2", "token": 12811, "bitis": "length"}
 {"id": "inflate.c:-O0:inflateValidate", "gercek": "inflateValidate", "tahmin": "set_bit_if_nonzero", "aciklama": "Fonksiyon, doğrulama başarılıysa ikinci argüman ve hedef bayrak alanı sıfır değilse bayrağın 0x4 bitini ayarlıyor, aksi halde temizliyor.", "f1": 0.0, "opt": "-O0", "token": 3153}

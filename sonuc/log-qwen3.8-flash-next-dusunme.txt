@@ -1,1 +1,65 @@
 7 satır korundu, 53 soruluyor
+0.00  -O2  deflateEnd                   ← 
+0.00  -O2  inflateReset                 ← 
+0.00  -O0  adler32_combine              ← three_arg_wrapper
+0.00  -O0  deflateBound_z               ← 
+0.00  -O2  deflateSetDictionary         ← 
+0.00  -O0  zlibVersion                  ← get_string
+0.50  -O2  adler32_combine              ← adler32_combine64
+0.00  -O0  deflateSetDictionary         ← 
+0.00  -O0  inflate_fixed                ← 
+0.00  -O2  inflate_fixed                ← 
+0.00  -O0  crc_word                     ← crc32_64
+1.00  -O0  tr_align                     ← tr_align
+0.00  -O2  crc32_combine                ← 
+0.00  -O2  crc32                        ← tail_call_sub_0024
+0.00  -O2  tr_flush_bits                ← 
+0.00  -O2  zcalloc                      ← malloc_array
+0.00  -O2  inflateSync                  ← 
+0.00  -O2  deflateCopy                  ← 
+0.00  -O2  crc32_combine_gen64          ← 
+0.00  -O2  inflatePrime                 ← 
+0.00  -O2  deflateTune                  ← 
+0.00  -O2  tr_tally                     ← 
+0.00  -O0  deflateParams                ← set_mode
+0.00  -O2  inflateCopy                  ← 
+0.00  -O0  adler32                      ← wrapper_sub_0004
+0.00  -O0  inflateCopy                  ← 
+0.00  -O0  inflateReset2                ← 
+0.00  -O0  inflateSyncPoint             ← 
+0.00  -O2  adler32_z                    ← 
+0.00  -O0  deflateGetDictionary         ← 
+0.00  -O0  inflateEnd                   ← 
+0.00  -O0  inflateBackInit_             ← 
+0.00  -O2  uncompress                   ← 
+0.00  -O0  tr_init                      ← 
+0.00  -O0  inflateResetKeep             ← 
+0.00  -O2  inflateValidate              ← 
+1.00  -O2  longest_match                ← longest_match
+0.00  -O0  deflateReset                 ← check_and_cleanup
+0.00  -O0  crc32_combine_op             ← hash32
+0.00  -O0  deflatePrime                 ← 
+0.00  -O0  uncompress2_z                ← 
+0.00  -O2  crc32_combine_op             ← 
+0.00  -O0  deflateUsed                  ← get_int_value
+0.00  -O0  multmodp                     ← 
+0.00  -O2  inflateGetDictionary         ← 
+0.00  -O2  inflateBackInit_             ← 
+0.00  -O0  pqdownheap                   ← 
+0.00  -O0  tr_stored_block              ← 
+0.00  -O0  x2nmodp                      ← 
+0.00  -O0  inflatePrime                 ← bitstream_write_bits
+0.00  -O0  lm_init                      ← 
+0.00  -O2  deflatePending               ← 
+0.00  -O0  zcfree                       ← free_pointer
+0.00  -O0  detect_data_type             ← 
+0.00  -O0  compressBound                ← safe_call
+0.00  -O0  adler32_combine64            ← wrapper_sub_0003
+0.00  -O0  inflateMark                  ← 
+0.00  -O2  deflateSetHeader             ← 
+0.00  -O2  inflateSyncPoint             ← 
+0.00  -O0  inflateValidate              ← set_bit_if_nonzero
+-O0: ortalama F1 0.03  (n=34, tam isabet 1)
+-O2: ortalama F1 0.06  (n=26, tam isabet 1)
+yeni token: 654358
+ayrıntı → sonuc/zlib-qwen3.8-flash-next-dusunme.jsonl

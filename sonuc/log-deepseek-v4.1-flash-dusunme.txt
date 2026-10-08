@@ -1,1 +1,65 @@
 15 satır korundu, 45 soruluyor
+0.00  -O2  deflateEnd                   ← 
+0.00  -O2  inflateReset                 ← 
+0.00  -O0  adler32_combine              ← main
+0.00  -O0  deflateBound_z               ← 
+0.00  -O2  deflateSetDictionary         ← 
+0.50  -O0  zlibVersion                  ← get_version
+1.00  -O2  adler32_combine              ← adler32_combine
+0.00  -O0  deflateSetDictionary         ← 
+0.00  -O0  inflate_fixed                ← fixedtables
+0.00  -O2  inflate_fixed                ← fixedtables
+0.00  -O0  crc_word                     ← crc64
+1.00  -O0  tr_align                     ← _tr_align
+1.00  -O2  crc32_combine                ← crc32_combine
+0.00  -O2  crc32                        ← 
+0.40  -O2  tr_flush_bits                ← bi_flush
+0.00  -O2  zcalloc                      ← 
+0.00  -O2  inflateSync                  ← 
+0.00  -O2  deflateCopy                  ← 
+1.00  -O2  crc32_combine_gen64          ← crc32_combine_gen64
+0.00  -O2  inflatePrime                 ← 
+0.00  -O2  deflateTune                  ← 
+1.00  -O2  tr_tally                     ← _tr_tally
+1.00  -O0  deflateParams                ← deflate_params
+0.00  -O2  inflateCopy                  ← 
+0.00  -O0  adler32                      ← wrapper
+0.00  -O0  inflateCopy                  ← 
+1.00  -O0  inflateReset2                ← inflateReset2
+0.00  -O0  inflateSyncPoint             ← is_quest_available
+0.67  -O2  adler32_z                    ← adler32
+0.00  -O0  deflateGetDictionary         ← 
+0.00  -O0  inflateEnd                   ← 
+1.00  -O0  inflateBackInit_             ← inflate_back_init_
+0.00  -O2  uncompress                   ← 
+0.00  -O0  tr_init                      ← 
+0.00  -O0  inflateResetKeep             ← 
+0.00  -O2  inflateValidate              ← 
+1.00  -O2  longest_match                ← longest_match
+0.00  -O0  deflateReset                 ← 
+0.00  -O0  crc32_combine_op             ← 
+0.00  -O0  deflatePrime                 ← put_bits
+0.00  -O0  uncompress2_z                ← 
+0.50  -O2  crc32_combine_op             ← crc32
+0.00  -O0  deflateUsed                  ← get_entity_id
+0.00  -O0  multmodp                     ← 
+0.00  -O2  inflateGetDictionary         ← ring_buffer_read
+0.00  -O2  inflateBackInit_             ← 
+0.00  -O0  pqdownheap                   ← sift_down
+1.00  -O0  tr_stored_block              ← _tr_stored_block
+1.00  -O0  x2nmodp                      ← x2nmodp
+0.00  -O0  inflatePrime                 ← put_bits
+0.00  -O0  lm_init                      ← 
+0.00  -O2  deflatePending               ← 
+0.00  -O0  zcfree                       ← free_second_arg
+0.00  -O0  detect_data_type             ← 
+0.00  -O0  compressBound                ← 
+0.00  -O0  adler32_combine64            ← wrapper
+0.00  -O0  inflateMark                  ← 
+0.00  -O2  deflateSetHeader             ← 
+0.00  -O2  inflateSyncPoint             ← 
+0.00  -O0  inflateValidate              ← 
+-O0: ortalama F1 0.19  (n=34, tam isabet 6)
+-O2: ortalama F1 0.25  (n=26, tam isabet 5)
+yeni token: 523445
+ayrıntı → sonuc/zlib-deepseek-v4.1-flash-dusunme.jsonl
