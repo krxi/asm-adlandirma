@@ -16,7 +16,7 @@ def turler(r: dict) -> list[str]:
     satirlar = asm.splitlines()
     cagrilar = [s for s in satirlar if s.startswith("call")]
     ic_cagri = [s for s in cagrilar if "sub_" in s]
-    kuyruk = [s for s in satirlar if s.startswith("jmp") and "; -> sub_" in s]
+    kuyruk = [s for s in satirlar if s.startswith("jmp") and "sub_" in s]
     t = [r["opt"]]
     t.append("kısa (<20)" if n < 20 else "orta (20-80)" if n <= 80 else "uzun (>80)")
     if n <= 25 and len(ic_cagri) + len(kuyruk) == 1 and len(cagrilar) <= 1:
@@ -45,7 +45,7 @@ def main():
     for p in sorted(Path("sonuc").glob(f"{a.veri.stem}-*.jsonl")):
         model = p.stem[len(a.veri.stem) + 1:]
         satirlar = [json.loads(l) for l in p.open()]
-        satirlar = [s for s in satirlar if not str(s.get("aciklama", "")).startswith("HATA")]
+        satirlar = [s for s in satirlar if not str(s.get("aciklama", "")).startswith("HATA") and s["id"] in veri]
         if not satirlar:
             continue
         modeller.append(model)
