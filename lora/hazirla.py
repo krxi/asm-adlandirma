@@ -23,7 +23,7 @@ BAGLAM_BASLIK = "\n\n; --- çağrılan fonksiyonlar ---\n"
 
 def oku(veri: Path) -> dict[str, list[dict]]:
     projeler: dict[str, list[dict]] = {}
-    for yol in sorted(veri.glob("*/*.jsonl")):            # veri/egitim/<proje>.jsonl, veri/test/<proje>.jsonl
+    for yol in sorted([*veri.glob("egitim/*.jsonl"), *veri.glob("test/*.jsonl")]):  # veri/egitim/<proje>.jsonl, veri/test/<proje>.jsonl
         for l in yol.open():
             if l.strip():
                 r = json.loads(l)

@@ -20,7 +20,7 @@ def onekler() -> dict[str, set[str]]:
     """Proje → ad öneki: adların ≥%10'unun başladığı, proje adının başı olan (cyaml, mu, sqlite3)
     ya da baş harfiyle başlayan kısaltma olan (pm → picomatch) ilk sözcük."""
     sonuc = {}
-    for p in Path("veri").glob("*/*.jsonl"):
+    for p in [*Path("veri").glob("egitim/*.jsonl"), *Path("veri").glob("test/*.jsonl")]:
         adlar = [kelimeler(json.loads(l)["ad"]) for l in p.open()]
         say = Counter(k[0] for k in adlar if len(k) > 1)
         proje = p.stem.lower().replace("_", "").removeprefix("lib")
