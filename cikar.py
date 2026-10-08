@@ -20,11 +20,22 @@ OPTS = ["-O0", "-O2"]
 HEDEF = "x86_64-apple-macos12"
 FONK = re.compile(r"^[0-9a-f]+ <(_?[A-Za-z_][\w.$]*)>:$")
 ADRES_YORUMU = re.compile(r"##\s*0x([0-9a-f]+)")
+RELOK_EKI = re.compile(r"[-+](?:0x[0-9a-f]+|\d+)$")        # Mach-O PC-relative ek: vfsList-1, global_error-4
+BOLUM = re.compile(r"^__[a-z][a-z0-9_]*$")                 # bölüm adı: __cstring, __const, __literal16
+DAL = re.compile(r"(0x[0-9a-f]+ )?<([\w.$]+?)(\+0x[0-9a-f]+)?>")
+EV = str(Path.home())
 
 
-def derle(c: Path, opt: str, cikti: Path, bayraklar: list[str]) -> bool:
-    r = subprocess.run(["clang", "-target", HEDEF, opt, "-w", "-c", str(c), "-o", str(cikti), *bayraklar],
-                       capture_output=True, text=True)
+def csym(ham: str) -> str:
+    """Mach-O C sembolündeki tek '_' önekini at (___stack_chk_guard → __stack_chk_guard)."""
+    return ham[1:] if ham.startswith("_") else ham
+
+
+def derle(c: Path, opt: str, cikti: Path, bayraklar: list[str], kok: Path = Path(".")) -> bool:
+    # Göreli -I/-D yolları proje kökünden çözülsün diye clang proje dizininde çalışır.
+    # Kaynak yolu göreli verilir: __FILE__ string'lerine yerel dizin (kullanıcı adı) girmesin.
+    r = subprocess.run(["clang", "-target", HEDEF, opt, "-w", "-c", str(c.resolve().relative_to(kok.resolve())),
+                        "-o", str(cikti.resolve()), *bayraklar], capture_output=True, text=True, cwd=kok)
     return r.returncode == 0
 
 
@@ -34,7 +45,7 @@ def semboller(o: Path) -> tuple[set[str], set[str]]:
     for satir in subprocess.run(["nm", str(o)], capture_output=True, text=True).stdout.splitlines():
         p = satir.split()
         if len(p) == 3 and p[1] != "U":
-            ad = p[2].lstrip("_")
+            ad = csym(p[2])
             (fonk if p[1] in "Tt" else veri).add(ad)
     return fonk, veri
 
@@ -64,7 +75,7 @@ def ayristir(o: Path) -> dict[str, list[str]]:
     for satir in dump.splitlines():
         m = FONK.match(satir.strip())
         if m:
-            ad = m.group(1).lstrip("_")
+            ad = csym(m.group(1))
             fonklar[ad] = []
         elif ad and satir.strip() and "\t" in satir:
             fonklar[ad].append(satir.strip())
@@ -88,51 +99,72 @@ def string_goster(s: str) -> str:
     return f'"{s[:80]}{"…" if len(s) > 80 else ""}"'
 
 
-def anonimlestir(satirlar: list[str], adlar: dict[str, str], strs: dict[int, str]) -> str:
-    out, son_adres = [], None
+def anonimlestir(satirlar: list[str], adlar: dict[str, str], strs: dict[int, str], kendi: str) -> str:
+    """objdump satırları → stripped binary görünümü.
+
+    Fonksiyon içi dal hedefleri sıralı loc_N etiketine çevrilir (.o yerleşimi ve fonksiyonun kendi
+    kimliği sızmasın); relokasyonlu RIP ofsetleri [rip] olur; dış importlar adıyla kalır.
+    """
+    out, adresler, son_adres, etiketler = [], [], None, {}
+
+    def dal(m):
+        ad = csym(m.group(2))
+        if m.group(3) or ad == kendi:
+            anahtar = int(m.group(1), 16) if m.group(1) else m.group(0)
+            return etiketler.setdefault(anahtar, f"loc_{len(etiketler) + 1}")
+        return adlar.get(ad, "loc")
+
     for s in satirlar:
+        a = re.match(r"^([0-9a-f]+):", s)
         s = re.sub(r"^[0-9a-f]+:\s*", "", s)                  # adres sütunu
         if s.startswith(("X86_64_RELOC", "0000")):          # relokasyon satırı → hedefi yorum olarak ekle
-            ham_hedef = s.split()[-1]
-            hedef = ham_hedef.lstrip("_").split("@")[0]
-            if ham_hedef == "__cstring" and (st := string_bul(strs, son_adres)) is not None:
+            ham = RELOK_EKI.sub("", s.split()[-1].split("@")[0])
+            if ham == "__cstring" and (st := string_bul(strs, son_adres)) is not None:
                 hedef = string_goster(st)
-            elif ham_hedef.startswith("__"):                # başka bölüm (__const, __data): sabit tablo
+            elif BOLUM.match(ham) or not ham.startswith("_"):  # bölüm ya da derleyici etiketi (LCPI, L_.str)
                 hedef = "veri"
-            elif "." in hedef:                              # fonk.static_degisken → veri (ad sızmasın)
+            elif "." in ham:                                # fonk.static_degisken → veri (ad sızmasın)
                 hedef = "veri"
             else:
-                hedef = adlar.get(hedef, hedef)
+                hedef = adlar.get(csym(ham), csym(ham))     # iç → sub_/dat_, dış import adıyla kalır
             if out:                                         # .o'da çözülmemiş hedef adresi yanıltıcı, sil
-                out[-1] = re.sub(r"\s*(0x[0-9a-f]+ )?<[^>]*>", "", out[-1]).rstrip() + f"    ; -> {hedef}"
+                onceki = re.sub(r"\[rip\s*[+-]\s*0x[0-9a-f]+\]", "[rip]", out[-1])
+                out[-1] = re.sub(r"\s*(0x[0-9a-f]+ )?<[^>]*>", "", onceki).rstrip() + f"    ; -> {hedef}"
             continue
         m = ADRES_YORUMU.search(s)
         son_adres = int(m.group(1), 16) if m else None
         s = re.sub(r"\s*##.*$", "", s)                       # objdump'ın rip yorumları
-        s = re.sub(r"<_?([\w.$]+)(\+0x[0-9a-f]+)?>", lambda m: f"<{adlar.get(m.group(1), 'loc')}{m.group(2) or ''}>", s)
+        s = DAL.sub(dal, s)
+        if not s or s.startswith("<"):                      # kod içine gömülü veri artığı
+            continue
         out.append(s)
-    return "\n".join(out)
+        adresler.append(int(a.group(1), 16) if a else None)
+    # Dal hedefi olan komutların önüne "loc_N:" etiketi (döngü/dallanma yapısı görünsün)
+    son = []
+    for adres, s in zip(adresler, out):
+        if adres in etiketler:
+            son.append(f"{etiketler[adres]}:")
+        son.append(s)
+    return "\n".join(son).replace(EV, "~")
 
 
 def sizar_mi(ad: str, asm: str) -> bool:
-    """Gerçek ad (ya da camel/snake gövdesi) asm metninde geçiyor mu? Kısa adlar (≤3) sayılmaz."""
+    """Gerçek ad asm metninde (ör. bir hata mesajında) ayrı bir sözcük olarak geçiyor mu? Kısa adlar (≤3) sayılmaz."""
     if len(ad) <= 3:
         return False
-    alt = asm.lower()
-    return ad.lower() in alt or ad.lower().replace("_", "") in alt.replace("_", "")
+    return re.search(rf"(?<![A-Za-z0-9_]){re.escape(ad)}(?![A-Za-z0-9_])", asm, re.I) is not None
 
 
 def cikar(kok: Path, cikti: Path, dosyalar=("*.c",), haric=(), bayraklar=(), proje=None, surum=None,
           en_az=6, en_cok=300, tohum=7) -> int:
     proje = proje or kok.name
     kaynaklar = sorted({c for d in dosyalar for c in kok.glob(d)} - {c for h in haric for c in kok.glob(h)})
-    bayraklar = [b.replace("{kok}", str(kok)) for b in bayraklar]
     ham, tanimli_fonk, tanimli_veri, basarisiz = [], set(), set(), []
     with tempfile.TemporaryDirectory() as t:
         def is_(ck):
             c, opt = ck
             o = Path(t) / f"{c.relative_to(kok).as_posix().replace('/', '__')}{opt}.o"
-            if not derle(c, opt, o, list(bayraklar)):
+            if not derle(c, opt, o, list(bayraklar), kok):
                 return c, opt, None
             return c, opt, (semboller(o), stringler(o), ayristir(o))
         with ThreadPoolExecutor(8) as havuz:
@@ -145,13 +177,16 @@ def cikar(kok: Path, cikti: Path, dosyalar=("*.c",), haric=(), bayraklar=(), pro
                 tanimli_veri |= v
                 ham += [(c.relative_to(kok).as_posix(), opt, ad, s, strs) for ad, s in fonklar.items()]
 
-    rnd = random.Random(f"{proje}-{tohum}")
-    fonk_adlari = sorted(tanimli_fonk | {ad for _, _, ad, _, _ in ham})
-    veri_adlari = sorted(tanimli_veri - set(fonk_adlari))
-    rnd.shuffle(fonk_adlari)
-    rnd.shuffle(veri_adlari)
-    adlar = {ad: f"sub_{i:04x}" for i, ad in enumerate(fonk_adlari)}
-    adlar |= {ad: f"dat_{i:04x}" for i, ad in enumerate(veri_adlari)}
+    # Her kip ayrı bir binary sayılır: -O0 ve -O2 aynı sub_ kimliklerini paylaşmasın.
+    adlar = {}
+    for opt in OPTS:
+        rnd = random.Random(f"{proje}-{opt}-{tohum}")
+        fonk_adlari = sorted(tanimli_fonk | {ad for _, o, ad, _, _ in ham if o == opt})
+        veri_adlari = sorted(tanimli_veri - set(fonk_adlari))
+        rnd.shuffle(fonk_adlari)
+        rnd.shuffle(veri_adlari)
+        adlar[opt] = {ad: f"sub_{i:04x}" for i, ad in enumerate(fonk_adlari)}
+        adlar[opt] |= {ad: f"dat_{i:04x}" for i, ad in enumerate(veri_adlari)}
 
     cikti.parent.mkdir(parents=True, exist_ok=True)
     n = sizan = 0
@@ -161,7 +196,7 @@ def cikar(kok: Path, cikti: Path, dosyalar=("*.c",), haric=(), bayraklar=(), pro
             komut = [x for x in s if not x.split(":", 1)[-1].strip().startswith(("X86_64_RELOC",))]
             if not (en_az <= len(komut) <= en_cok):
                 continue
-            asm = anonimlestir(s, adlar, strs)
+            asm = anonimlestir(s, adlar[opt], strs, ad)
             if (opt, ad, asm) in gorulen:                   # aynı static yardımcı birden çok dosyada
                 continue
             gorulen.add((opt, ad, asm))
