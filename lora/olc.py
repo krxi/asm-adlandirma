@@ -63,12 +63,15 @@ def main():
                          repetition_penalty=a.repetition_penalty)
         m = re.findall(r"\{[^{}]*\}", metin)
         try:
-            tahmin = str(json.loads(m[-1]).get("ad", "")) if m else metin.strip()[:60]
+            cevap = json.loads(m[-1]) if m else {"ad": metin.strip()[:60]}
         except json.JSONDecodeError:
-            tahmin = ""
-        gercek = json.loads(r["messages"][2]["content"])["ad"]
+            cevap = {}
+        tahmin, aciklama = str(cevap.get("ad", "")), str(cevap.get("aciklama", ""))
+        hedef = json.loads(r["messages"][2]["content"])
+        gercek = hedef["ad"]
         s = f1(tahmin, gercek)
-        hepsi.append({"id": r["id"], "gercek": gercek, "tahmin": tahmin, "aciklama": "",
+        hepsi.append({"id": r["id"], "gercek": gercek, "tahmin": tahmin, "aciklama": aciklama,
+                      "ogretmen": hedef.get("aciklama", ""),
                       "f1": round(s, 3), "opt": r.get("opt", ""), "token": n_giris + len(tok.encode(metin))})
         print(f"{s:.2f}  {hepsi[-1]['opt']}  {gercek:<28} ← {tahmin}", flush=True)
 
