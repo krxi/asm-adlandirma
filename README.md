@@ -67,6 +67,7 @@ Ortalama ad F1 (1.0 = tam doğru). "Öneksiz" sütununda projenin ortak ad önek
 |---|---|---|---|---|
 | mimo-v2.6-pro (düşünmeli) | **0.20** | **0.17** | **0.21** | 3 / 115 |
 | mimo-v2.6-pro | 0.18 | 0.16 | 0.20 | **4 / 115** |
+| glm-5.3 (düşünmeli) | 0.16 | 0.11 | 0.15 | **4 / 115** |
 | qwen3.8-flash-next (düşünmeli) | 0.16 | 0.08 | 0.13 | 3 / 115 |
 | deepseek-v4.1-flash (düşünmeli) | 0.12 | 0.08 | 0.12 | 3 / 115 |
 | deepseek-v4.1-flash | 0.10 | 0.11 | 0.12 | 2 / 115 |
@@ -77,7 +78,7 @@ Ortalama ad F1 (1.0 = tam doğru). "Öneksiz" sütununda projenin ortak ad önek
 | qwen2.5-coder-0.5b, eğitimsiz | 0.00 | 0.01 | 0.01 | 0 / 112 |
 | qwen2.5-coder-0.5b + LoRA v1 | 0.02 | 0.00 | 0.01 | 0 / 112 |
 
-Düşünmeli koşularda `max_tokens` tavanı 12.288. deepseek ve qwen bu tavanda bile isteklerin yarısından fazlasında cevaba varamadan düşünmeye devam ediyor; bu satırlar 0 sayıldı.
+Düşünmeli koşularda `max_tokens` tavanı 12.288. deepseek ve qwen bu tavanda bile isteklerin yarısından fazlasında, glm 115'in 50'sinde cevaba varamadan düşünmeye devam ediyor; bu satırlar 0 sayıldı.
 
 ### 2. Ezber: düşünmek ünlü kodda işe yarıyor, bilinmeyen kodda yaramıyor
 

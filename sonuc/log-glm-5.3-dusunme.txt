@@ -1,1 +1,131 @@
 30 satır korundu, 30 soruluyor
+30 satır korundu, 30 soruluyor
+0.00  -O2  deflateEnd                   ← 
+0.50  -O2  inflateReset                 ← reset_stream
+0.00  -O0  adler32_combine              ← forward_call
+0.00  -O0  deflateBound_z               ← 
+0.00  -O2  deflateSetDictionary         ← 
+0.00  -O0  zlibVersion                  ← what
+0.00  -O2  adler32_combine              ← 
+0.00  -O0  deflateSetDictionary         ← lzw_decode
+0.00  -O0  inflate_fixed                ← fixedtables
+0.00  -O2  inflate_fixed                ← fixedtables
+0.00  -O0  crc_word                     ← crc32_hash_u64
+1.00  -O0  tr_align                     ← _tr_align
+1.00  -O2  crc32_combine                ← crc32_combine
+0.00  -O2  crc32                        ← 
+0.80  -O2  tr_flush_bits                ← flush_bits
+0.00  -O2  zcalloc                      ← alloc_array
+0.00  -O2  inflateSync                  ← 
+0.00  -O2  deflateCopy                  ← clone_state
+0.00  -O2  crc32_combine_gen64          ← 
+0.00  -O2  inflatePrime                 ← put_bits
+0.00  -O2  deflateTune                  ← 
+1.00  -O2  tr_tally                     ← _tr_tally
+0.00  -O0  deflateParams                ← set_mode
+0.00  -O2  inflateCopy                  ← 
+0.00  -O0  adler32                      ← forward_call
+0.00  -O0  inflateCopy                  ← clone_state
+0.00  -O0  inflateReset2                ← 
+0.00  -O0  inflateSyncPoint             ← is_idle
+0.67  -O2  adler32_z                    ← adler32
+0.00  -O0  deflateGetDictionary         ← buffer_peek_tail
+0.00  -O0  inflateEnd                   ← close
+0.00  -O0  inflateBackInit_             ← 
+0.00  -O2  uncompress                   ← 
+1.00  -O0  tr_init                      ← _tr_init
+0.40  -O0  inflateResetKeep             ← audio_reset
+0.00  -O2  inflateValidate              ← 
+0.80  -O2  longest_match                ← find_longest_match
+0.00  -O0  deflateReset                 ← close
+0.40  -O0  crc32_combine_op             ← hash_combine
+0.00  -O0  deflatePrime                 ← write_bits
+0.00  -O0  uncompress2_z                ← zlib_decompress
+0.00  -O2  crc32_combine_op             ← 
+0.00  -O0  deflateUsed                  ← get_status
+0.00  -O0  multmodp                     ← crc32_multiply
+0.00  -O2  inflateGetDictionary         ← 
+0.00  -O2  inflateBackInit_             ← 
+0.00  -O0  pqdownheap                   ← 
+1.00  -O0  tr_stored_block              ← _tr_stored_block
+0.00  -O0  x2nmodp                      ← 
+0.00  -O0  inflatePrime                 ← 
+0.00  -O0  lm_init                      ← reset_state
+0.00  -O2  deflatePending               ← 
+0.00  -O0  zcfree                       ← free_value
+0.00  -O0  detect_data_type             ← 
+0.00  -O0  compressBound                ← get_value
+0.00  -O0  adler32_combine64            ← wrapper
+0.00  -O0  inflateMark                  ← 
+0.00  -O2  deflateSetHeader             ← 
+0.00  -O2  inflateSyncPoint             ← 
+0.00  -O0  inflateValidate              ← set_flag
+-O0: ortalama F1 0.11  (n=34, tam isabet 3)
+-O2: ortalama F1 0.18  (n=26, tam isabet 2)
+yeni token: 356761
+ayrıntı → sonuc/zlib-glm-5.3-dusunme.jsonl
+60 satır korundu, 0 soruluyor
+0.00  -O2  deflateEnd                   ← 
+0.50  -O2  inflateReset                 ← reset_stream
+0.00  -O0  adler32_combine              ← forward_call
+0.00  -O0  deflateBound_z               ← 
+0.00  -O2  deflateSetDictionary         ← 
+0.00  -O0  zlibVersion                  ← what
+0.00  -O2  adler32_combine              ← 
+0.00  -O0  deflateSetDictionary         ← lzw_decode
+0.00  -O0  inflate_fixed                ← fixedtables
+0.00  -O2  inflate_fixed                ← fixedtables
+0.00  -O0  crc_word                     ← crc32_hash_u64
+1.00  -O0  tr_align                     ← _tr_align
+1.00  -O2  crc32_combine                ← crc32_combine
+0.00  -O2  crc32                        ← 
+0.80  -O2  tr_flush_bits                ← flush_bits
+0.00  -O2  zcalloc                      ← alloc_array
+0.00  -O2  inflateSync                  ← 
+0.00  -O2  deflateCopy                  ← clone_state
+0.00  -O2  crc32_combine_gen64          ← 
+0.00  -O2  inflatePrime                 ← put_bits
+0.00  -O2  deflateTune                  ← 
+1.00  -O2  tr_tally                     ← _tr_tally
+0.00  -O0  deflateParams                ← set_mode
+0.00  -O2  inflateCopy                  ← 
+0.00  -O0  adler32                      ← forward_call
+0.00  -O0  inflateCopy                  ← clone_state
+0.00  -O0  inflateReset2                ← 
+0.00  -O0  inflateSyncPoint             ← is_idle
+0.67  -O2  adler32_z                    ← adler32
+0.00  -O0  deflateGetDictionary         ← buffer_peek_tail
+0.00  -O0  inflateEnd                   ← close
+0.00  -O0  inflateBackInit_             ← 
+0.00  -O2  uncompress                   ← 
+1.00  -O0  tr_init                      ← _tr_init
+0.40  -O0  inflateResetKeep             ← audio_reset
+0.00  -O2  inflateValidate              ← 
+0.80  -O2  longest_match                ← find_longest_match
+0.00  -O0  deflateReset                 ← close
+0.40  -O0  crc32_combine_op             ← hash_combine
+0.00  -O0  deflatePrime                 ← write_bits
+0.00  -O0  uncompress2_z                ← zlib_decompress
+0.00  -O2  crc32_combine_op             ← 
+0.00  -O0  deflateUsed                  ← get_status
+0.00  -O0  multmodp                     ← crc32_multiply
+0.00  -O2  inflateGetDictionary         ← 
+0.00  -O2  inflateBackInit_             ← 
+0.00  -O0  pqdownheap                   ← 
+1.00  -O0  tr_stored_block              ← _tr_stored_block
+0.00  -O0  x2nmodp                      ← 
+0.00  -O0  inflatePrime                 ← 
+0.00  -O0  lm_init                      ← reset_state
+0.00  -O2  deflatePending               ← 
+0.00  -O0  zcfree                       ← free_value
+0.00  -O0  detect_data_type             ← 
+0.00  -O0  compressBound                ← get_value
+0.00  -O0  adler32_combine64            ← wrapper
+0.00  -O0  inflateMark                  ← 
+0.00  -O2  deflateSetHeader             ← 
+0.00  -O2  inflateSyncPoint             ← 
+0.00  -O0  inflateValidate              ← set_flag
+-O0: ortalama F1 0.11  (n=34, tam isabet 3)
+-O2: ortalama F1 0.18  (n=26, tam isabet 2)
+yeni token: 0
+ayrıntı → sonuc/zlib-glm-5.3-dusunme.jsonl
