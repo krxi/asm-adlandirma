@@ -82,6 +82,35 @@ def test_taban_devam_saglam_satirlari_korur(ornek_kok, monkeypatch):
     assert not any(str(r["aciklama"]).startswith("HATA") for r in oku_jsonl(yol))
 
 
+def test_taban_idler_dosya_sirasini_korur_ve_n_yok_sayar(ornek_kok, monkeypatch):
+    secilen = olcum_seti(ornek_kok, k=3)
+    sira = [r["id"] for r in reversed(secilen[:4])]
+    idler = ornek_kok / "idler.txt"
+    idler.write_text("\n".join(sira) + "\n")
+    monkeypatch.chdir(ornek_kok)
+    monkeypatch.setattr(taban, "sor", sahte_sor)
+    monkeypatch.setattr(sys, "argv", ["taban.py", "veri/test.jsonl", "-n", "1", "-m", "sahte",
+                                       "--idler", str(idler)])
+    taban.main()
+    sonuc = oku_jsonl(ornek_kok / "sonuc" / f"test{len(sira)}-sahte.jsonl")
+    assert [r["id"] for r in sonuc] == sira
+
+
+def test_taban_kuru_istek_atmaz_ve_token_tahmini_yazar(ornek_kok, monkeypatch, capsys):
+    secilen = olcum_seti(ornek_kok, k=1)
+    idler = ornek_kok / "idler.txt"
+    idler.write_text(secilen[0]["id"] + "\n")
+    monkeypatch.chdir(ornek_kok)
+    monkeypatch.setattr(taban, "sor", lambda *a, **k: pytest.fail("kuru kip istek atmamalı"))
+    monkeypatch.setattr(sys, "argv", ["taban.py", "veri/test.jsonl", "--idler", str(idler),
+                                       "--baglam", "--kuru"])
+    taban.main()
+    cikti = capsys.readouterr().out
+    assert "tahmini toplam girdi tokenı" in cikti
+    assert "test1-deepseek-v4.1-flash-baglam.jsonl" in cikti
+    assert not (ornek_kok / "sonuc").exists()
+
+
 def test_ozet_tablosu(ornek_kok, monkeypatch):
     olcum_seti(ornek_kok, k=2)
     monkeypatch.chdir(ornek_kok)

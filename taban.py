@@ -6,7 +6,7 @@
 Skor: tahmin ve gerçek adı kelimelere böl (snake/camel), kelime örtüşmesinin F1'i.
 Tam doğruluk nadir olur; F1 "yakın mı" sorusunu ölçer (crc32_update ~ update_crc).
 """
-import argparse, json, os, random, re, sys, time, urllib.request
+import argparse, json, os, random, re, sys, time, urllib.error, urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -28,6 +28,33 @@ def anahtar() -> str:
     sys.exit("anahtar yok")
 
 
+def evren_istek(model: str, mesajlar: list[dict], max_tokens: int = 2048, **ek) -> dict:
+    """Evren sohbet uç noktasına düşünme kapalı bir istek gönderir.
+
+    Genel tutulan bu yardımcı denetim gibi farklı istem kullanan ölçümlerin de aynı
+    BASE/anahtar/yeniden-deneme yolunu kullanabilmesini sağlar.
+    """
+    govde = {"model": model, "temperature": 0, "max_tokens": max_tokens,
+             "chat_template_kwargs": {"enable_thinking": False}, "messages": mesajlar}
+    govde.update(ek)
+    son = None
+    for deneme in range(6):
+        try:
+            istek = urllib.request.Request(BASE + "/chat/completions", data=json.dumps(govde).encode(),
+                                           headers={"X-API-Key": anahtar(), "Content-Type": "application/json"})
+            return json.load(urllib.request.urlopen(istek, timeout=900))
+        except urllib.error.HTTPError as hata:
+            son = hata
+            if hata.code not in (429, 503):
+                raise
+        except Exception as hata:
+            son = hata
+        if deneme < 5:
+            time.sleep(2 ** deneme + random.random())
+    assert son is not None
+    raise son
+
+
 def sor(model: str, asm: str, dusunme: bool = False, tavan: int = 4096, baglam: bool = False) -> dict:
     # Düşünme açıkken bazı modeller 16K token'lık döngüye girip dakikalarca bekletiyor:
     # varsayılan kapalı, açıkken max_tokens tavanı var. Tavana çarpan cevap "kesik" sayılır.
@@ -41,24 +68,42 @@ def sor(model: str, asm: str, dusunme: bool = False, tavan: int = 4096, baglam: 
         # dakikalarca sürüp zaman aşımına düşüyor.
         govde["chat_template_kwargs"] = {"enable_thinking": False}
         govde["max_tokens"] = 2048
-    for deneme in range(6):
+    try:
+        ek = ({"chat_template_kwargs": {"enable_thinking": True}} if dusunme else {})
+        yanit = evren_istek(model, govde["messages"], max_tokens=govde.get("max_tokens", 2048), **ek)
+        secim = yanit["choices"][0]
+        metin = secim["message"].get("content") or ""
+        token = yanit.get("usage", {}).get("total_tokens", 0)
+        m = re.findall(r"\{[^{}]*\}", metin)
         try:
-            istek = urllib.request.Request(BASE + "/chat/completions", data=json.dumps(govde).encode(),
-                                           headers={"X-API-Key": anahtar(), "Content-Type": "application/json"})
-            yanit = json.load(urllib.request.urlopen(istek, timeout=900))
-            secim = yanit["choices"][0]
-            metin = secim["message"].get("content") or ""
-            token = yanit.get("usage", {}).get("total_tokens", 0)
-            m = re.findall(r"\{[^{}]*\}", metin)
-            try:
-                cevap = json.loads(m[-1]) if m else {"ad": metin.strip()[:60], "aciklama": ""}
-            except json.JSONDecodeError:
-                cevap = {"ad": "", "aciklama": metin.strip()[:200]}
-            return {**cevap, "token": token, "bitis": secim.get("finish_reason")}
-        except Exception as hata:
-            son = hata
-            time.sleep(2 ** deneme + random.random())
-    return {"ad": "", "aciklama": f"HATA: {son}", "token": 0}
+            cevap = json.loads(m[-1]) if m else {"ad": metin.strip()[:60], "aciklama": ""}
+        except json.JSONDecodeError:
+            cevap = {"ad": "", "aciklama": metin.strip()[:200]}
+        return {**cevap, "token": token, "bitis": secim.get("finish_reason")}
+    except Exception as hata:
+        return {"ad": "", "aciklama": f"HATA: {hata}", "token": 0}
+
+
+def token_tahmini(metin: str) -> int:
+    """Tokenizer gerektirmeyen, yaklaşık dört karakter/token hesabı."""
+    return (len(metin) + 3) // 4
+
+
+def model_girdisi(r: dict, baglam: bool = False, baglam_derin: bool = False) -> str:
+    alan = "baglam_derin" if baglam_derin else "baglam"
+    if not (baglam or baglam_derin) or not r.get(alan):
+        return r["asm"]
+    return r["asm"] + "\n\n; --- çağrılan fonksiyonlar ---\n" + r[alan]
+
+
+def idlerle_sec(satirlar: list[dict], idler_yolu: Path) -> list[dict]:
+    idler = [satir.strip() for satir in idler_yolu.read_text().splitlines() if satir.strip()]
+    kimlikten = {r["id"]: r for r in satirlar}
+    eksik = [kimlik for kimlik in idler if kimlik not in kimlikten]
+    if eksik:
+        ornek = ", ".join(eksik[:3])
+        raise SystemExit(f"--idler içindeki {len(eksik)} id veride yok: {ornek}")
+    return [kimlikten[kimlik] for kimlik in idler]
 
 
 def kelimeler(ad: str) -> list[str]:
@@ -127,7 +172,7 @@ def main():
     ap.add_argument("veri", type=Path)
     ap.add_argument("-n", type=int, default=60)
     ap.add_argument("-m", "--model", default="deepseek-v4.1-flash")
-    ap.add_argument("-j", type=int, default=6)
+    ap.add_argument("-j", type=int, default=8)
     ap.add_argument("--tohum", type=int, default=7)
     ap.add_argument("--dusunme", action="store_true", help="modelin düşünmesini aç (yavaş, pahalı)")
     ap.add_argument("--tavan", type=int, default=4096, help="düşünmede max_tokens")
@@ -138,6 +183,8 @@ def main():
                               help="çağrılan iç fonksiyonların derin bağlamını asm'ye ekle")
     ap.add_argument("--devam", action="store_true",
                     help="var olan sonuç dosyasındaki sağlam satırları koru, yalnız eksik/HATA olanları sor")
+    ap.add_argument("--idler", type=Path, help="id listesini dosyadaki sırayla seç; -n yok sayılır")
+    ap.add_argument("--kuru", action="store_true", help="istek ve dosya yazımı yapma; girdi token tahminini yaz")
     ap.add_argument("--kesik-de", action="store_true", help="--devam ile: tavana çarpıp boş kalanları da yeniden sor")
     ap.add_argument("--kismi", action="store_true",
                     help="satırlara sözcük düzeyinde precision (p) ve recall (r) ekle, ortalamalarını raporla")
@@ -150,11 +197,22 @@ def main():
         from ozet import f1_oneksiz  # ozet taban'ı içe aktarır; döngü olmasın diye burada
 
     satirlar = [json.loads(l) for l in a.veri.open()]
-    random.Random(a.tohum).shuffle(satirlar)
-    ornek = satirlar[: a.n]
+    if a.idler:
+        ornek = idlerle_sec(satirlar, a.idler)
+    else:
+        random.Random(a.tohum).shuffle(satirlar)
+        ornek = satirlar[: a.n]
 
     baglam_eki = "-baglam2" if a.baglam_derin else "-baglam" if a.baglam else ""
-    sonuc = Path("sonuc") / f"{a.veri.stem}-{a.model}{'-dusunme' if a.dusunme else ''}{baglam_eki}.jsonl"
+    veri_adi = f"{a.veri.stem}{len(ornek)}" if a.idler else a.veri.stem
+    sonuc = Path("sonuc") / f"{veri_adi}-{a.model}{'-dusunme' if a.dusunme else ''}{baglam_eki}.jsonl"
+    if a.kuru:
+        sistem = SISTEM_BAGLAM if (a.baglam or a.baglam_derin) else SISTEM
+        toplam = sum(token_tahmini(sistem) + token_tahmini(model_girdisi(r, a.baglam, a.baglam_derin))
+                     for r in ornek)
+        print(f"kuru: {len(ornek)} satır; tahmini toplam girdi tokenı (model başına): {toplam:,}")
+        print(f"çıktı yolu → {sonuc}")
+        return
     sonuc.parent.mkdir(exist_ok=True)
     eski = {}
     if a.devam and sonuc.exists():
@@ -190,19 +248,20 @@ def main():
         yeni = {r["id"]: r for r in map(json.loads, ara.open()) if not str(r.get("aciklama", "")).startswith("HATA")}
         sorulacak = [r for r in sorulacak if r["id"] not in yeni]
     with ThreadPoolExecutor(a.j) as havuz, ara.open("a") as f:
-        def girdi(r):
-            alan = "baglam_derin" if a.baglam_derin else "baglam"
-            if not (a.baglam or a.baglam_derin) or not r.get(alan):
-                return r["asm"]
-            return r["asm"] + "\n\n; --- çağrılan fonksiyonlar ---\n" + r[alan]
-
         baglamli = a.baglam or a.baglam_derin
-        isler = {havuz.submit(sor, a.model, girdi(r), a.dusunme, a.tavan, baglamli): r for r in sorulacak}
+        isler = {havuz.submit(sor, a.model, model_girdisi(r, a.baglam, a.baglam_derin),
+                              a.dusunme, a.tavan, baglamli): r for r in sorulacak}
+        kosu_token = 0
+        tamamlanan = 0
         for gelen in as_completed(isler):
             r = isler[gelen]
             yeni[r["id"]] = satir(r, gelen.result())
+            kosu_token += yeni[r["id"]].get("token", 0)
+            tamamlanan += 1
             f.write(json.dumps(yeni[r["id"]], ensure_ascii=False) + "\n")
             f.flush()
+            if tamamlanan % 200 == 0:
+                print(f"token: {kosu_token:,} ({tamamlanan}/{len(sorulacak)} yeni satır)", file=sys.stderr)
 
     hepsi = [iki_f1(eski.get(r["id"]) or yeni[r["id"]]) for r in ornek]
     with sonuc.open("w") as f:
@@ -225,7 +284,8 @@ def main():
             print(f"{opt}: precision {ort('p'):.2f}  recall {ort('r'):.2f}")
         if a.esanlam:
             print(f"{opt}: eş anlamlı  precision {ort('p_es'):.2f}  recall {ort('r_es'):.2f}  F1 {ort('f1_es'):.2f}")
-    print(f"yeni token: {sum(r.get('token', 0) for r in yeni.values())}")
+    print(f"yeni token: {sum(r.get('token', 0) for r in yeni.values()):,}")
+    print(f"toplam token: {sum(r.get('token', 0) for r in hepsi):,}")
     print(f"ayrıntı → {sonuc}")
 
 
