@@ -12,8 +12,8 @@ fi
 if [ -f "$D/sonuc-molab.zip" ]; then
   T="$(mktemp -d)"
   unzip -oj "$D/sonuc-molab.zip" -d "$T"
-  cp "$T/sonuc-test-Qwen3-8B-lora.jsonl" "$KOK/sonuc/test-molab-qwen3-8b-lora.jsonl"
-  cp "$T/sonuc-eval115-Qwen3-8B-lora.jsonl" "$KOK/sonuc/eval115-molab-qwen3-8b-lora.jsonl"
+  cp "$T/sonuc-test-Qwen3-8B-lora.jsonl" "$KOK/sonuc/test2000-molab-qwen3-8b.jsonl"
+  cp "$T/sonuc-eval115-Qwen3-8B-lora.jsonl" "$KOK/sonuc/eval115-molab-qwen3-8b.jsonl"
   { echo; echo "--- egitim.log (tam) ---"; cat "$T/egitim.log"; } >> "$KOK/sonuc/log-molab-qwen3-8b.txt"
   rm -rf "$T"
   ls -la "$KOK"/sonuc/*molab*
