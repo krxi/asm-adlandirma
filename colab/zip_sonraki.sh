@@ -1,10 +1,10 @@
 #!/bin/sh
-# Colab'a yüklenecek veri-sonraki.zip dosyasını repo kökünde hazırlar.
+# Colab'a yüklenecek veri arşivini repo kökünde hazırlar: sh colab/zip_sonraki.sh [veri-sonraki-v2 | veri-sonraki]
 set -eu
 
 KOK=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-VERI="$KOK/lora/veri-sonraki"
-CIKTI="$KOK/veri-sonraki.zip"
+VERI="$KOK/lora/${1:-veri-sonraki-v2}"
+CIKTI="$KOK/${1:-veri-sonraki-v2}.zip"
 
 for DOSYA in train.jsonl valid.jsonl test.jsonl test_sabit.jsonl; do
     if [ ! -f "$VERI/$DOSYA" ]; then
