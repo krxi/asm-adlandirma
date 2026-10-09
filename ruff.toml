@@ -1,0 +1,9 @@
+# CI'da yalnız yeni dosyalar için zorunlu (bkz. .github/workflows/test.yml); eski betikler kendi üslubunda kalır.
+line-length = 120
+target-version = "py39"
+
+[lint]
+# pyflakes + temel pycodestyle, açıkça (ruff sürümünün varsayılanı değişebilir).
+# Repo üslubu korunur: `import a, b` (E401), kısa lambda ataması (E731), `for l in f` (E741).
+select = ["E4", "E7", "E9", "F"]
+ignore = ["E401", "E731", "E741"]

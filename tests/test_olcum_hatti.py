@@ -1,4 +1,5 @@
 """Ölçüm hattı: test_seti.py → taban.py (model çağrısı sahte) → ozet.py, örnek veri üzerinde."""
+
 import json, subprocess, sys
 from pathlib import Path
 
@@ -15,8 +16,9 @@ def oku_jsonl(yol):
 
 
 def olcum_seti(ornek_kok, k=3):
-    s = subprocess.run([sys.executable, str(KOK / "test_seti.py"), "-k", str(k)], cwd=ornek_kok,
-                       capture_output=True, text=True)
+    s = subprocess.run(
+        [sys.executable, str(KOK / "test_seti.py"), "-k", str(k)], cwd=ornek_kok, capture_output=True, text=True
+    )
     assert s.returncode == 0, s.stderr
     return oku_jsonl(ornek_kok / "veri" / "test.jsonl")
 
@@ -86,8 +88,13 @@ def test_ozet_tablosu(ornek_kok, monkeypatch):
     monkeypatch.setattr(taban, "sor", sahte_sor)
     monkeypatch.setattr(sys, "argv", ["taban.py", "veri/test.jsonl", "-n", "1000", "-m", "sahte"])
     taban.main()
-    s = subprocess.run([sys.executable, str(KOK / "ozet.py"), "--md", "test"], cwd=ornek_kok,
-                       capture_output=True, text=True, env={"PYTHONPATH": str(KOK), "PATH": ""})
+    s = subprocess.run(
+        [sys.executable, str(KOK / "ozet.py"), "--md", "test"],
+        cwd=ornek_kok,
+        capture_output=True,
+        text=True,
+        env={"PYTHONPATH": str(KOK), "PATH": ""},
+    )
     assert s.returncode == 0, s.stderr
     assert "| test-sahte |" in s.stdout
 
@@ -96,17 +103,27 @@ def test_taban_oneksiz_iki_f1(ornek_kok, monkeypatch, capsys):
     secilen = olcum_seti(ornek_kok, k=3)
     monkeypatch.chdir(ornek_kok)
     import ozet
+
     monkeypatch.setattr(ozet, "ONEK", {"tomlc17": {"toml"}, "picomatch": {"pm"}})
     # Model gerçek adı öneksiz biliyor: gerçek ad F1 < 1, öneksiz F1 = 1 olmalı.
     gercek = {r["asm"]: r["ad"] for r in secilen}
-    monkeypatch.setattr(taban, "sor", lambda model, asm, *a, **k: {
-        "ad": "_".join(w for w in taban.kelimeler(gercek[asm]) if w not in ("toml", "pm")) or gercek[asm],
-        "aciklama": "", "token": 1, "bitis": "stop"})
+    monkeypatch.setattr(
+        taban,
+        "sor",
+        lambda model, asm, *a, **k: {
+            "ad": "_".join(w for w in taban.kelimeler(gercek[asm]) if w not in ("toml", "pm")) or gercek[asm],
+            "aciklama": "",
+            "token": 1,
+            "bitis": "stop",
+        },
+    )
     monkeypatch.setattr(sys, "argv", ["taban.py", "veri/test.jsonl", "-n", "1000", "-m", "sahte", "--oneksiz"])
     taban.main()
     sonuc = oku_jsonl(ornek_kok / "sonuc" / "test-sahte.jsonl")
     assert all(r["f1_oneksiz"] == 1.0 for r in sonuc)
-    onekli = [r for r in sonuc if taban.kelimeler(r["gercek"])[0] in ("toml", "pm") and len(taban.kelimeler(r["gercek"])) > 1]
+    onekli = [
+        r for r in sonuc if taban.kelimeler(r["gercek"])[0] in ("toml", "pm") and len(taban.kelimeler(r["gercek"])) > 1
+    ]
     assert onekli and all(r["f1"] < 1.0 for r in onekli)
     assert "öneksiz F1 1.00" in capsys.readouterr().out
 
@@ -122,11 +139,16 @@ def test_taban_oneksiz_yokken_alan_eklenmez(ornek_kok, monkeypatch):
 
 def test_iki_f1_oneksiz_hedefi_yakalar_ve_gercek_adla_puanlar(ornek_kok, monkeypatch):
     import iki_f1, ozet
+
     monkeypatch.setattr(ozet, "ONEK", {"tomlc17": {"toml"}})
     adlar = iki_f1.gercek_adlar(ornek_kok / "veri")
-    satir = next(r for p in (ornek_kok / "veri" / "test").glob("tomlc17.jsonl") for r in oku_jsonl(p)
-                 if r["ad"].startswith("toml_"))
-    oneksiz = satir["ad"][len("toml_"):]
+    satir = next(
+        r
+        for p in (ornek_kok / "veri" / "test").glob("tomlc17.jsonl")
+        for r in oku_jsonl(p)
+        if r["ad"].startswith("toml_")
+    )
+    oneksiz = satir["ad"][len("toml_") :]
     # Hedefi öneksiz yazılmış bir LoRA koşusu: dosyadaki f1 = 1, ama gerçek ad F1 < 1.
     kayit = {"id": satir["id"], "gercek": oneksiz, "tahmin": oneksiz, "f1": 1.0, "opt": satir["opt"]}
     p = iki_f1.puanla([kayit], adlar)
@@ -142,8 +164,9 @@ def test_iki_f1_rapor(ornek_kok, monkeypatch):
     monkeypatch.setattr(taban, "sor", sahte_sor)
     monkeypatch.setattr(sys, "argv", ["taban.py", "veri/test.jsonl", "-n", "1000", "-m", "sahte"])
     taban.main()
-    s = subprocess.run([sys.executable, str(KOK / "iki_f1.py"), "-o", "rapor/r.md"], cwd=ornek_kok,
-                       capture_output=True, text=True)
+    s = subprocess.run(
+        [sys.executable, str(KOK / "iki_f1.py"), "-o", "rapor/r.md"], cwd=ornek_kok, capture_output=True, text=True
+    )
     assert s.returncode == 0, s.stderr
     md = (ornek_kok / "rapor" / "r.md").read_text()
     assert "| test-sahte |" in md and "gerçek ad |" in md
@@ -153,8 +176,10 @@ def test_iki_f1_rapor(ornek_kok, monkeypatch):
 
 def test_rapor_guncel(tmp_path):
     """rapor/F1_IKI_TANIM.md, sonuc/ değişince `python3 iki_f1.py` ile yeniden üretilmeli."""
-    s = subprocess.run([sys.executable, str(KOK / "iki_f1.py"), "-o", str(tmp_path / "r.md")], cwd=KOK,
-                       capture_output=True, text=True)
+    s = subprocess.run(
+        [sys.executable, str(KOK / "iki_f1.py"), "-o", str(tmp_path / "r.md")], cwd=KOK, capture_output=True, text=True
+    )
     assert s.returncode == 0, s.stderr
-    assert (tmp_path / "r.md").read_text() == (KOK / "rapor" / "F1_IKI_TANIM.md").read_text(), \
+    assert (tmp_path / "r.md").read_text() == (KOK / "rapor" / "F1_IKI_TANIM.md").read_text(), (
         "rapor eski: python3 iki_f1.py çalıştırın"
+    )

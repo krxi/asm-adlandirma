@@ -13,4 +13,3 @@ def ornek_kok(tmp_path):
     """tmp_path/veri altında küçük örnek veri; testler cwd'yi buraya alabilir."""
     ornek.kur(tmp_path)
     return tmp_path
-

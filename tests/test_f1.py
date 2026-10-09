@@ -1,4 +1,5 @@
 """taban.py ad F1'i: bütün ölçümler (taban.py, lora/olc.py, ozet.py, Colab) bu tanıma dayanır."""
+
 import ast, json
 from pathlib import Path
 
@@ -11,33 +12,39 @@ from taban import f1, kelimeler
 KOK = Path(__file__).resolve().parent.parent
 
 
-@pytest.mark.parametrize("ad, beklenen", [
-    ("adler32_update", ["adler32", "update"]),
-    ("crc32Update", ["crc32", "update"]),
-    ("sqlite3VdbeMemSet", ["sqlite3", "vdbe", "mem", "set"]),
-    ("__stack_chk_fail", ["stack", "chk", "fail"]),
-    ("ParseJSON", ["parse", "json"]),
-    ("XMLParser", ["xmlparser"]),          # ardışık büyük harf bölünmez: bilinen sınır
-    ("toml.parse-file", ["toml", "parse", "file"]),
-    ("", []),
-    ("___", []),
-])
+@pytest.mark.parametrize(
+    "ad, beklenen",
+    [
+        ("adler32_update", ["adler32", "update"]),
+        ("crc32Update", ["crc32", "update"]),
+        ("sqlite3VdbeMemSet", ["sqlite3", "vdbe", "mem", "set"]),
+        ("__stack_chk_fail", ["stack", "chk", "fail"]),
+        ("ParseJSON", ["parse", "json"]),
+        ("XMLParser", ["xmlparser"]),  # ardışık büyük harf bölünmez: bilinen sınır
+        ("toml.parse-file", ["toml", "parse", "file"]),
+        ("", []),
+        ("___", []),
+    ],
+)
 def test_kelimeler(ad, beklenen):
     assert kelimeler(ad) == beklenen
 
 
-@pytest.mark.parametrize("tahmin, gercek, beklenen", [
-    ("adler32_update", "adler32_update", 1.0),
-    ("ADLER32_UPDATE", "adler32_update", 1.0),     # büyük/küçük harf duyarsız
-    ("adler32Update", "adler32_update", 1.0),      # camel ~ snake
-    ("update_crc", "crc_update", 1.0),             # sözcük sırası puanı etkilemez (küme örtüşmesi)
-    ("crc32_update", "update_crc", 0.5),           # p=1/2, r=1/2
-    ("adler32", "adler32_update", 2 / 3),          # p=1, r=1/2
-    ("get_get_value", "get_value", 1.0),           # tekrar eden sözcük ödüllenmez/cezalanmaz
-    ("parse_value", "emit_scalar", 0.0),
-    ("", "emit_scalar", 0.0),
-    ("emit_scalar", "", 0.0),
-])
+@pytest.mark.parametrize(
+    "tahmin, gercek, beklenen",
+    [
+        ("adler32_update", "adler32_update", 1.0),
+        ("ADLER32_UPDATE", "adler32_update", 1.0),  # büyük/küçük harf duyarsız
+        ("adler32Update", "adler32_update", 1.0),  # camel ~ snake
+        ("update_crc", "crc_update", 1.0),  # sözcük sırası puanı etkilemez (küme örtüşmesi)
+        ("crc32_update", "update_crc", 0.5),  # p=1/2, r=1/2
+        ("adler32", "adler32_update", 2 / 3),  # p=1, r=1/2
+        ("get_get_value", "get_value", 1.0),  # tekrar eden sözcük ödüllenmez/cezalanmaz
+        ("parse_value", "emit_scalar", 0.0),
+        ("", "emit_scalar", 0.0),
+        ("emit_scalar", "", 0.0),
+    ],
+)
 def test_f1_degerleri(tahmin, gercek, beklenen):
     assert f1(tahmin, gercek) == pytest.approx(beklenen)
 
@@ -51,6 +58,7 @@ def test_f1_simetrik_ve_sinirli():
 
 def test_olc_ayni_f1_kullanir():
     import olc
+
     assert olc.f1 is taban.f1
 
 
@@ -65,8 +73,7 @@ def _fonksiyon_kaynagi(kod: str, ad: str) -> str:
 def test_colab_f1_taban_ile_ayni(defter):
     """Notebook'lar F1'i kopya olarak taşır; kopya taban.py'den ayrışırsa sonuçlar karşılaştırılamaz."""
     taban_kodu = (KOK / "taban.py").read_text()
-    hucreler = ["".join(h["source"]) for h in json.loads(defter.read_text())["cells"]
-                if h["cell_type"] == "code"]
+    hucreler = ["".join(h["source"]) for h in json.loads(defter.read_text())["cells"] if h["cell_type"] == "code"]
     bulundu = False
     for kod in hucreler:
         # IPython satırları (%pip, !ls) AST'yi bozar; yalnız f1 tanımı olan hücrelere bak.

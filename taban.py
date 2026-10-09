@@ -66,6 +66,53 @@ def kelimeler(ad: str) -> list[str]:
     return [k for k in re.split(r"[_\W]+", ad.lower()) if k]
 
 
+# --esanlam: aynı işi anlatan sözcükler tek temsilciye indirilir (get_size ~ fetch_length). Elle seçilmiş,
+# muhafazakâr bir liste; f1() bunu kullanmaz, yalnız --kismi/--esanlam raporundaki ek sütunları etkiler.
+ESANLAM_GRUPLARI = (
+    ("get", "fetch", "read", "load", "retrieve", "obtain"),
+    ("find", "lookup", "search"),
+    ("set", "put", "store", "write", "assign", "save"),
+    ("free", "release", "destroy", "delete", "dealloc", "dispose", "cleanup"),
+    ("alloc", "allocate", "malloc", "new", "create", "make"),
+    ("init", "initialize", "setup"),
+    ("len", "length", "size"),
+    ("cmp", "compare"),
+    ("eq", "equal", "equals"),
+    ("str", "string"),
+    ("buf", "buffer"),
+    ("err", "error"),
+    ("msg", "message"),
+    ("idx", "index"),
+    ("ptr", "pointer"),
+    ("num", "number"),
+    ("val", "value"),
+    ("cfg", "config", "conf", "configuration"),
+    ("ctx", "context"),
+    ("emit", "print", "dump", "output"),
+    ("check", "validate", "verify"),
+)
+ESANLAM = {k: grup[0] for grup in ESANLAM_GRUPLARI for k in grup}
+
+
+def kelime_pr(tahmin: str, gercek: str, esanlam: bool = False) -> tuple:
+    """Sözcük kümesi precision ve recall'u. f1() ile aynı bölme; esanlam=True ise ESANLAM'a indirger.
+
+    precision düşük, recall yüksek: tahmin doğru sözcükleri içeriyor ama fazlasını da ekliyor.
+    precision yüksek, recall düşük: tahmin doğru ama eksik (ör. yalnız "update").
+    """
+    t, g = set(kelimeler(tahmin)), set(kelimeler(gercek))
+    if esanlam:
+        t, g = {ESANLAM.get(k, k) for k in t}, {ESANLAM.get(k, k) for k in g}
+    ortak = len(t & g)
+    if not ortak:
+        return 0.0, 0.0
+    return ortak / len(t), ortak / len(g)
+
+
+def harmonik(p: float, r: float) -> float:
+    return 2 * p * r / (p + r) if p + r else 0.0
+
+
 def f1(tahmin: str, gercek: str) -> float:
     t, g = kelimeler(tahmin), kelimeler(gercek)
     ortak = len(set(t) & set(g))
@@ -92,6 +139,10 @@ def main():
     ap.add_argument("--devam", action="store_true",
                     help="var olan sonuç dosyasındaki sağlam satırları koru, yalnız eksik/HATA olanları sor")
     ap.add_argument("--kesik-de", action="store_true", help="--devam ile: tavana çarpıp boş kalanları da yeniden sor")
+    ap.add_argument("--kismi", action="store_true",
+                    help="satırlara sözcük düzeyinde precision (p) ve recall (r) ekle, ortalamalarını raporla")
+    ap.add_argument("--esanlam", action="store_true",
+                    help="--kismi ile: get/fetch/read gibi eş anlamlıları birleştirerek p_es, r_es, f1_es de yaz")
     ap.add_argument("--oneksiz", action="store_true",
                     help="gerçek ad F1'inin yanına öneksiz F1'i de (ozet.py tanımı) yaz ve raporla")
     a = ap.parse_args()
@@ -122,7 +173,15 @@ def main():
                 "f1": round(s, 3), "opt": r["opt"], "token": c.get("token", 0), "bitis": c.get("bitis")}
 
     def iki_f1(r):
-        return {**r, "f1_oneksiz": round(f1_oneksiz(r), 3)} if a.oneksiz else r
+        r = {**r, "f1_oneksiz": round(f1_oneksiz(r), 3)} if a.oneksiz else r
+        if a.kismi or a.esanlam:
+            tahmin = str(r.get("tahmin") or "")
+            p, rc = kelime_pr(tahmin, r["gercek"])
+            r = {**r, "p": round(p, 3), "r": round(rc, 3)}
+            if a.esanlam:
+                p, rc = kelime_pr(tahmin, r["gercek"], esanlam=True)
+                r = {**r, "p_es": round(p, 3), "r_es": round(rc, 3), "f1_es": round(harmonik(p, rc), 3)}
+        return r
 
     # Satırlar geldikçe ara dosyaya yazılır; koşu yarıda kesilse de --devam kaldığı yerden alır.
     ara = sonuc.with_suffix(".ara")
@@ -160,6 +219,12 @@ def main():
         if a.oneksiz:
             o = oneksiz[opt]
             print(f"{opt}: öneksiz F1 {sum(o) / len(o):.2f}  (tam isabet {sum(x == 1 for x in o)})")
+        grup = [r for r in hepsi if r["opt"] == opt]
+        ort = lambda alan: sum(r[alan] for r in grup) / len(grup)
+        if a.kismi or a.esanlam:
+            print(f"{opt}: precision {ort('p'):.2f}  recall {ort('r'):.2f}")
+        if a.esanlam:
+            print(f"{opt}: eş anlamlı  precision {ort('p_es'):.2f}  recall {ort('r_es'):.2f}  F1 {ort('f1_es'):.2f}")
     print(f"yeni token: {sum(r.get('token', 0) for r in yeni.values())}")
     print(f"ayrıntı → {sonuc}")
 
