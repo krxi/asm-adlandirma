@@ -8,7 +8,7 @@ Sonda, repodan yeniden üretilemeyen parçaların listesi var.
 
 | Gereken | Neden | Not |
 |---|---|---|
-| macOS + Apple clang | Hedef `x86_64-apple-macos12`, Mach-O `.o`/dylib, `strip -x` | v4 raporu: Apple clang 21.0.0, sistem Python 3.9.6 ([VERI_HATTI_V4.md](VERI_HATTI_V4.md)) |
+| macOS + Apple clang **21** | Hedef `x86_64-apple-macos12`, Mach-O `.o`/dylib, `strip -x` | v4 raporu: Apple clang 21.0.0, sistem Python 3.9.6 ([VERI_HATTI_V4.md](VERI_HATTI_V4.md)). CI'da Xcode 26.6 (clang 21) ile `test_cikar_bin` geçiyor; Xcode 15.4 (clang 15) ile `cikar_bin.py` kod içi bir baytı `<unknown>` komut olarak görüp duruyor |
 | `objdump` (LLVM) | Disassembly, relokasyon, `__cstring` | Xcode komut satırı araçlarıyla gelir |
 | Python 3.9+ | Bütün betikler | Testler 3.9 ve 3.12'de CI'da koşar |
 | `gh` (oturum açık) | Yalnız `aday_bul.py` (v4 aday listesi) | |
