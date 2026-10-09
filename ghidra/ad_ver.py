@@ -10,8 +10,10 @@ MODEL = "mlx-community/Qwen2.5-Coder-0.5B-Instruct-4bit"
 ANAHTAR_DEGISKENI = "OPENAI_API_KEY"
 KURU_CALIS = True
 EN_COK = 20
-BAGLAM = False
-ISTEM = "taban"   # taban: büyük modeller; lora: ad+açıklama LoRA'sı (v4); lora-ad: yalnız ad LoRA'sı (v3)
+BAGLAM = True
+ISTEM = "sonraki"  # sonraki: ad+açıklama ve çağrı bağlamıyla eğitilen deney adaptörü
+GIRDI_KARAKTER_TAVANI = 9000
+YORUM_HEDEFI = "ikisi"  # ikisi | plate | fonksiyon
 ZAMAN_ASIMI = 300
 # --------------------------------------------------------------------------
 
@@ -28,7 +30,8 @@ BETIK_DIZINI = os.path.dirname(os.path.abspath(__file__))
 if BETIK_DIZINI not in sys.path:
     sys.path.insert(0, BETIK_DIZINI)
 
-from bicim import asm_bicimle, cevap_ayristir, fonksiyon_ozeti, gecerli_ad
+from bicim import (asm_bicimle, cevap_ayristir, fonksiyon_ozeti, gecerli_ad,
+                   model_girdisi, model_yorumu_birlestir)
 
 from ghidra.program.model.listing import CodeUnit
 from ghidra.program.model.symbol import SourceType
@@ -40,7 +43,7 @@ SISTEM = ("Sen deneyimli bir tersine mühendissin. Sana sembolleri silinmiş bir
           "kütüphane çağrıları görünür. Fonksiyonun asıl kaynak koddaki adını tahmin et. "
           'Yalnız JSON dön: {"ad": "snake_case_tahmin", "aciklama": "tek cümle Türkçe"}')
 SISTEM_BAGLAM = SISTEM + " Çağrılan iç fonksiyonların özetleri asm'nin altında verildi."
-# lora/hazirla.py ile aynı tutulur: LoRA bu istemlerle, bağlam cümlesi olmadan eğitildi.
+# lora/hazirla.py ile aynı tutulur: LoRA'lar bu istemlerle, bağlam cümlesi olmadan eğitildi.
 SISTEM_LORA_AD = SISTEM.rsplit("Yalnız JSON", 1)[0] + 'Yalnız JSON dön: {"ad": "fonksiyon_adi"}'
 SISTEM_LORA = SISTEM_LORA_AD[:-1] + ', "aciklama": "tek cümle Türkçe"}'
 YORUM_ON_EKI = "[asm-adlandirma] "
@@ -76,8 +79,8 @@ def ayarlar(ham):
             MODEL = secenek.split("=", 1)[1]
         elif secenek.startswith("--istem="):
             ISTEM = secenek.split("=", 1)[1]
-            if ISTEM not in ("taban", "lora", "lora-ad"):
-                raise ValueError("--istem taban|lora|lora-ad")
+            if ISTEM not in ("taban", "sonraki", "lora", "lora-ad"):
+                raise ValueError("--istem taban|sonraki|lora|lora-ad")
         elif secenek.startswith("--en-cok="):
             en_cok = int(secenek.split("=", 1)[1])
         else:
@@ -85,6 +88,8 @@ def ayarlar(ham):
         i += 1
     if en_cok < 1:
         raise ValueError("--en-cok en az 1 olmalı")
+    if YORUM_HEDEFI not in ("ikisi", "plate", "fonksiyon"):
+        raise ValueError("YORUM_HEDEFI ikisi|plate|fonksiyon olmalı")
     return kuru, en_cok, baglam
 
 
@@ -206,7 +211,7 @@ def baglam_uret(program, cagrilanlar, sub_adlari):
 
 
 def sistem_istemi(baglam):
-    if ISTEM == "lora":
+    if ISTEM in ("sonraki", "lora"):
         return SISTEM_LORA
     if ISTEM == "lora-ad":
         return SISTEM_LORA_AD
@@ -214,9 +219,7 @@ def sistem_istemi(baglam):
 
 
 def modele_sor(asm, baglam):
-    girdi = asm
-    if baglam:
-        girdi += "\n\n; --- çağrılan fonksiyonlar ---\n" + baglam
+    girdi, baglam_kesildi = model_girdisi(asm, baglam, GIRDI_KARAKTER_TAVANI)
     govde = {"model": MODEL, "temperature": 0, "max_tokens": 2048,
              "messages": [{"role": "system", "content": sistem_istemi(baglam)},
                           {"role": "user", "content": girdi}]}
@@ -229,7 +232,7 @@ def modele_sor(asm, baglam):
     yanit = urlopen(istek, timeout=ZAMAN_ASIMI).read()
     if not isinstance(yanit, str):
         yanit = yanit.decode("utf-8")
-    return cevap_ayristir(json.loads(yanit))
+    return cevap_ayristir(json.loads(yanit)), baglam_kesildi
 
 
 def aday_fonksiyonlar(program):
@@ -251,12 +254,15 @@ def aday_fonksiyonlar(program):
 def plate_yorumu_yaz(program, adres, aciklama):
     """Analistin eski yorumunu koru, önceki model yorumunu güncelle."""
     liste = program.getListing()
-    yeni = YORUM_ON_EKI + aciklama.strip()
     eski = liste.getComment(CodeUnit.PLATE_COMMENT, adres) or ""
-    satirlar = [satir for satir in str(eski).splitlines()
-                if not satir.startswith(YORUM_ON_EKI)]
-    satirlar.append(yeni)
-    liste.setComment(adres, CodeUnit.PLATE_COMMENT, "\n".join(satirlar).strip())
+    liste.setComment(adres, CodeUnit.PLATE_COMMENT,
+                     model_yorumu_birlestir(eski, aciklama, YORUM_ON_EKI))
+
+
+def fonksiyon_yorumu_yaz(fonksiyon, aciklama):
+    """Fonksiyon yorumunda analist satırlarını koruyup model satırını güncelle."""
+    eski = fonksiyon.getComment() or ""
+    fonksiyon.setComment(model_yorumu_birlestir(eski, aciklama, YORUM_ON_EKI))
 
 
 def uygula(program, fonksiyon, ad, aciklama):
@@ -272,7 +278,10 @@ def uygula(program, fonksiyon, ad, aciklama):
                 fonksiyon.setName(ekli, SourceType.USER_DEFINED)
                 ad = ekli
         if aciklama.strip():
-            plate_yorumu_yaz(program, fonksiyon.getEntryPoint(), aciklama)
+            if YORUM_HEDEFI in ("ikisi", "plate"):
+                plate_yorumu_yaz(program, fonksiyon.getEntryPoint(), aciklama)
+            if YORUM_HEDEFI in ("ikisi", "fonksiyon"):
+                fonksiyon_yorumu_yaz(fonksiyon, aciklama)
         basarili = True
         return ad
     finally:
@@ -301,7 +310,7 @@ def ana():
         try:
             asm, cagrilanlar, _ = fonksiyonu_bicimle(currentProgram, fonksiyon, sub_adlari)
             baglam = baglam_uret(currentProgram, cagrilanlar, sub_adlari) if baglamli else ""
-            cevap = modele_sor(asm, baglam)
+            cevap, baglam_kesildi = modele_sor(asm, baglam)
             yeni_ad = gecerli_ad(cevap.get("ad", ""))
             aciklama = cevap.get("aciklama", "").strip()
             if not yeni_ad:
@@ -310,7 +319,11 @@ def ana():
                 yeni_ad = uygula(currentProgram, fonksiyon, yeni_ad, aciklama)
             println("[%d/%d] %s -> %s%s" %
                     (sira, len(adaylar), eski_ad, yeni_ad, "  [kuru]" if kuru else ""))
-            if aciklama:
+            if kuru:
+                println("  açıklama: " + (aciklama or "(yok)"))
+                println("  bağlam: " + ("kesildi" if baglam_kesildi else
+                                         ("kesilmedi" if baglamli else "kapalı")))
+            elif aciklama:
                 println("  " + aciklama)
         except Exception as hata:
             printerr("[%d/%d] %s: HATA: %s" % (sira, len(adaylar), eski_ad, hata))

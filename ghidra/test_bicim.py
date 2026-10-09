@@ -3,7 +3,8 @@ import json
 import unittest
 
 from bicim import (asm_bicimle, cevap_ayristir, fonksiyon_ozeti,
-                   gecerli_ad, ic_cagrilar, string_goster)
+                   gecerli_ad, ic_cagrilar, model_girdisi,
+                   model_yorumu_birlestir, string_goster)
 
 
 class BicimTesti(unittest.TestCase):
@@ -51,6 +52,28 @@ class BicimTesti(unittest.TestCase):
     def test_json_olmayan_cevap(self):
         ham = {"choices": [{"message": {"content": "paket_ayristir"}}]}
         self.assertEqual(cevap_ayristir(ham), {"ad": "paket_ayristir", "aciklama": ""})
+
+    def test_sonraki_model_girdisi(self):
+        girdi, kesildi = model_girdisi("ret", "sub_0001 (1 komut)", 100)
+        self.assertEqual(girdi, "ret\n\n; --- çağrılan fonksiyonlar ---\nsub_0001 (1 komut)")
+        self.assertFalse(kesildi)
+
+        girdi, kesildi = model_girdisi(
+            "ret", "sub_0001 (10 komut)\nsub_0002 (20 komut)\nsub_0003 (30 komut)", 80)
+        self.assertTrue(kesildi)
+        self.assertLessEqual(len(girdi), 80)
+        self.assertTrue(girdi.endswith("; ... bağlam kesildi"))
+        self.assertIn("sub_0001", girdi)
+        self.assertNotIn("sub_0003", girdi)
+
+    def test_model_yorumu_analist_satirlarini_korur(self):
+        eski = ("Analistin ilk notu\n[asm-adlandirma] Eski açıklama.\n"
+                "Analistin ikinci notu\n[asm-adlandirma] Yinelenmiş eski satır.")
+        self.assertEqual(
+            model_yorumu_birlestir(eski, "Yeni açıklama."),
+            "Analistin ilk notu\nAnalistin ikinci notu\n[asm-adlandirma] Yeni açıklama.")
+        self.assertEqual(model_yorumu_birlestir("", "İlk açıklama."),
+                         "[asm-adlandirma] İlk açıklama.")
 
 
 if __name__ == "__main__":

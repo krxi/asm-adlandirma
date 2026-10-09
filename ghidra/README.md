@@ -2,8 +2,8 @@
 
 `ad_ver.py`, seçili fonksiyonları; seçim yoksa adı `FUN_` ile başlayan en çok
 `EN_COK` fonksiyonu OpenAI uyumlu bir modele yollar. Tahmini geçerli bir ada
-çevirir, açıklamayı plate comment olarak ekler. Varsayılan kip kurudur: modeli
-çağırır ama Ghidra veritabanını değiştirmez.
+çevirir, açıklamayı hem plate comment'e hem fonksiyon yorumuna ekler. Varsayılan
+kip kurudur: modeli çağırır ama Ghidra veritabanını değiştirmez.
 
 ## Kurulum ve kullanım
 
@@ -18,6 +18,21 @@
    çalıştırın. Seçim yoksa yalnız `FUN_...` fonksiyonları ele alınır.
 4. Sonucu gördükten sonra `KURU_CALIS = False` yaparak yeniden çalıştırın.
 
+Sonraki deney adaptörü için varsayılan ayarlar `ISTEM = "sonraki"` ve
+`BAGLAM = True` değerleridir. Bu kip, `lora/hazirla.py` içindeki
+`SISTEM_ACIKLAMA` istemini bağlamdan söz eden ek bir sistem cümlesi olmadan
+kullanır. Kullanıcı girdisi eğitimdeki gibi assembly, boş satır ve
+`; --- çağrılan fonksiyonlar ---` başlığından sonra bağlamdır. Eğitim hedefinde
+proje öneki atılmış olabileceğinden üretilen adın proje öneki taşımaması
+beklenen bir sonuçtur.
+
+`GIRDI_KARAKTER_TAVANI = 9000`, tokenizer gerektirmeyen yaklaşık girdi
+sınırıdır. Sınır aşılırsa önce çağrı bağlamı kısaltılır ve girdiye
+`; ... bağlam kesildi` satırı eklenir. `YORUM_HEDEFI`, açıklamanın `"ikisi"`,
+`"plate"` veya `"fonksiyon"` hedeflerinden hangilerine yazılacağını seçer.
+Her iki yorum türünde analist satırları korunur ve yalnız önceki
+`[asm-adlandirma]` satırı güncellenir.
+
 Başta düzenlenebilen `EN_COK` ve `BAGLAM` seçeneklerine ek olarak headless
 çalıştırmada şu argümanlar kullanılabilir:
 
@@ -25,11 +40,14 @@ Başta düzenlenebilen `EN_COK` ve `BAGLAM` seçeneklerine ek olarak headless
 --kuru | --uygula
 --en-cok 10
 --baglam | --baglamsiz
+--istem=taban|sonraki|lora|lora-ad
 ```
 
 `--baglam`, çağrılan iç fonksiyonların `cikar.py` biçimindeki kısa özetlerini
 assembly'nin sonuna ekler. Yalnız x86-64 desteklenir. Dolaylı çağrılarda hedef
 Ghidra analizi tarafından çözülememişse import/iç fonksiyon adı da çözülemez.
+Kuru kip her fonksiyon için tahmini adı, açıklamayı ve bağlamın kesilip
+kesilmediğini konsola yazar.
 
 Ghidra gerektirmeyen testler depo kökünden çalışır:
 
@@ -45,14 +63,19 @@ Ghidra 12'de Jython yok; betik PyGhidra ile çalışır. Ghidra'nın kendi wheel
 python3.12 -m venv ~/ghidra-venv
 ~/ghidra-venv/bin/pip install --no-index --find-links <ghidra>/Ghidra/Features/PyGhidra/pypkg/dist pyghidra
 source ~/ghidra-venv/bin/activate
-.venv/bin/python -m mlx_lm server --model mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit --adapter-path lora/adaptor-15b-v3 &
+.venv/bin/python -m mlx_lm server --model mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit --adapter-path lora/adaptor-sonraki &
 <ghidra>/support/pyghidraRun --headless /tmp proje -import libtomlc17.dylib -deleteProject \
-  -scriptPath ghidra -postScript ad_ver.py --kuru --baglam --istem=lora-ad \
+  -scriptPath ghidra -postScript ad_ver.py --kuru --istem=sonraki \
   --model=mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit --en-cok 100
 ```
 
-`--istem=lora` (ad + açıklama, v4) ve `--istem=lora-ad` (yalnız ad, v3) LoRA'nın eğitildiği istemi birebir kullanır;
-varsayılan `taban` büyük modeller içindir. `--model=` sunucuya hangi modelin sorulacağını seçer.
+`lora/adaptor-sonraki` örnek addır; `--adapter-path` için eğitilen ve sunucu
+biçimine dönüştürülen adaptörün gerçek dizinini kullanın.
+
+`--istem=sonraki` yeni ad + açıklama ve çağrı bağlamı adaptörünü hedefler.
+`--istem=lora` (eski ad + açıklama) ile `--istem=lora-ad` (yalnız ad) da LoRA'nın
+eğitildiği sistem istemini kullanır; `taban` büyük modeller içindir. `--model=`
+sunucuya hangi modelin sorulacağını seçer.
 
 İlk deneme (tomlc17, eğitimde görülmemiş test projesi, `-O2`, `strip -x`, 1.5B LoRA v3'ün 750. adım kaydı):
 67 `FUN_` parçası; `pool_destroy`, `pool_alloc`, `tab_find` tam isabet. Parçaların çoğu `-O2`'nin ayırdığı

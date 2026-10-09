@@ -22,6 +22,8 @@ TURKCE = {
     "ö": "o", "Ö": "O", "ş": "s", "Ş": "S", "ü": "u", "Ü": "U",
 }
 
+BAGLAM_BASLIK = "\n\n; --- çağrılan fonksiyonlar ---\n"
+
 
 def string_goster(deger, sinir=80):
     """Bir string'i veri setindeki ``"..."`` gösterimine çevir."""
@@ -40,6 +42,51 @@ def metin(deger):
     if isinstance(deger, METIN):
         return deger
     return str(deger)
+
+
+def model_girdisi(asm, baglam, karakter_tavan=9000):
+    """Assembly ve çağrı bağlamını eğitimdeki biçimde birleştir.
+
+    Tavan aşılırsa assembly korunarak önce bağlam kısaltılır. Çok büyük bir
+    assembly tek başına tavanı dolduruyorsa son çare olarak o da kısaltılır;
+    kesilme işareti her durumda girdinin sonunda kalır. Dönüş değeri
+    ``(girdi, baglam_kesildi)`` ikilisidir.
+    """
+    asm, baglam = metin(asm), metin(baglam)
+    if not baglam:
+        return asm, False
+
+    tam = asm + BAGLAM_BASLIK + baglam
+    if not karakter_tavan or len(tam) <= karakter_tavan:
+        return tam, False
+
+    isaret = "; ... bağlam kesildi"
+    # İşaret için de yer ayır; bağlam, eğitim hazırlayıcısındaki gibi önce
+    # feda edilir. Bağlam çok satırlıysa yarım kalan son özeti at.
+    sabit = len(asm) + len(BAGLAM_BASLIK) + len(isaret) + 1
+    kalan = max(0, karakter_tavan - sabit)
+    kirpilmis = baglam[:kalan].rstrip()
+    if len(kirpilmis) < len(baglam) and "\n" in kirpilmis:
+        kirpilmis = kirpilmis.rsplit("\n", 1)[0].rstrip()
+
+    ek = (kirpilmis + "\n" if kirpilmis else "") + isaret
+    sonuc = asm + BAGLAM_BASLIK + ek
+    if karakter_tavan and len(sonuc) > karakter_tavan:
+        # Assembly'nin kendisi tavandan büyükse bağlam artık tamamen
+        # çıkarılmıştır; işareti koruyacak kadar assembly bırak.
+        asm_siniri = max(0, karakter_tavan - len(BAGLAM_BASLIK) - len(isaret))
+        asm = asm[:asm_siniri].rstrip()
+        sonuc = asm + BAGLAM_BASLIK + isaret
+    return sonuc, True
+
+
+def model_yorumu_birlestir(eski, aciklama, on_ek="[asm-adlandirma] "):
+    """Analist yorumlarını koruyup önceki model satırını yenisiyle değiştir."""
+    satirlar = [satir for satir in metin(eski).splitlines()
+                if not satir.startswith(on_ek)]
+    yeni = on_ek + metin(aciklama).strip()
+    satirlar.append(yeni)
+    return "\n".join(satirlar).strip()
 
 
 def islenenleri_temizle(islenenler):
