@@ -15,7 +15,7 @@ import pytest
 import taban
 
 KOK = Path(__file__).resolve().parents[1]
-SAF = {"ad_ayikla", "kelimeler", "f1", "hf_klasoru", "veri_sirasi", "kodla", "egitim_ayarlari", "hf_paketle"}
+SAF = {"ad_ayikla", "kelimeler", "f1", "hf_klasoru", "veri_sirasi", "sablon_ids", "kodla", "egitim_ayarlari", "hf_paketle"}
 
 
 def kaynaklar():
@@ -112,9 +112,17 @@ def test_sira_tum_veriyi_korur_ve_mikro_batchten_bagimsiz(yardimci):
 
 
 class SahteTokenizer:
-    def apply_chat_template(self, mesajlar, *, tokenize, add_generation_prompt, enable_thinking):
+    def apply_chat_template(self, mesajlar, *, tokenize, add_generation_prompt, enable_thinking, return_dict=True):
         assert tokenize and not enable_thinking
-        return [1, 2, 3] if add_generation_prompt else [1, 2, 3, 4, 5, 6]
+        ids = [1, 2, 3] if add_generation_prompt else [1, 2, 3, 4, 5, 6]
+        # transformers 5 gibi: return_dict yoksa sözlük döner
+        return ids if return_dict is False else {"input_ids": ids, "attention_mask": [1] * len(ids)}
+
+
+class SozlukTokenizer(SahteTokenizer):
+    def apply_chat_template(self, *a, **k):
+        k["return_dict"] = True
+        return super().apply_chat_template(*a, **k)
 
 
 def test_yalniz_assistant_kaybi_ve_json_hedef(yardimci):
@@ -124,6 +132,7 @@ def test_yalniz_assistant_kaybi_ve_json_hedef(yardimci):
     ]}
     kod = yardimci["kodla"](satir, SahteTokenizer())
     assert kod["labels"] == [-100, -100, -100, 4, 5, 6]
+    assert yardimci["kodla"](satir, SozlukTokenizer())["labels"] == [-100, -100, -100, 4, 5, 6]
     assert len(kod["attention_mask"]) == len(kod["input_ids"]) == 6
     with pytest.raises(ValueError, match="veriyi bu tokenizer"):
         yardimci["kodla"](satir, SahteTokenizer(), 5)
