@@ -18,6 +18,15 @@ SISTEM = ("Sen deneyimli bir tersine mühendissin. Sana sembolleri silinmiş bir
           "kütüphane çağrıları görünür. Fonksiyonun asıl kaynak koddaki adını tahmin et. "
           'Yalnız JSON dön: {"ad": "fonksiyon_adi"}')
 SISTEM_ACIKLAMA = SISTEM[:-1] + ', "aciklama": "tek cümle Türkçe"}'
+SISTEM_V5 = (
+    "Sen deneyimli bir tersine mühendissin. Sana sembolleri silinmiş bir x86-64 fonksiyonu "
+    "(Intel sözdizimi) ve varsa çağrı bağlamı verilecek. İç fonksiyonlar sub_XXXX diye gizlendi; "
+    "dış kütüphane çağrıları görünür. Önce fonksiyonun ne yaptığını tek cümle İngilizce açıkla, "
+    "sonra asıl kaynak adını snake_case veya kaynak stilinde bir tanımlayıcı olarak tahmin et, "
+    "sonra tek cümle Türkçe açıkla. Yalnız bu sırada JSON dön: "
+    '{"aciklama_en": "Reads a record from the stream.", "ad": "read_record", '
+    '"aciklama": "Akıştan bir kayıt okur."}'
+)
 BAGLAM_BASLIK = "\n\n; --- çağrılan fonksiyonlar ---\n"
 
 

@@ -1,6 +1,6 @@
 """lora/hazirla.py (v3 düzeni) ve lora/hazirla_olcek.py (v4 düzeni): sohbet biçimi ve proje bazlı bölme."""
 
-import json, subprocess, sys
+import json, os, subprocess, sys
 from collections import Counter
 from pathlib import Path
 
@@ -8,6 +8,8 @@ import pytest
 
 import hazirla as h
 import hazirla_olcek as ho
+import hazirla_sonraki as hs
+from types import SimpleNamespace
 
 KOK = Path(__file__).resolve().parent.parent
 
@@ -342,3 +344,124 @@ def test_hazirla_olcek_hedef_bayraklari(tmp_path, bayraklar, egitim, test, ozet_
     assert hedefler(tmp_path / "c" / "train.jsonl") == sorted(egitim)
     assert hedefler(tmp_path / "c" / "test.jsonl") == test
     assert json.loads((tmp_path / "c" / "ozet.json").read_text())["test_hedefi"] == ozet_test
+
+
+class SohbetTok(KarakterTok):
+    def decode(self, ids):
+        return "".join(ids)
+
+    def apply_chat_template(self, messages, **kwargs):
+        assert kwargs.get("return_dict") is False
+        return self.encode("".join(m["content"] for m in messages) + "!" * 20)
+
+
+def test_v5_hedef_sirasi_ve_ham_ad(monkeypatch):
+    monkeypatch.setattr(h, "TOK", SohbetTok())
+    monkeypatch.setattr(h, "ONEK", {"p": {"p"}})
+    a = SimpleNamespace(satir_tavan=200, token_tavan=2500)
+    r = satir(dosya="a.c")
+    for ham, ad in ((False, "oku"), (True, "p_oku")):
+        s = hs.satir_v5(r, "Okur.", "Reads.", a, ham)
+        assert s["messages"][0]["content"] == h.SISTEM_V5
+        hedef = json.loads(s["messages"][2]["content"])
+        assert list(hedef) == ["aciklama_en", "ad", "aciklama"]
+        assert hedef["ad"] == ad
+        assert s["hedef_tur"] == "tam"
+    for tr, en in ((None, None), ("Okur.", None), (None, "Reads.")):
+        s = hs.satir_v5(r, tr, en, a)
+        assert json.loads(s["messages"][2]["content"]) == {"ad": "oku"}
+        assert s["hedef_tur"] == "ad"
+
+
+@pytest.mark.parametrize("ad", ["MAIN", "init", "foo", "bar", "baz", "helper", "test", "f123", "Test_x", "SUB_0001"])
+def test_v5_jenerik(ad):
+    assert hs.JENERIK.fullmatch(ad)
+
+
+@pytest.mark.parametrize("ad", ["main_loop", "initialize", "foo_reader", "f12x", "p_test", "testify"])
+def test_v5_anlamli_ad(ad):
+    assert not hs.JENERIK.fullmatch(ad)
+
+
+def test_v5_kapsam_tavan_ve_belirlenimcilik():
+    rs = [{"kaynak": f"{p}/a.c:oku{i}", "satir": {"id": f"{p}/{i}/{o}", "proje": p, "opt": o}}
+          for p in ("a", "b") for i in range(10) for o in hs.OPT_AGIRLIK]
+    sec, ozet = hs.egitim_sec_v5(rs, hedef=30, proje_tavan=15)
+    assert len(sec) == 30
+    assert {r["kaynak"] for r in sec} == {r["kaynak"] for r in rs}
+    assert max(Counter(r["satir"]["proje"] for r in sec).values()) == 15
+    for key in {r["kaynak"] for r in sec}:
+        opts = [r["satir"]["opt"] for r in sec if r["kaynak"] == key]
+        assert len(opts) == len(set(opts)) <= 2
+    assert (sec, ozet) == hs.egitim_sec_v5(list(reversed(rs)), hedef=30, proje_tavan=15)
+    kapsam, ozet = hs.egitim_sec_v5(rs, proje_tavan=5)
+    assert len(kapsam) == 20 and ozet["tavan_asan_projeler"] == {"a": 10, "b": 10}
+    tavan, ozet = hs.egitim_sec_v5(rs, proje_tavan=5, kapsam_onceligi=False)
+    assert len(tavan) == 10 and ozet["tavandan_atilan_fonksiyon"] == 10
+
+
+def test_v5_opt_agirligi():
+    rs = [{"kaynak": f"p/{i}", "satir": {"id": f"{i}/{o}", "proje": "p", "opt": o}}
+          for i in range(3000) for o in hs.OPT_AGIRLIK]
+    sec, _ = hs.egitim_sec_v5(rs, hedef=3000, proje_tavan=0)
+    say = Counter(r["satir"]["opt"] for r in sec)
+    assert say["-O2"] > say["-O0"] and say["-O3"] > say["-O0"]
+
+
+def test_v5_tam_akis(tmp_path, monkeypatch):
+    monkeypatch.setattr(hs, "tokenizer_v5", lambda a: (SohbetTok(), {"kullanilan": "test"}))
+    monkeypatch.setattr(hs, "OZET_ONEK", {})
+    d = tmp_path / "veri" / "bin" / "olcek"
+    d.mkdir(parents=True)
+    train = [satir(id=f"p/{ad}/{opt}", dosya="a.c", ad=ad, opt=opt)
+             for ad in ["main", "Test_x", "oku", "yaz"] for opt in ("-O0", "-O2")]
+    # Aynı asm'ye sahip farklı kaynak fonksiyonlar da kapsamda kalmalı.
+    valid = [satir(id=f"v/{i}", proje=f"v{i % 3}", dosya="a.c") for i in range(310)]
+    test = [satir(id=f"t/{i}", proje="p", dosya="a.c", ad=f"p_oku{i}") for i in range(6)]
+    for ad, rs in (("egitim", train), ("dogrulama", valid), ("test", test)):
+        (d / f"{ad}.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rs))
+    tr, en = tmp_path / "tr.jsonl", tmp_path / "en.jsonl"
+    tr.write_text(json.dumps({"anahtar": "p/a.c:oku", "aciklama": "x" * 3000}) + "\n")
+    en.write_text(json.dumps({"anahtar": "p/a.c:oku", "aciklama_en": "Reads."}) + "\n")
+    ev, ids = tmp_path / "eval.jsonl", tmp_path / "ids.txt"
+    ev.write_text(json.dumps(test[0]) + "\n")
+    ids.write_text("t/4\nt/1\n")
+    a = SimpleNamespace(veri=d, aciklama=tr, aciklama_detay=en, eval115=ev, test_idler=ids,
+                        token_tavan=2500, max_uzunluk=3072, satir_tavan=200, tohum=7,
+                        proje_tavan=1500, hedef_satir=95000, kapsam_onceligi="kapsam", cikti=tmp_path / "c")
+    hs.hazirla_v5(a)
+    ilk = {p.name: p.read_bytes() for p in a.cikti.iterdir()}
+    hs.hazirla_v5(a)
+    assert ilk == {p.name: p.read_bytes() for p in a.cikti.iterdir()}
+    o = json.loads((a.cikti / "ozet.json").read_text())
+    assert o["filtreler"]["train"]["jenerik"] == 4
+    assert o["filtreler"]["train"]["uzunluktan_atilan"] == 2
+    assert o["filtreler"]["train"]["uzunluktan_kaybolan_fonksiyon"] == 1
+    assert o["train"]["satir"] == 2 and o["train"]["uzunluk_asan"] == 0
+    assert o["valid"]["satir"] == 310 and o["valid_300"]["satir"] == 300
+    assert Counter(r["proje"] for r in oku_jsonl(a.cikti / "valid_300.jsonl")) == {"v0": 100, "v1": 100, "v2": 100}
+    assert [r["id"] for r in oku_jsonl(a.cikti / "test_sabit.jsonl")] == ["t/4", "t/1"]
+    for ad in ("test", "test_sabit", "eval115"):
+        for r in oku_jsonl(a.cikti / f"{ad}.jsonl"):
+            assert json.loads(r["messages"][2]["content"])["ad"] == r["gercek_ad"]
+    ids.write_text("yok\n")
+    with pytest.raises(ValueError, match="eksik id"):
+        hs.hazirla_v5(a)
+
+
+def test_v5_tek_satir_token_tavani(monkeypatch):
+    monkeypatch.setattr(h, "TOK", SohbetTok())
+    a = SimpleNamespace(satir_tavan=200, token_tavan=20)
+    s = hs.satir_v5(satir(asm="x" * 100), None, None, a)
+    assert len(s["messages"][1]["content"]) == 20
+
+
+def test_v5_onek_esitligi_hash_tohumundan_bagimsiz():
+    kod = (
+        "import hazirla_olcek as ho; "
+        "rs=[{'proje':'tinymaix','ad':f'{p}_f{i}'} for p in ('tm','tml') for i in range(5)]; "
+        "print(ho.onekler(rs, 'proje', belirlenimci=True))"
+    )
+    for tohum in ("1", "2", "7", "42"):
+        env = {**os.environ, "PYTHONHASHSEED": tohum, "PYTHONPATH": str(KOK / "lora")}
+        assert subprocess.check_output([sys.executable, "-c", kod], env=env, text=True).strip() == "{'tinymaix': {'tm'}}"

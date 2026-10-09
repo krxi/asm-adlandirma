@@ -26,12 +26,14 @@ def proje_ile_ilgili(onek: str, proje: str) -> bool:
     return bool(kok) and (ad.startswith(kok) or (len(kok) <= 3 and ad.startswith(kok[0])))
 
 
-def onekler(satirlar, kural="siklik"):
+def onekler(satirlar, kural="siklik", belirlenimci=False):
     adlar = defaultdict(set)
     for r in satirlar:
         adlar[r["proje"]].add(r["ad"])
     sonuc = {}
     for proje, ads in adlar.items():
+        if belirlenimci:
+            ads = sorted(ads)  # Eşit sıklıkta önekler PYTHONHASHSEED'den etkilenmesin.
         say = Counter(m.group(1).lower() for a in ads if (m := re.match(r"^([A-Za-z][A-Za-z0-9]{1,11})_", a)))
         if kural == "proje":
             say = Counter({k: n for k, n in say.items() if proje_ile_ilgili(k, proje)})

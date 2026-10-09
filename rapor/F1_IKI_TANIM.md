@@ -1,6 +1,6 @@
 # Ad F1: gerçek ad ve öneksiz ad
 
-`python3 iki_f1.py` çıktısı, 38 sonuç dosyası. Elle düzenlemeyin; betiği yeniden çalıştırın.
+`python3 iki_f1.py` çıktısı, 42 sonuç dosyası. Elle düzenlemeyin; betiği yeniden çalıştırın.
 
 - **gerçek ad F1**: `taban.f1(tahmin, gerçek ad)`. Ad snake/camel sözcüklere bölünür, sözcük kümelerinin F1'i.
 - **öneksiz F1**: `ozet.f1_oneksiz`. Projenin ortak öneki (aşağıdaki tablo, ilk sütun) iki taraftan atılır;
@@ -33,6 +33,8 @@
 | zlib-deepseek-v4.1-flash | 60 | 0.105 / 0.130 / 0.116 | 0.105 / 0.130 / 0.116 | +0.000 | 0 / 0 | 0.116 | gerçek ad |
 | test-deepseek-v4.1-flash-dusunme | 115 | 0.121 / 0.082 / 0.102 | 0.133 / 0.096 / 0.115 | +0.013 | 3 / 4 | 0.102 | gerçek ad |
 | test-qwen3.8-flash-next | 115 | 0.128 / 0.075 / 0.103 | 0.143 / 0.082 / 0.114 | +0.011 | 1 / 2 | 0.103 | gerçek ad |
+| eval115-molab-qwen3-8b | 115 | 0.102 / 0.085 / 0.094 | 0.118 / 0.103 / 0.111 | +0.017 | 1 / 4 | 0.094 | gerçek ad |
+| test2000-molab-qwen3-8b | 2000 | 0.108 / 0.093 / 0.106 | 0.110 / 0.095 / 0.108 | +0.002 | 25 / 33 | 0.106 | gerçek ad, 2000 id veri/'de yok |
 | zlib-qwen3.8-flash-next | 60 | 0.059 / 0.171 / 0.107 | 0.059 / 0.171 / 0.107 | +0.000 | 0 / 0 | 0.107 | gerçek ad |
 | test-gemma-4-31b-dusunme | 115 | 0.107 / 0.080 / 0.094 | 0.115 / 0.092 / 0.104 | +0.010 | 2 / 3 | 0.094 | gerçek ad |
 | test-gemma-4-31b | 115 | 0.106 / 0.075 / 0.091 | 0.117 / 0.084 / 0.101 | +0.010 | 0 / 1 | 0.091 | gerçek ad |
@@ -42,7 +44,9 @@
 | zlib-v3-qwen3.8-flash-next | 115 | 0.053 / 0.096 / 0.073 | 0.053 / 0.096 / 0.073 | +0.000 | 0 / 0 | 0.073 | gerçek ad |
 | zlib-gemma-4-31b-dusunme | 60 | 0.046 / 0.088 / 0.064 | 0.046 / 0.088 / 0.064 | +0.000 | 0 / 0 | 0.064 | gerçek ad |
 | zlib-gemma-4-31b | 60 | 0.052 / 0.044 / 0.049 | 0.052 / 0.044 / 0.049 | +0.000 | 0 / 0 | 0.049 | gerçek ad |
+| sabit500-lora15-v3-baglam-ozet | 500 | 0.047 / 0.037 / 0.044 | 0.048 / 0.037 / 0.045 | +0.000 | 0 / 0 | 0.044 | gerçek ad, 500 id veri/'de yok |
 | zlib-qwen3.8-flash-next-dusunme | 60 | 0.029 / 0.058 / 0.042 | 0.029 / 0.058 / 0.042 | +0.000 | 2 / 2 | 0.042 | gerçek ad |
+| sabit500-lora15-v3-baglam-yok | 500 | 0.034 / 0.026 / 0.037 | 0.035 / 0.026 / 0.038 | +0.000 | 0 / 0 | 0.037 | gerçek ad, 500 id veri/'de yok |
 | zlib-v3-gemma-4-31b | 115 | 0.013 / 0.047 / 0.028 | 0.013 / 0.047 / 0.028 | +0.000 | 0 / 0 | 0.028 | gerçek ad |
 | zlib-glm-5.3 | 60 | 0.044 / 0.000 / 0.025 | 0.044 / 0.000 / 0.025 | +0.000 | 1 / 1 | 0.025 | gerçek ad |
 | test-Qwen2.5-Coder-0.5B-lora-v2 | 112 | 0.021 / 0.019 / 0.020 | 0.022 / 0.022 / 0.022 | +0.002 | 0 / 0 | 0.020 | gerçek ad |
