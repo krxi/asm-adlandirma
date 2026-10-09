@@ -66,31 +66,10 @@ def kelimeler(ad: str) -> list[str]:
     return [k for k in re.split(r"[_\W]+", ad.lower()) if k]
 
 
-# --esanlam: aynı işi anlatan sözcükler tek temsilciye indirilir (get_size ~ fetch_length). Elle seçilmiş,
-# muhafazakâr bir liste; f1() bunu kullanmaz, yalnız --kismi/--esanlam raporundaki ek sütunları etkiler.
-ESANLAM_GRUPLARI = (
-    ("get", "fetch", "read", "load", "retrieve", "obtain"),
-    ("find", "lookup", "search"),
-    ("set", "put", "store", "write", "assign", "save"),
-    ("free", "release", "destroy", "delete", "dealloc", "dispose", "cleanup"),
-    ("alloc", "allocate", "malloc", "new", "create", "make"),
-    ("init", "initialize", "setup"),
-    ("len", "length", "size"),
-    ("cmp", "compare"),
-    ("eq", "equal", "equals"),
-    ("str", "string"),
-    ("buf", "buffer"),
-    ("err", "error"),
-    ("msg", "message"),
-    ("idx", "index"),
-    ("ptr", "pointer"),
-    ("num", "number"),
-    ("val", "value"),
-    ("cfg", "config", "conf", "configuration"),
-    ("ctx", "context"),
-    ("emit", "print", "dump", "output"),
-    ("check", "validate", "verify"),
-)
+# --esanlam: aynı işi anlatan sözcükler tek temsilciye indirilir (get_size ~ fetch_length). Gruplar ve
+# gerekçeleri esanlam.json'da; f1() bunu kullanmaz, yalnız --kismi/--esanlam raporundaki ek sütunları etkiler.
+ESANLAM_GRUPLARI = tuple(tuple(g["sozcukler"]) for g in
+                         json.loads((Path(__file__).resolve().parent / "esanlam.json").read_text())["gruplar"])
 ESANLAM = {k: grup[0] for grup in ESANLAM_GRUPLARI for k in grup}
 
 

@@ -1,0 +1,2 @@
+gradio>=4.44,<6
+# hf arka ucu için ayrıca: torch transformers peft accelerate
