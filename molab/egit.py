@@ -628,6 +628,8 @@ def _(egitim_ayarlari, form, mo):
     _os.environ["DEVAM"] = "1" if _kip.startswith("devam") else "0"
     # 96 GB'ta gerek yok; duman koşusunda açıkken 10.9 sn/adım ölçüldü.
     _os.environ.setdefault("GRAD_CKPT", "0")
+    # ckpt kapalıyken mikro 4 × 3072 token 95 GB'a sığmadı (OOM); ilk molab koşusu mikro 2 idi.
+    _os.environ.setdefault("MIKRO_BATCH", "2")
     if _kip.startswith("duman"):
         _os.environ.setdefault("ASM_KOK", "asm-calisma-v5-duman")
     ayar = egitim_ayarlari("molab")
