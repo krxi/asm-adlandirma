@@ -1,6 +1,6 @@
 # Ad F1: gerçek ad ve öneksiz ad
 
-`python3 iki_f1.py` çıktısı, 42 sonuç dosyası. Elle düzenlemeyin; betiği yeniden çalıştırın.
+`python3 iki_f1.py` çıktısı, 44 sonuç dosyası. Elle düzenlemeyin; betiği yeniden çalıştırın.
 
 - **gerçek ad F1**: `taban.f1(tahmin, gerçek ad)`. Ad snake/camel sözcüklere bölünür, sözcük kümelerinin F1'i.
 - **öneksiz F1**: `ozet.f1_oneksiz`. Projenin ortak öneki (aşağıdaki tablo, ilk sütun) iki taraftan atılır;
@@ -21,7 +21,9 @@
 | zlib-v3-mimo-v2.6-pro | 115 | 0.163 / 0.190 / 0.176 | 0.163 / 0.190 / 0.176 | +0.000 | 9 / 9 | 0.176 | gerçek ad |
 | test-deepseek-v4.1-flash-baglam2 | 115 | 0.194 / 0.121 / 0.159 | 0.203 / 0.138 / 0.172 | +0.013 | 3 / 4 | 0.159 | gerçek ad |
 | test-deepseek-v4.1-flash-baglam | 115 | 0.192 / 0.123 / 0.159 | 0.198 / 0.140 / 0.170 | +0.012 | 2 / 3 | 0.159 | gerçek ad |
+| test2000-mimo-v2.6-pro-baglam | 2000 | 0.178 / 0.154 / 0.167 | 0.180 / 0.157 / 0.170 | +0.003 | 40 / 45 | 0.167 | gerçek ad |
 | test-qwen3.8-flash-next-baglam2 | 115 | 0.204 / 0.086 / 0.148 | 0.213 / 0.102 / 0.160 | +0.012 | 1 / 2 | 0.148 | gerçek ad |
+| test2000-deepseek-v4.1-flash-baglam | 2000 | 0.161 / 0.130 / 0.154 | 0.163 / 0.132 / 0.156 | +0.002 | 40 / 45 | 0.154 | gerçek ad |
 | test-glm-5.3-dusunme | 115 | 0.159 / 0.114 / 0.138 | 0.172 / 0.123 / 0.148 | +0.011 | 4 / 5 | 0.138 | gerçek ad |
 | test-qwen3.8-flash-next-baglam | 115 | 0.171 / 0.091 / 0.133 | 0.181 / 0.109 / 0.147 | +0.014 | 1 / 2 | 0.133 | gerçek ad |
 | zlib-glm-5.3-dusunme | 60 | 0.112 / 0.183 / 0.143 | 0.112 / 0.183 / 0.143 | +0.000 | 5 / 5 | 0.143 | gerçek ad |
