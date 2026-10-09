@@ -20,3 +20,12 @@ Veri, ana checkout'taki `veri/bin/olcek/` ve `veri/aciklama-v4/codex.jsonl` dosy
 ```
 
 Varsayılanlar: proje başına en çok 1.500 eğitim satırı, asm+bağlam için 2.500 token tavanı (notebook `MAX_UZUNLUK=3072`). 9 Ekim 2026 üretimi: train 131.588, valid 19.770, test 12.290 satır; test girdilerinin 7.211'inde bağlam var. Ana metrik `f1`, `taban.py` ile aynı puanlamayla önekli gerçek ada göre hesaplanır; `f1_oneksiz` hedefteki öneksiz ada göredir. `TEST_N=2000` varsayılanıyla test tohumlu bir alt kümede yapılır; tüm test için `None` verin.
+
+**v2 (önerilen):** bulut hattının önek bulgusu üzerine veri `--onek-kurali proje --test-ham-ad` ile yeniden üretildi (`rapor/ONEK_DENETIM_V4.md`). Repo kökünden:
+
+```bash
+.venv/bin/python lora/hazirla_sonraki.py --cikti lora/veri-sonraki-v2 --onek-kurali proje --test-ham-ad
+sh colab/zip_sonraki.sh veri-sonraki-v2
+```
+
+v1'e göre train hedeflerinin %12,8'i (16.909 satır) değişti; test hedefi artık ham ad. `test_sabit.jsonl` aynı 2.000 id. Notebook `f1` (gerçek ad) ve `f1_oneksiz` (`ozet.f1_oneksiz`) raporlar.
