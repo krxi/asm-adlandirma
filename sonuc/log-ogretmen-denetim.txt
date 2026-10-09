@@ -1,0 +1,20 @@
+0 satır korundu, 3000 soruluyor
+token: 162,373 (200/3000 yeni satır)
+token: 321,303 (400/3000 yeni satır)
+token: 469,911 (600/3000 yeni satır)
+token: 635,405 (800/3000 yeni satır)
+token: 797,715 (1000/3000 yeni satır)
+token: 955,048 (1200/3000 yeni satır)
+token: 1,122,052 (1400/3000 yeni satır)
+token: 1,273,967 (1600/3000 yeni satır)
+token: 1,433,903 (1800/3000 yeni satır)
+token: 1,609,539 (2000/3000 yeni satır)
+token: 1,773,788 (2200/3000 yeni satır)
+token: 1,935,120 (2400/3000 yeni satır)
+token: 2,091,215 (2600/3000 yeni satır)
+token: 2,249,114 (2800/3000 yeni satır)
+token: 2,414,432 (3000/3000 yeni satır)
+yeni token: 2,414,432
+toplam token: 2,414,432
+ayrıntı → sonuc/ogretmen-denetim-mimo-v2.6-pro.jsonl
+rapor → rapor/OGRETMEN_DENETIM.md
