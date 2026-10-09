@@ -626,6 +626,8 @@ def _(egitim_ayarlari, form, mo):
     _kip = form.value["kip"]
     _os.environ["MAX_ADIM"] = "20" if _kip.startswith("duman") else "0"
     _os.environ["DEVAM"] = "1" if _kip.startswith("devam") else "0"
+    # 96 GB'ta gerek yok; duman koşusunda açıkken 10.9 sn/adım ölçüldü.
+    _os.environ.setdefault("GRAD_CKPT", "0")
     if _kip.startswith("duman"):
         _os.environ.setdefault("ASM_KOK", "asm-calisma-v5-duman")
     ayar = egitim_ayarlari("molab")
