@@ -44,6 +44,7 @@ def main():
     a = ap.parse_args()
 
     from mlx_lm import generate, load
+    from mlx_lm.sample_utils import make_logits_processors
     model, tok = load(a.model, adapter_path=None if a.adaptor_yok else a.adaptor)
 
     satirlar = [json.loads(l) for l in a.test.open() if l.strip()]
@@ -59,8 +60,10 @@ def main():
         mesajlar[1] = {**mesajlar[1], "content": girdi(r, a.baglam)}
         istem = tok.apply_chat_template(mesajlar, add_generation_prompt=True, tokenize=False)
         n_giris = len(tok.encode(istem))
-        metin = generate(model, tok, prompt=istem, max_tokens=a.maks_token, verbose=False,
-                         repetition_penalty=a.repetition_penalty)
+        # Yeni mlx_lm generate() repetition_penalty almıyor; ceza logits işlemcisiyle verilir.
+        ek = ({"logits_processors": make_logits_processors(repetition_penalty=a.repetition_penalty)}
+              if a.repetition_penalty != 1.0 else {})
+        metin = generate(model, tok, prompt=istem, max_tokens=a.maks_token, verbose=False, **ek)
         m = re.findall(r"\{[^{}]*\}", metin)
         try:
             cevap = json.loads(m[-1]) if m else {"ad": metin.strip()[:60]}
