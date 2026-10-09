@@ -1,8 +1,18 @@
 """cikar.py'nin derleyiciden bağımsız yardımcıları: anonimleştirme, sızıntı, çağrı bağlamı."""
+
 import pytest
 
-from cikar import (anonimlestir, csym, fonksiyon_ozeti, gercek_sembol_deseni, ic_cagrilar, sizar_mi,
-                   string_bul, string_goster, string_kisalt)
+from cikar import (
+    anonimlestir,
+    csym,
+    fonksiyon_ozeti,
+    gercek_sembol_deseni,
+    ic_cagrilar,
+    sizar_mi,
+    string_bul,
+    string_goster,
+    string_kisalt,
+)
 
 
 def test_csym():
@@ -11,14 +21,17 @@ def test_csym():
     assert csym("ltmp0") == "ltmp0"
 
 
-@pytest.mark.parametrize("ad, asm, beklenen", [
-    ("parse_value", 'lea\trdi, [rip]    ; -> "parse_value failed"', True),
-    ("parse_value", 'lea\trdi, [rip]    ; -> "PARSE_VALUE"', True),          # büyük/küçük harf duyarsız
-    ("parse_value", 'lea\trdi, [rip]    ; -> "parse_values"', False),        # sözcük sınırı
-    ("parse_value", 'call\tsub_0001    ; -> my_parse_value', False),
-    ("get", 'lea\trdi, [rip]    ; -> "get"', False),                         # ≤3 harf sayılmaz
-    ("toml_free", "mov\trax, rdi\nret", False),
-])
+@pytest.mark.parametrize(
+    "ad, asm, beklenen",
+    [
+        ("parse_value", 'lea\trdi, [rip]    ; -> "parse_value failed"', True),
+        ("parse_value", 'lea\trdi, [rip]    ; -> "PARSE_VALUE"', True),  # büyük/küçük harf duyarsız
+        ("parse_value", 'lea\trdi, [rip]    ; -> "parse_values"', False),  # sözcük sınırı
+        ("parse_value", "call\tsub_0001    ; -> my_parse_value", False),
+        ("get", 'lea\trdi, [rip]    ; -> "get"', False),  # ≤3 harf sayılmaz
+        ("toml_free", "mov\trax, rdi\nret", False),
+    ],
+)
 def test_sizar_mi(ad, asm, beklenen):
     assert sizar_mi(ad, asm) is beklenen
 
@@ -26,7 +39,7 @@ def test_sizar_mi(ad, asm, beklenen):
 def test_string_bul_bas_orta_ve_yok():
     strs = {0x100: "out of memory", 0x200: "ab"}
     assert string_bul(strs, 0x100) == "out of memory"
-    assert string_bul(strs, 0x107) == "memory"        # derleyici kuyruk paylaşımı
+    assert string_bul(strs, 0x107) == "memory"  # derleyici kuyruk paylaşımı
     assert string_bul(strs, 0x300) is None
     assert string_bul(strs, None) is None
 
@@ -41,28 +54,32 @@ def test_string_goster_ve_kisalt():
 
 
 def test_ic_cagrilar_iki_bicim_tekil_ve_sinir():
-    asm = "\n".join([
-        "call\tloc_1    ; -> sub_000a",
-        "loc_1:",
-        "call\tsub_000b",
-        "jmp\tloc_2    ; -> sub_000a",       # tekrar: bir kez
-        "call\tloc_3    ; -> memcpy",        # dış import iç çağrı değil
-        "mov\trax, qword ptr [rip]    ; -> dat_0001",
-        "callq\tloc_4    ; -> sub_000c",
-    ])
+    asm = "\n".join(
+        [
+            "call\tloc_1    ; -> sub_000a",
+            "loc_1:",
+            "call\tsub_000b",
+            "jmp\tloc_2    ; -> sub_000a",  # tekrar: bir kez
+            "call\tloc_3    ; -> memcpy",  # dış import iç çağrı değil
+            "mov\trax, qword ptr [rip]    ; -> dat_0001",
+            "callq\tloc_4    ; -> sub_000c",
+        ]
+    )
     assert ic_cagrilar(asm) == ["sub_000a", "sub_000b", "sub_000c"]
     assert ic_cagrilar(asm, sinir=2) == ["sub_000a", "sub_000b"]
 
 
 def test_fonksiyon_ozeti():
-    asm = "\n".join([
-        'lea\trdi, [rip]    ; -> "hata"',
-        "call\tloc_1    ; -> malloc",
-        "loc_1:",
-        "call\tloc_2    ; -> sub_0003",
-        "mov\trax, qword ptr [rip]    ; -> dat_0002",
-        "lea\trsi, [rip]    ; -> veri",
-    ])
+    asm = "\n".join(
+        [
+            'lea\trdi, [rip]    ; -> "hata"',
+            "call\tloc_1    ; -> malloc",
+            "loc_1:",
+            "call\tloc_2    ; -> sub_0003",
+            "mov\trax, qword ptr [rip]    ; -> dat_0002",
+            "lea\trsi, [rip]    ; -> veri",
+        ]
+    )
     assert fonksiyon_ozeti("sub_0001", 6, asm) == 'sub_0001 (6 komut): çağırır malloc, sub_0003; string "hata"'
     assert fonksiyon_ozeti("sub_0002", 2, "mov\teax, 0x1\nret") == "sub_0002 (2 komut)"
 
@@ -109,6 +126,6 @@ def test_gercek_sembol_deseni():
     desen = gercek_sembol_deseni({"inflate_fast", "crc", "adler32"})
     assert desen.search("; -> inflate_fast")
     assert desen.search("ADLER32 ")
-    assert not desen.search("crc")                      # 5 harften kısa adlar desende yok
+    assert not desen.search("crc")  # 5 harften kısa adlar desende yok
     assert not desen.search("my_inflate_fast_x")
     assert gercek_sembol_deseni({"a", "bc"}) is None

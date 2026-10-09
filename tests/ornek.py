@@ -8,6 +8,7 @@ veri hattını uçtan uca çalıştırabilsin diye:
 
 Gerçek ayrımı taklit etmez; yalnız biçimi ve proje bazlı bölmeyi korur.
 """
+
 import json, sys
 from pathlib import Path
 
@@ -26,8 +27,9 @@ def sec(proje: str) -> list[dict]:
     secilen = []
     for opt in ("-O0", "-O2"):
         # Kısa asm: dosyalar küçük kalsın. Bağlamlı ve bağlamsız satırların ikisi de girsin.
-        havuz = sorted((r for r in satirlar if r["opt"] == opt and not r["sizinti"]),
-                       key=lambda r: (len(r["asm"]), r["id"]))
+        havuz = sorted(
+            (r for r in satirlar if r["opt"] == opt and not r["sizinti"]), key=lambda r: (len(r["asm"]), r["id"])
+        )
         baglamli = [r for r in havuz if r.get("baglam")][: PROJE_BASINA // 2]
         baglamsiz = [r for r in havuz if not r.get("baglam")][: PROJE_BASINA - len(baglamli)]
         secilen += baglamli + baglamsiz
@@ -59,8 +61,10 @@ def kur(hedef: Path) -> dict[str, list[dict]]:
     # Öğretmen açıklamaları (lora/hazirla.py --aciklama): eğitim satırlarının yarısına.
     for p in EGITIM:
         satirlar = [r for r in roller["egitim"] if r["proje"] == p][::2]
-        yaz(veri / "aciklama" / f"{p}.jsonl",
-            [{"id": r["id"], "aciklama": f"{r['ad']} için örnek açıklama."} for r in satirlar])
+        yaz(
+            veri / "aciklama" / f"{p}.jsonl",
+            [{"id": r["id"], "aciklama": f"{r['ad']} için örnek açıklama."} for r in satirlar],
+        )
     return roller
 
 

@@ -1,4 +1,5 @@
 """Repodaki ölçüm verisinin bütünlüğü: README'deki sayılar ve sızıntı/ayrım garantileri."""
+
 import json
 from pathlib import Path
 
@@ -27,8 +28,8 @@ def olcum_seti():
 
 def test_test_projeleri_ve_sayilar(test_satirlari, olcum_seti):
     assert {p.stem for p in TEST_DOSYALARI} == {"tomlc17", "cyaml", "mu_json_x", "sajs", "picomatch"}
-    assert len(test_satirlari) == 777          # README: test 777
-    assert len(olcum_seti) == 115              # README: eval_115
+    assert len(test_satirlari) == 777  # README: test 777
+    assert len(olcum_seti) == 115  # README: eval_115
 
 
 @pytest.mark.parametrize("yol", TEST_DOSYALARI + [KOK / "veri" / "test.jsonl"], ids=lambda p: p.name)
@@ -63,7 +64,7 @@ def test_olcum_seti_alt_kume_ve_sizintisiz(test_satirlari, olcum_seti):
     sayi = {}
     for r in olcum_seti:
         sayi[(r["proje"], r["opt"])] = sayi.get((r["proje"], r["opt"]), 0) + 1
-    assert max(sayi.values()) <= 12            # test_seti.py -k 12
+    assert max(sayi.values()) <= 12  # test_seti.py -k 12
 
 
 def test_asmde_gercek_ic_ad_yok(test_satirlari):
@@ -71,6 +72,7 @@ def test_asmde_gercek_ic_ad_yok(test_satirlari):
 
     Proje bazında bakılır: mu_json_x'in kendi strlen'i başka projede libc importu olarak görünebilir."""
     from cikar import gercek_sembol_deseni
+
     projeler = {}
     for r in test_satirlari:
         projeler.setdefault(r["proje"], []).append(r)

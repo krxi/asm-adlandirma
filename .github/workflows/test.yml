@@ -13,6 +13,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  ruff:
+    # Zorunlu yalnız yeni Python dosyalarında: main'e göre eklenenler + aşağıdaki liste. Eski betikler
+    # kendi üslubunda kalır; ayar ruff.toml'da.
+    name: ruff (yeni dosyalar)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install ruff==0.16.8
+      - name: Denetlenecek dosyalar
+        run: |
+          set -eu
+          git fetch -q origin main || true
+          taban=$(git merge-base HEAD origin/main 2>/dev/null || echo "")
+          {
+            printf '%s\n' conftest.py iki_f1.py onek_denetim.py
+            git ls-files 'tests/*.py'
+            if [ -n "$taban" ]; then git diff --name-only --diff-filter=A "$taban" HEAD -- '*.py'; fi
+          } | sort -u | while read -r f; do [ -f "$f" ] && echo "$f"; done > "$RUNNER_TEMP/ruff-dosyalar"
+          cat "$RUNNER_TEMP/ruff-dosyalar"
+      - run: xargs ruff check < "$RUNNER_TEMP/ruff-dosyalar"
+      - run: xargs ruff format --check --diff < "$RUNNER_TEMP/ruff-dosyalar"
+
   birim:
     name: pytest + duman (Python ${{ matrix.python }})
     runs-on: ubuntu-latest

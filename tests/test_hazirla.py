@@ -1,4 +1,5 @@
 """lora/hazirla.py (v3 düzeni) ve lora/hazirla_olcek.py (v4 düzeni): sohbet biçimi ve proje bazlı bölme."""
+
 import json, subprocess, sys
 from collections import Counter
 from pathlib import Path
@@ -20,13 +21,22 @@ def temiz_durum(monkeypatch):
 
 class KarakterTok:
     """Her karakter bir token: token tavanı mantığını transformers'sız sınamak için."""
+
     def encode(self, s):
         return list(s)
 
 
 def satir(**alan):
-    r = {"id": "p/a.c:-O0:p_oku", "proje": "p", "opt": "-O0", "ad": "p_oku", "sizinti": False,
-         "asm": "push\trbp\nret", "baglam": "", "baglam_derin": ""}
+    r = {
+        "id": "p/a.c:-O0:p_oku",
+        "proje": "p",
+        "opt": "-O0",
+        "ad": "p_oku",
+        "sizinti": False,
+        "asm": "push\trbp\nret",
+        "baglam": "",
+        "baglam_derin": "",
+    }
     r.update(alan)
     return r
 
@@ -37,6 +47,7 @@ def oku_jsonl(yol):
 
 # --- birim -------------------------------------------------------------------------------------
 
+
 def test_kes():
     assert h.kes("a\nb\nc", 5) == "a\nb\nc"
     assert h.kes("a\nb\nc", 2) == "a\nb\n; ... kesildi"
@@ -44,9 +55,9 @@ def test_kes():
 
 def test_oneksiz(monkeypatch):
     monkeypatch.setattr(h, "ONEK", {"mbedtls": {"mbedtls", "mbedtls_mpi"}, "sqlite": {"sqlite3"}})
-    assert h.oneksiz(satir(proje="mbedtls", ad="mbedtls_mpi_core_read")) == "core_read"   # en uzun önek önce
+    assert h.oneksiz(satir(proje="mbedtls", ad="mbedtls_mpi_core_read")) == "core_read"  # en uzun önek önce
     assert h.oneksiz(satir(proje="sqlite", ad="sqlite3VdbeMemSet")) == "VdbeMemSet"
-    assert h.oneksiz(satir(proje="mbedtls", ad="mbedtls")) == "mbedtls"                   # ad boş kalmaz
+    assert h.oneksiz(satir(proje="mbedtls", ad="mbedtls")) == "mbedtls"  # ad boş kalmaz
     assert h.oneksiz(satir(proje="baska", ad="mbedtls_x")) == "mbedtls_x"
 
 
@@ -55,14 +66,14 @@ def test_baglam_metni_kipleri():
     assert h.baglam_metni(r, "yok") == ""
     assert h.baglam_metni(r, "ozet") == "ozet"
     assert h.baglam_metni(r, "derin") == "derin"
-    assert h.baglam_metni(satir(baglam="ozet"), "derin") == "ozet"   # derin yoksa özete düşer
+    assert h.baglam_metni(satir(baglam="ozet"), "derin") == "ozet"  # derin yoksa özete düşer
 
 
 def test_girdi_baglam_basligi():
     r = satir(baglam="sub_0001 (3 komut): çağırır free")
     assert h.girdi(r, "yok", 200) == r["asm"]
     assert h.girdi(r, "ozet", 200) == r["asm"] + h.BAGLAM_BASLIK + r["baglam"]
-    assert h.girdi(satir(), "ozet", 200) == satir()["asm"]          # bağlamsız satırda başlık yok
+    assert h.girdi(satir(), "ozet", 200) == satir()["asm"]  # bağlamsız satırda başlık yok
 
 
 def test_girdi_token_tavani_once_baglami_feda_eder(monkeypatch):
@@ -72,7 +83,7 @@ def test_girdi_token_tavani_once_baglami_feda_eder(monkeypatch):
     r = satir(asm=asm, baglam=baglam)
     tavan = len(asm) + 200
     sonuc = h.girdi(r, "ozet", 200, tavan)
-    assert sonuc.startswith(asm + h.BAGLAM_BASLIK)                    # asm bütün kalır
+    assert sonuc.startswith(asm + h.BAGLAM_BASLIK)  # asm bütün kalır
     assert len(sonuc) <= tavan
     assert sonuc.endswith("; ... bağlam kesildi")
     # Asm tek başına tavanı aşıyorsa bağlam tamamen gider, asm kısalır.
@@ -120,25 +131,42 @@ def test_oku_ve_aciklamalar(ornek_kok):
 
 
 def test_onekler_esik():
-    adlar = [f"cyaml_f{i}" for i in range(6)] + ["load", "save"]          # 6/8 ≥ %30, ≥5
-    az = [f"mu_f{i}" for i in range(4)] + [f"g{i}" for i in range(2)]   # 4 < 5
+    adlar = [f"cyaml_f{i}" for i in range(6)] + ["load", "save"]  # 6/8 ≥ %30, ≥5
+    az = [f"mu_f{i}" for i in range(4)] + [f"g{i}" for i in range(2)]  # 4 < 5
     seyrek = [f"sj_f{i}" for i in range(5)] + [f"h{i}" for i in range(20)]  # 5/25 < %30
-    satirlar = ([{"proje": "cyaml", "ad": a} for a in adlar] + [{"proje": "mu", "ad": a} for a in az]
-                + [{"proje": "sj", "ad": a} for a in seyrek])
+    satirlar = (
+        [{"proje": "cyaml", "ad": a} for a in adlar]
+        + [{"proje": "mu", "ad": a} for a in az]
+        + [{"proje": "sj", "ad": a} for a in seyrek]
+    )
     assert ho.onekler(satirlar) == {"cyaml": {"cyaml"}}
 
 
 # --- uçtan uca (alt süreç, örnek veri) ---------------------------------------------------------
 
+
 def calistir(betik, *arg, cwd):
-    return subprocess.run([sys.executable, str(KOK / betik), *map(str, arg)], cwd=cwd,
-                          capture_output=True, text=True)
+    return subprocess.run([sys.executable, str(KOK / betik), *map(str, arg)], cwd=cwd, capture_output=True, text=True)
 
 
 def test_hazirla_uctan_uca(ornek_kok):
     cikti = ornek_kok / "lora" / "veri"
-    s = calistir("lora/hazirla.py", "--veri", "veri", "--cikti", cikti, "--token-tavan", 0,
-                 "--baglam", "ozet", "--onek-at", "--aciklama", "--test-dosyasi", "yok.jsonl", cwd=ornek_kok)
+    s = calistir(
+        "lora/hazirla.py",
+        "--veri",
+        "veri",
+        "--cikti",
+        cikti,
+        "--token-tavan",
+        0,
+        "--baglam",
+        "ozet",
+        "--onek-at",
+        "--aciklama",
+        "--test-dosyasi",
+        "yok.jsonl",
+        cwd=ornek_kok,
+    )
     assert s.returncode == 0, s.stderr
     tr, va, te = (oku_jsonl(cikti / f"{ad}.jsonl") for ad in ("train", "valid", "test"))
     assert tr and va and te
@@ -159,24 +187,45 @@ def test_hazirla_uctan_uca(ornek_kok):
 
 
 def test_hazirla_sizintida_durur(ornek_kok):
-    s = calistir("lora/hazirla.py", "--veri", "veri", "--egitim", "cyaml", "--test", "cyaml",
-                 "--token-tavan", 0, cwd=ornek_kok)
+    s = calistir(
+        "lora/hazirla.py", "--veri", "veri", "--egitim", "cyaml", "--test", "cyaml", "--token-tavan", 0, cwd=ornek_kok
+    )
     assert s.returncode != 0 and "sızıntı" in s.stderr
 
 
 def test_hazirla_test_dosyasiyla_sinirlar(ornek_kok):
     secili = oku_jsonl(ornek_kok / "veri" / "test" / "tomlc17.jsonl")[:3]
     (ornek_kok / "secili.jsonl").write_text("".join(json.dumps(r) + "\n" for r in secili))
-    s = calistir("lora/hazirla.py", "--veri", "veri", "--cikti", "c", "--token-tavan", 0,
-                 "--test-dosyasi", "secili.jsonl", cwd=ornek_kok)
+    s = calistir(
+        "lora/hazirla.py",
+        "--veri",
+        "veri",
+        "--cikti",
+        "c",
+        "--token-tavan",
+        0,
+        "--test-dosyasi",
+        "secili.jsonl",
+        cwd=ornek_kok,
+    )
     assert s.returncode == 0, s.stderr
     assert {r["id"] for r in oku_jsonl(ornek_kok / "c" / "test.jsonl")} == {r["id"] for r in secili}
 
 
 def test_hazirla_olcek_uctan_uca(ornek_kok):
     cikti = ornek_kok / "lora" / "veri-olcek"
-    s = calistir("lora/hazirla_olcek.py", "--veri", "veri/bin/olcek", "--cikti", cikti,
-                 "--token-tavan", 0, "--proje-tavan", 5, cwd=ornek_kok)
+    s = calistir(
+        "lora/hazirla_olcek.py",
+        "--veri",
+        "veri/bin/olcek",
+        "--cikti",
+        cikti,
+        "--token-tavan",
+        0,
+        "--proje-tavan",
+        5,
+        cwd=ornek_kok,
+    )
     assert s.returncode == 0, s.stderr
     ozet = json.loads((cikti / "ozet.json").read_text())
     tr = oku_jsonl(cikti / "train.jsonl")
@@ -185,38 +234,73 @@ def test_hazirla_olcek_uctan_uca(ornek_kok):
     assert {r["id"].split("/")[0] for r in oku_jsonl(cikti / "valid.jsonl")} == {"mu_json_x"}
     assert {r["id"].split("/")[0] for r in oku_jsonl(cikti / "test.jsonl")} == {"tomlc17", "picomatch"}
     # Aynı tohumla iki koşu birebir aynı dosyayı üretir.
-    s2 = calistir("lora/hazirla_olcek.py", "--veri", "veri/bin/olcek", "--cikti", ornek_kok / "iki",
-                  "--token-tavan", 0, "--proje-tavan", 5, cwd=ornek_kok)
+    s2 = calistir(
+        "lora/hazirla_olcek.py",
+        "--veri",
+        "veri/bin/olcek",
+        "--cikti",
+        ornek_kok / "iki",
+        "--token-tavan",
+        0,
+        "--proje-tavan",
+        5,
+        cwd=ornek_kok,
+    )
     assert s2.returncode == 0, s2.stderr
     assert (cikti / "train.jsonl").read_bytes() == (ornek_kok / "iki" / "train.jsonl").read_bytes()
 
 
 # --- önek kuralı ve test hedefi ----------------------------------------------------------------
 
-@pytest.mark.parametrize("onek, proje, beklenen", [
-    ("cyaml", "cyaml", True), ("mu", "mu_json_x", True), ("sqlite3", "sqlite", True),
-    ("png", "libpng", True), ("pm", "picomatch", True), ("toml", "tomlc17", True),
-    ("eat", "sajs", False), ("emit", "picomatch", False), ("get", "zlib", False),
-])
+
+@pytest.mark.parametrize(
+    "onek, proje, beklenen",
+    [
+        ("cyaml", "cyaml", True),
+        ("mu", "mu_json_x", True),
+        ("sqlite3", "sqlite", True),
+        ("png", "libpng", True),
+        ("pm", "picomatch", True),
+        ("toml", "tomlc17", True),
+        ("eat", "sajs", False),
+        ("emit", "picomatch", False),
+        ("get", "zlib", False),
+    ],
+)
 def test_proje_ile_ilgili(onek, proje, beklenen):
     assert ho.proje_ile_ilgili(onek, proje) is beklenen
 
 
 def test_onekler_proje_kurali_fiilleri_atmaz():
-    satirlar = ([{"proje": "sajs", "ad": f"eat_x{i}"} for i in range(6)] + [{"proje": "sajs", "ad": "parse"}]
-                + [{"proje": "cyaml", "ad": f"cyaml_f{i}"} for i in range(6)])
-    assert ho.onekler(satirlar) == {"sajs": {"eat"}, "cyaml": {"cyaml"}}          # varsayılan: eski davranış
+    satirlar = (
+        [{"proje": "sajs", "ad": f"eat_x{i}"} for i in range(6)]
+        + [{"proje": "sajs", "ad": "parse"}]
+        + [{"proje": "cyaml", "ad": f"cyaml_f{i}"} for i in range(6)]
+    )
+    assert ho.onekler(satirlar) == {"sajs": {"eat"}, "cyaml": {"cyaml"}}  # varsayılan: eski davranış
     assert ho.onekler(satirlar, "proje") == {"cyaml": {"cyaml"}}
 
 
 def sentetik_olcek(kok):
     """sajs (eğitim, 'eat_' fiili) + cyaml (test, gerçek önek) ile küçük v4 ağacı."""
+
     def r(proje, ad, i):
-        return {"id": f"{proje}/a.c:-O0:{ad}", "proje": proje, "opt": "-O0", "ad": ad, "sizinti": False,
-                "asm": f"mov\teax, {i}\nret", "baglam": "", "baglam_derin": ""}
-    roller = {"egitim": [r("sajs", f"eat_x{i}", i) for i in range(6)] + [r("sajs", "parse", 99)],
-              "dogrulama": [r("mu_json_x", f"mu_f{i}", 100 + i) for i in range(6)],
-              "test": [r("cyaml", f"cyaml_f{i}", 200 + i) for i in range(6)]}
+        return {
+            "id": f"{proje}/a.c:-O0:{ad}",
+            "proje": proje,
+            "opt": "-O0",
+            "ad": ad,
+            "sizinti": False,
+            "asm": f"mov\teax, {i}\nret",
+            "baglam": "",
+            "baglam_derin": "",
+        }
+
+    roller = {
+        "egitim": [r("sajs", f"eat_x{i}", i) for i in range(6)] + [r("sajs", "parse", 99)],
+        "dogrulama": [r("mu_json_x", f"mu_f{i}", 100 + i) for i in range(6)],
+        "test": [r("cyaml", f"cyaml_f{i}", 200 + i) for i in range(6)],
+    }
     d = kok / "veri" / "bin" / "olcek"
     d.mkdir(parents=True)
     for rol, satirlar in roller.items():
@@ -227,16 +311,33 @@ def hedefler(yol):
     return sorted(json.loads(r["messages"][2]["content"])["ad"] for r in oku_jsonl(yol))
 
 
-@pytest.mark.parametrize("bayraklar, egitim, test, ozet_test", [
-    ([], ["parse"] + [f"x{i}" for i in range(6)], [f"f{i}" for i in range(6)], "oneksiz"),
-    (["--test-ham-ad"], ["parse"] + [f"x{i}" for i in range(6)], [f"cyaml_f{i}" for i in range(6)], "gercek"),
-    (["--onek-kurali", "proje"], ["parse"] + [f"eat_x{i}" for i in range(6)], [f"f{i}" for i in range(6)], "oneksiz"),
-    (["--ham-ad"], ["parse"] + [f"eat_x{i}" for i in range(6)], [f"cyaml_f{i}" for i in range(6)], "gercek"),
-])
+@pytest.mark.parametrize(
+    "bayraklar, egitim, test, ozet_test",
+    [
+        ([], ["parse"] + [f"x{i}" for i in range(6)], [f"f{i}" for i in range(6)], "oneksiz"),
+        (["--test-ham-ad"], ["parse"] + [f"x{i}" for i in range(6)], [f"cyaml_f{i}" for i in range(6)], "gercek"),
+        (
+            ["--onek-kurali", "proje"],
+            ["parse"] + [f"eat_x{i}" for i in range(6)],
+            [f"f{i}" for i in range(6)],
+            "oneksiz",
+        ),
+        (["--ham-ad"], ["parse"] + [f"eat_x{i}" for i in range(6)], [f"cyaml_f{i}" for i in range(6)], "gercek"),
+    ],
+)
 def test_hazirla_olcek_hedef_bayraklari(tmp_path, bayraklar, egitim, test, ozet_test):
     sentetik_olcek(tmp_path)
-    s = calistir("lora/hazirla_olcek.py", "--veri", "veri/bin/olcek", "--cikti", "c", "--token-tavan", 0,
-                 *bayraklar, cwd=tmp_path)
+    s = calistir(
+        "lora/hazirla_olcek.py",
+        "--veri",
+        "veri/bin/olcek",
+        "--cikti",
+        "c",
+        "--token-tavan",
+        0,
+        *bayraklar,
+        cwd=tmp_path,
+    )
     assert s.returncode == 0, s.stderr
     assert hedefler(tmp_path / "c" / "train.jsonl") == sorted(egitim)
     assert hedefler(tmp_path / "c" / "test.jsonl") == test
