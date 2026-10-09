@@ -1,0 +1,504 @@
+Fetching 9 files:   0%|          | 0/9 [00:00<?, ?it/s]Fetching 9 files: 100%|██████████| 9/9 [00:00<00:00, 2189.35it/s]
+0.33  -O0  mu_str_is_word               ← isUpper
+0.00  -O2  cyaml_span_dup               ← XXH64_copyState
+0.00  -O0  qaws_arc_prepare_3d          ← math_ceil
+0.00  -O0  flags_ok                     ← isolate
+0.00  -O0  cex_os__env__get             ← getenv
+0.00  -O2  Random_next                  ← assert
+0.00  -O1  sqlite3OsSync                ← get_x_offset_inches
+0.00  -O0  create_binary_op_node        ← strdup
+0.00  -O1  SegSegForce_SBN1_SBA         ← math_32bits
+0.29  -O3  crypto_poly1305              ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O1  cex_str_eqi                  ← isHex
+0.00  -O0  sqlite3LogEst                ← get_x_offset_inches
+0.00  -O2  secp256k1_der_parse_integer  ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O1  carquet_bit_writer_flush     ← inflateEnd
+0.00  -Os  cex_str_findr                ← json_object_iter
+0.00  -Os  join_nurbs                   ← psa_hash
+0.00  -O2  qaws_curve_compute_frenet_frame_3d ← math_sqrt
+0.00  -O2  cex_sbuf_destroy             ← assert
+0.00  -O2  cvvdp_temporal_ring_init     ← math_pow
+0.00  -O0  date_get_dayofyear           ← v06_decompressBound
+0.00  -O1  sqlite3_str_errcode          ← get_x_offset_inches
+0.00  -O3  qaws_curve_join              ← psa_hash_update
+0.00  -O1  cex_str__slice__match        ← v06_decompress
+0.29  -O2  kvstore_vec_get_vector       ← getStreamSize
+0.80  -Os  parse_create_table           ← create_table
+0.00  -Os  blst_fp_sqr                  ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -Os  sqlite3TokenInit             ← json_object_iter
+0.00  -Os  strAccumFinishRealloc        ← inflateCopy
+0.00  -O3  ge_frombytes_neg_vartime     ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O1  cex_os__platform__arch_from_str ← json_object_iter
+0.00  -O2  sqlite3LogEstToInt           ← getFrameSize
+0.00  -O3  sqlite3PagerOpenWal          ← v06_decompress
+0.00  -O0  compute_uniform_cr_coeffs    ← math_0065
+0.00  -O0  cex_os__random__next         ← set_tlv_bootstrap
+0.00  -Os  blst_p1_deserialize          ← crypto_auth_hmacsha512
+0.00  -O0  cex_io__file__size           ← fstat$INODE64
+0.00  -O1  walFindFrame                 ← BtreeCheckpoint
+0.00  -O0  json_push_visited            ← realloc
+0.00  -O0  HiAE_get_implementation_name ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O2  join_trajectory              ← psa_hash
+0.00  -O1  cyaml_resolve_aliases        ← gz_write
+0.00  -O1  findReusableFd               ← stat$INODE64
+0.00  -Os  format_date                  ← json_dump
+0.33  -O2  proxyCheckReservedLock       ← walLock
+0.00  -O3  HiAEx2_init_software         ← crypto_auth_hmacsha512_128
+0.00  -O2  sqlite3BtreeCount            ← v06_decompress
+0.00  -Os  is_spm                       ← normalizer
+0.00  -O0  POINTonE2_precompute_w4      ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O1  evaluate_create_table        ← result
+0.00  -O3  kvstore_remove_encryption    ← auth_verify
+0.00  -O2  findInodeInfo                ← fstat
+0.00  -O0  toks_jbool                   ← isSkipFrame
+0.00  -O0  secp256k1_ecmult_gen_context_is_built ← get_x_offset_inches
+0.00  -Os  InitCellDomains              ← v06_decompressBound
+0.00  -O0  terminal_cursor_move         ← write_error
+0.00  -O1  sqlite3PcacheRelease         ← inflateEnd
+0.00  -O1  CexParser_decl_free          ← v06_decompress
+0.00  -O2  kvstoreFixMovedTableRoot     ← v06_decompress
+0.00  -O1  cex_sbuf_destroy             ← assert
+0.00  -Os  sqlite3PagerDirectReadOk     ← getFrameSize
+0.00  -O1  mul_fp6x2                    ← crypto_auth
+0.00  -O0  readDbPage                   ← v06_decompress
+0.00  -Os  bpe_key_at                   ← get_y_offset_inches
+0.29  -O1  crypto_chacha20_x            ← crypto_kem_expand_key
+0.00  -Os  qaws_curve_create_arc        ← v06_decompress
+0.33  -Os  HiAEx2_stream_init           ← inflateInit
+0.00  -O0  kvstoreEncDecrypt            ← crypto_auth
+0.00  -Os  low_pass_filter_impl         ← v06_decompress
+0.00  -O0  sqlite3BtreeCursorUnpin      ← v06_isPublicId
+0.00  -O0  SegSegForce_SBN1             ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.50  -O1  print_hex                    ← print_hex4
+0.29  -O0  fmag_cg_word_is_register     ← isFrame
+0.00  -O0  sha256_final                 ← v06_decompress
+0.00  -O1  toml_seek                    ← v06_decompress
+0.00  -Os  cvvdp_init_dispatch_once     ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -Os  cex_os__random__next         ← get_tlv_version
+0.00  -O2  sqlite3PcacheInitialize      ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O1  normalize_path               ← get_coding_style
+0.00  -O1  kvstore_cf_get_ttl           ← BtreeCreate
+0.00  -O0  sqlite3PagerLockingMode      ← inflatePending
+0.20  -O0  stbtt_BakeFontBitmap         ← stb_truetype_readFontFile_internal
+0.00  -O0  sqlite3BitvecSet             ← v06_decompress
+0.33  -O0  generate_random_bytes        ← randombytes_internal_random
+0.00  -Os  crypto_blake2b               ← v06_decompress
+0.40  -O2  cex_os__fs__getcwd           ← getcwd
+0.00  -Os  date_add_years               ← v06_decompressBound
+0.00  -O1  sqlite3BtreeEnterAll         ← v06_decompress
+0.00  -O2  qaws_curve_compute_tangent_3d ← math_sqrt
+0.00  -Os  cyaml_vscanf                 ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O0  stbtt_MakeGlyphBitmap        ← psa_hash_free
+0.00  -O2  cyaml_map_set                ← json_object_iterate
+0.00  -O0  unixShmSystemLock            ← F_read
+0.00  -O2  qaws_traversal_create_multi  ← loadBlock
+0.00  -O3  carquet_decode_bitpacked_levels ← v06_decompressBound
+0.00  -O2  cls_items                    ← split_class
+0.00  -Os  cexsp__clamp_callback        ← inflatePending
+0.00  -O2  btreeLeaveAll                ← get_next_frame
+0.00  -O2  pager_incr_changecounter     ← entity6
+0.00  -Os  HiAEx2_finalize_mac_software ← crypto_auth_hmacsha512_update
+0.67  -O0  stbtt_GetGlyphShape          ← stb__getGlyphShapeT2
+0.00  -O0  toml_seek                    ← json_object_iterate
+0.67  -O1  stbtt_BakeFontBitmap         ← stb_bakeFontBitmap_internal
+0.00  -Os  sqlite3BtreeSchemaLocked     ← v06_decompress
+0.00  -O0  pager_delsuper               ← crypto_auth_hmacsha512_update
+0.00  -O3  getOverflowPage              ← v06_decompress
+0.00  -O0  checkOom                     ← inflateInit2
+0.00  -O2  _cexds__hmdel_key            ← assert
+0.00  -O0  print_yaml                   ← json_dump
+0.00  -O0  logprob_target               ← math_exp
+0.00  -O0  crypto_verify16              ← v06_decompress
+0.00  -O0  mktoken                      ← psa_hash_update
+0.00  -O1  toks_par_get_info            ← clock_gettime
+0.75  -O1  cex_json__rd__step_in        ← json_step_in
+0.00  -O1  cex_os_sleep                 ← get_tIME
+0.00  -O3  descend_keypart              ← TID_tab_add
+0.50  -Os  cmd_encrypt                  ← encrypt_file
+0.00  -O0  sw_token                     ← json_object_iterate
+0.00  -O2  walWriteOneFrame             ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -Os  toks_tmpl_invalid            ← set_o200k
+0.00  -O2  eat_num_exp_int_cont         ← inflateInit
+0.00  -Os  pipe_worker                  ← L_checkbuffer
+0.00  -O0  catmull_rom_destroy_impl     ← psa_hash_free
+0.00  -O2  hex4                         ← v06_decompressBound
+0.00  -O0  stbtt__CompareUTF8toUTF16_bigendian_prefix ← get_y_offset_inches
+0.00  -O2  calc_power                   ← math_pow
+0.00  -O0  strHash                      ← hash64
+0.00  -O3  stbtt_GetNumberOfFonts       ← v06_is64
+0.00  -Os  cyaml_path_first             ← L_checklstring
+0.00  -Os  fe_frombytes_mask            ← inflateDStream
+0.00  -Os  parse_line                   ← json_dump
+0.00  -O0  pagerWalFrames               ← v06_decompress
+0.00  -O1  cex_str__slice__eq           ← JSON_IsEqual
+0.00  -Os  blst_p2_from_affine          ← v06_decompress
+0.00  -O0  parse_options                ← epilog
+0.00  -O0  cyaml_map_sort               ← get_next_frame
+0.00  -O0  parse_operand                ← json_object_iterate
+0.00  -O0  compute_normal               ← math_ceil
+0.00  -O0  qaws_nurbs_get_weights       ← copyStream
+0.00  -O0  readSuperJournal             ← crypto_auth
+0.00  -Os  cex_os_sleep                 ← get_x_offset_inches
+0.00  -Os  is_doc_start                 ← entity6
+0.00  -O0  sqlite3BtreeLeave            ← getStreamSize
+0.00  -O1  qaws_internal_find_knot_span ← math_lessequal
+0.00  -O1  pcache1Fetch                 ← v06_decompress
+0.00  -O1  kv_alloc                     ← falloc
+0.00  -O0  fetch_flow_collection_end    ← json_object_iterate
+0.00  -Os  inline_bezier_eval_2d        ← crypto_auth_hmacsha512_update
+0.00  -O1  sqlite3_str_append           ← copyStream
+0.00  -O1  stops_arm                    ← error_set
+0.00  -O2  qaws_internal_hermite_basis  ← normal_toFloat
+0.25  -Os  stbtt_GetPackedQuad          ← get_y_offset_inches
+0.50  -Os  read_vocab                   ← model_vocab
+0.50  -O0  emit_quantifier              ← emit_code
+0.00  -Os  secp256k1_rfc6979_hmac_sha256_initialize ← crypto_auth_hmacsha512_update
+0.00  -O2  cyaml_span_eq                ← json_object_iter
+0.33  -Os  _cex_allocator_heap__alloc   ← L_alloc
+0.00  -O0  POINTonE1_sign               ← crypto_auth_hmacsha512
+0.00  -O2  cyaml_as_int                 ← gz_load
+0.00  -O0  cvvdp_temporal_filter_init   ← math_powf
+0.00  -O1  cur_at                       ← entity6
+0.00  -O0  cvvdp_csf_destroy            ← v07_freeDCtx
+0.00  -O1  sqlite_exec_stmt             ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.50  -O0  unixSync                     ← f_sync
+0.00  -Os  sqlite3BtreeSchema           ← v06_decompress
+0.00  -O0  POINTonE1_Uncompress_BE      ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -Os  replace_uses                 ← inflateGetDictionarySize
+0.00  -O3  pick_tok                     ← json_object_iterate
+0.00  -O0  adam_history_append_assistant ← json_object_iterate
+0.00  -O1  key_needs_explicit           ← getFrameSize
+0.00  -O2  split_catmull_rom            ← v06_decompress
+0.00  -O1  lock_auth                    ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O1  GetNewTag                    ← v06_decompress
+0.00  -Os  slide_step                   ← bitvec_size
+0.00  -O2  crypto_verify32              ← XXH64_hashFromCanonical
+0.00  -O2  append_int                   ← v06_decompress
+0.00  -Os  tui_render_help              ← write_error
+0.00  -Os  scan_lines                   ← json_object_iter
+0.00  -O1  sqlite3BtreeLast             ← v06_decompress
+0.00  -Os  robust_open                  ← f_read
+0.00  -O1  uni_model                    ← json_object_iter_type
+0.00  -O3  add                          ← entity6
+0.00  -O0  _coverage__finalize_funcs    ← assert
+0.00  -O0  ptrmapPageno                 ← get_x_offset_inches
+0.00  -Os  pm_risk                      ← entity64
+0.00  -O2  btreeLast                    ← v06_decompress
+0.00  -O0  split_bezier                 ← v06_decompress
+0.00  -O0  qaws_surface_create_ruled    ← v06_decompress
+0.00  -O0  traversal_map_time_to_distance ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O0  qaws_hermite_prepare_2d      ← v06_decompress
+0.00  -O1  free_row_range               ← v06_decompress
+0.00  -O0  sqlite3OsFileSize            ← v06_decompress
+0.00  -Os  walRestartHdr                ← inflateInit
+0.00  -O0  compute_osculating_frame     ← crypto_core_ed25519_scalar_sub
+0.00  -O1  cex_os__random__range        ← get_x_offset_inches
+0.00  -O0  secp256k1_fe_impl_normalize_var ← inflateInit
+0.00  -O1  cex_os__platform__to_str     ← getStream
+0.00  -O1  secp256k1_modinv64_normalize_62 ← v06_decompress
+0.00  -O0  eat_mem_next                 ← get_x_offset_inches
+0.00  -Os  cyaml_strerror               ← get_error_string
+0.40  -O2  csv_load                     ← error_load_file
+0.00  -O0  stbtt_GetCodepointShape      ← stb_findGlyphIndex
+0.00  -Os  kvstoreIterSkipExpired       ← v06_decompress
+0.00  -O0  _sbuf__alloc_capacity        ← assert
+0.00  -O1  match_pattern                ← isLower
+0.00  -O0  sqlite_read_schema           ← BtreeCreateTable
+0.00  -O2  crypto_poly1305_update       ← v06_decompress
+0.00  -O2  descend_keypart              ← TID_tab_add
+0.00  -O1  sqlite3OsShmMap              ← get_next_frame
+0.00  -O1  date_get_year                ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.80  -O0  ParadisInit_lean             ← paradisInit
+0.00  -Os  sqlite3OsUnfetch             ← getStreamSize
+0.00  -Os  fn_adam_get_session          ← v06_decompress
+0.00  -O2  cex_os__env__home_dir        ← gethome
+0.00  -O1  secp256k1_ec_seckey_tweak_add ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -Os  sqlite3OsGetLastError        ← v06_decompressBound
+0.00  -O0  review_terminal_read         ← get_y_offset_inches
+0.00  -O1  push_state                   ← realloc
+0.00  -Os  walWriteToLog                ← get_x_offset_inches
+0.00  -O0  replace_uses                 ← inflateEnd
+0.00  -O1  string2h                     ← wt
+0.00  -Os  kvstoreDecodeBE64            ← XXH64_hashFromCanonical
+0.67  -O0  PrintNode                    ← node
+0.00  -O0  neq0                         ← bitvec_isReadOnly
+0.00  -Os  ensure_capacity              ← realloc
+0.00  -O3  evaluate_condition           ← windowFunction
+0.00  -O0  robust_open                  ← fstat
+0.50  -O0  kvstore_sync                 ← sync_commit
+0.00  -O0  sqlite3MutexEnd              ← getStream
+0.40  -O0  unixDlError                  ← error_set
+0.00  -Os  HiAE_finalize_aesni          ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -Os  _cexds__hash_bytes           ← entity6
+0.00  -O1  find_anchor_in_node          ← json_object_iterate
+0.00  -O1  evaluate_having_condition    ← json_object_iter
+0.25  -O0  stbtt_PackSetSkipMissingCodepoints ← setStream
+0.00  -O0  parse_font_dimensions        ← set_galactic
+0.00  -O0  fe_neg                       ← v06_decompressBound
+0.00  -Os  written                      ← json_object_iter_cmp
+0.00  -Os  cyaml_new_map                ← psa_hash_create
+0.40  -O1  btreeOverwriteCell           ← BtreeClear
+0.50  -O3  fn_adam                      ← adam_message
+0.00  -O1  POINTonE2_times_minus_z      ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O1  sqlite3_memory_highwater     ← v06_decompress
+0.00  -O0  xvector                      ← v06_decompressBound
+0.00  -O1  cyaml_vscanf                 ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -Os  run_bytes                    ← entity6
+0.00  -O1  sqlite3_database_file_object ← get_x_offset_inches
+0.00  -Os  adam_settings_set_mmproj     ← get_packing
+0.00  -O1  sqlite3HeapNearlyFull        ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.33  -O0  update_state_offset          ← psa_hash_update
+0.00  -O0  build                        ← json_load_file
+0.00  -O0  create_groups                ← json_object_iterate
+0.00  -Os  fmag_ir_value_new            ← inflateEnd
+0.00  -O1  sqlite3BtreeSharable         ← get_x_offset_inches
+0.00  -O1  LookupParam                  ← get_y_offset_inches
+0.00  -Os  grow_simple_keys             ← json_dump
+0.00  -O3  main                         ← set_font
+0.00  -Os  blst_fr_to                   ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.40  -O1  crypto_x25519                ← crypto_auth_hmacsha512
+0.00  -O1  dotlockUnlock                ← v07_decompress
+0.00  -O0  sqlite3VMPrintf              ← json_object_iter
+0.00  -Os  mu_json_token_depth          ← get_y_offset_inches
+0.00  -O0  merge_buckets                ← v06_decompressBound
+0.00  -Os  blst_sk_mul_n_check          ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -Os  sqlite3OsFileControl         ← get_packed_size
+0.00  -O0  secp256k1_gej_double         ← v06_decompress
+0.00  -O1  cvvdp_min_abs_task           ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O1  qaws_batch_bezier_eval_3d    ← v06_decompress
+0.00  -Os  mul_by_xy0_fp6x2             ← crypto_auth
+0.00  -O1  blst_p2_unchecked_mult       ← inflateInit2
+0.00  -O1  sqlite3MemSetArrayInt64      ← inflateInit
+0.00  -O0  sqlite3PagerLookup           ← inflateEnd
+0.00  -O3  arena_strdup                 ← json_object_iterate
+0.00  -Os  adam_history_attach          ← json_object_iterate
+0.00  -Os  adam_settings_set_tts        ← inflateInit2
+0.00  -O1  gr__esc                      ← entity6
+0.00  -O0  sqlite3DbReallocOrFree       ← v06_decompress
+0.00  -O2  inline_order                 ← inflateEnd
+0.00  -O0  secp256k1_i128_mul           ← v06_decompressBound
+0.00  -Os  wp_insert                    ← json_object_iterate
+0.00  -Os  sqlite3_malloc               ← v06_decompress
+0.40  -O0  arena_free                   ← psa_hash_free
+0.00  -Os  eat_string                   ← getFrameSize
+0.00  -O1  stbtt_PackEnd                ← v07_freeDCtx
+0.57  -O0  RecalcSegGlidePlane          ← set_glide_plane
+0.75  -Os  _cex_os_time_scope_cleanup   ← os_time_scope
+0.00  -Os  blst_p1_affine_on_curve      ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O1  apply_having_filter          ← L_checklstring
+0.00  -Os  sqr_fp6                      ← crypto_auth
+0.00  -O0  dtypeToStr                   ← get_f16
+0.00  -O0  secp256k1_eckey_pubkey_tweak_add ← psa_hash_update
+0.00  -O3  nc_ref_XYZToRGB              ← math_pow
+0.00  -O1  blst_bendian_from_scalar     ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O0  sqlite3OsDlOpen              ← v06_decompress
+0.00  -Os  sqlite3PcacheFetch           ← get_packed
+0.00  -Os  hash_reduce                  ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O0  adam_status_string           ← error_code
+0.40  -O0  crypto_aead_lock             ← crypto_auth
+0.00  -O1  toks_pieces                  ← v06_decompress
+0.00  -O0  arena_strdup                 ← v06_dealloc
+0.00  -O0  toks_norm                    ← crypto_auth_hmacsha512
+0.33  -Os  cex_json__rd__skip           ← json_dump
+0.00  -O1  toks_dec_free                ← psa_pake_get_pkey
+0.00  -Os  evaluate_delete              ← L_loadtable
+0.00  -O0  svg_export_hermite           ← json_dump
+0.00  -O1  blst_p2_add_or_double_affine ← v06_decompress
+0.33  -O0  crypto_x25519_to_eddsa       ← crypto_auth
+0.00  -O0  blst_uint32_from_fp          ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -Os  qaws_curve_reparameterize_arc_length ← inflateInit_
+0.00  -O0  memo_hash                    ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -Os  mu_str_parse_int64           ← get_y_offset_inches
+0.00  -Os  cex_str__slice__starts_with  ← json_object_cmp
+0.00  -O0  feature_insert_unique        ← get_y_offset_inches
+0.00  -O0  kvstore_rollback             ← BtreeCommit
+0.00  -O1  qaws_internal_parameter_to_distance ← math_ceil
+0.00  -Os  cex_json__rd__validate       ← getStreamSize
+0.00  -O3  ypath_lex_ident              ← entity6
+0.00  -Os  cyaml_str_to_i64             ← entity6
+0.00  -O0  cyaml_span_dup               ← L_alloc
+0.00  -Os  adam_settings_set_callbacks  ← v06_decompress
+0.00  -O2  cyaml_is_null_val            ← get_x_offset_inches
+0.00  -Os  sqlite3BtreeSavepoint        ← v06_decompress
+0.00  -O0  kvstore_iterator_prev        ← crypto_auth
+0.00  -O1  uni_replace                  ← json_object_iter
+0.00  -O1  event_anchor                 ← realloc
+0.00  -Os  lock_auth                    ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -Os  saveCursorsOnList            ← v06_decompress
+0.00  -O0  x64                          ← v06_decompressBound
+0.00  -O1  toks_k3_atom                 ← get_y_offset_inches
+0.00  -O1  arena_realloc                ← gz_read
+0.00  -O2  push_state                   ← setStream
+0.00  -O1  sqlite3PcacheSetSpillsize    ← getFrameSize
+0.00  -O1  sqlite3PcacheTruncate        ← v06_decompress
+0.00  -O0  block_needs_indicator        ← isolate
+0.00  -O2  adam_cache_store             ← strdup
+0.00  -O1  adam_settings_set_instructions ← get_packed_size
+0.00  -O0  wp_eq                        ← v06_decompress
+0.50  -O1  load_from_table              ← FROM
+0.00  -O1  kvstoreEncEncrypt            ← crypto_auth_hmacsha512_update
+0.00  -O0  ypath_lex_ident              ← json_isTrue
+0.00  -Os  offset_seg_isect             ← math_ceil
+0.00  -O0  secp256k1_scalar_cadd_bit    ← v06_decompress
+0.00  -O2  blst_p1_serialize            ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -Os  adam_settings_set_stt_callback ← {"ad": "ssl_tls13_psk_psk_psk_psk_psk_psk_psk_psk_psk_psk_ps
+0.00  -O0  canonicalize_factor          ← get_y_offset_inches
+0.00  -O2  sha256_update                ← v06_decompress
+0.00  -O0  HiAE_enc_vaes                ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O0  pcache1AllocPage             ← v06_decompress
+0.00  -O2  cvvdp_resolve_dispatch       ← cpuid
+0.00  -O3  sqlite3StrAccumEnlarge       ← psa_hash_update
+0.00  -O1  mu_str_find_substr           ← get_y_offset_inches
+0.00  -O2  flatten_order                ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O1  pager_incr_changecounter     ← v06_decompress
+0.00  -O2  join_hermite                 ← psa_hash
+0.00  -O0  has_trailing_whitespace      ← get_y_offset_inches
+0.00  -O1  cex_os__cmd__fstdin          ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O2  stbtt__csctx_close_shape     ← set_packing
+0.00  -O0  cellSizePtrTableLeaf         ← get_y_offset_inches
+0.00  -O1  toks_uni_normalize           ← psa_hash_update
+0.25  -O3  crypto_aead_write            ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O1  saveCursorKey                ← psa_hash_update
+0.00  -O2  adaptive_subdivide_3d        ← v06_decompress
+0.29  -O0  getDoubleArg                 ← get_y_offset_inches
+0.00  -O0  needs_quoting_ex             ← json_dump
+0.00  -O1  crypto_poly1305_update       ← inflateEnd
+0.00  -O2  cyaml_new_seq                ← XXH64_createState
+0.67  -O1  kvstore_cf_iterator_create   ← iterator_create
+0.00  -O0  walWriteOneFrame             ← crypto_auth_hmacsha512_update
+0.00  -O1  adam_tool_shell_exec         ← json_dump_file
+0.00  -O0  eat_start                    ← v06_decompress
+0.00  -O0  mul_fp12                     ← crypto_auth
+0.29  -Os  crypto_poly1305              ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O0  adam_history_count           ← get_next_frame
+0.25  -O1  cyaml_is_tag_char            ← v06_isFrameSize
+0.00  -O0  blst_p2_affine_serialize     ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O0  cyaml_parse_u64_n            ← get_y_offset_inches
+0.00  -O0  sqlite3JournalIsInMemory     ← is64bits
+0.00  -Os  pagerFixMaplimit             ← get_x_offset_inches
+0.00  -Os  sort_result                  ← L_checksort
+0.00  -O1  sqlite3WalBeginReadTransaction ← crypto_auth_hmacsha512
+0.00  -O1  cex_os__path__join           ← json_object_iter
+0.00  -O1  mu_str_rfind_byte            ← get_next_frame_y_offset
+0.00  -Os  others_refuse                ← set_regex
+0.00  -O1  sqlite3BtreeClearCache       ← v06_decompressBound
+0.00  -O1  sqlite3JournalIsInMemory     ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O1  sqlite3SafetyCheckOk         ← BtreeGetCursor
+0.00  -O0  sqlite3OsAccess              ← crypto_auth
+0.00  -O1  build_function_string        ← json_object_iter
+0.00  -O2  rms_volume                   ← get_y_offset_inches
+0.00  -O1  _cexds__arr_len              ← get_x_offset
+0.00  -O0  fmag_cg_word_register        ← getStreamSize
+0.00  -O0  secp256k1_fe_impl_normalizes_to_zero ← v06_isFrameSize
+0.00  -O1  expert_avail                 ← get_mlp_experts
+0.00  -O0  _cexds__arr_integrity        ← getFrameSize
+0.00  -O0  tui_app_create               ← T_init
+0.00  -O0  sqlite3VListNameToNum        ← json_object_iter
+0.00  -O0  btreeGetPage                 ← v06_decompress
+0.00  -O2  copyNodeContent              ← psa_hash_update
+0.00  -Os  adam_settings_set_stt        ← inflateInit
+0.33  -O1  _cex_alloc_estimate_alloc_size ← v06_alloc
+0.00  -O1  sajs_lexer_init              ← inflateInit2
+0.00  -O1  mu_str_compare               ← v06_isEqual
+0.40  -Os  pthreadMutexAlloc            ← mutex_init
+0.00  -O0  sqlite3DequoteNumber         ← L_checklstring
+0.00  -Os  dbMallocRawFinish            ← L_alloc
+0.00  -O1  sqlite3BtreeLeaveCursor      ← get_x_offset_inches
+0.00  -O1  POINTonE2_is_equal           ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O1  forward_all                  ← falloc
+0.00  -O0  sqlite3BtreeBeginStmt        ← v06_decompress
+0.00  -O0  sqlite3WalBeginReadTransaction ← v06_decompressBound
+0.00  -O1  ge_scalarmult_base           ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -Os  uni_resolve                  ← v06_decompress
+0.00  -O0  sqlite3WalOpen               ← v06_decompress
+0.00  -O0  skip_to_eol                  ← get_x_offset_inches
+0.29  -O1  kvstore_cf_get_default       ← default_column_family
+0.00  -O2  arena_cb_reallocate          ← psa_hash_update
+0.00  -O2  sqlite3BtreeRowCountEst      ← getFrameSize
+0.00  -O1  blst_fp2_inverse             ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -Os  eat_num_int_cont             ← inflateInit
+0.00  -O0  fetch_key                    ← json_object_iterate
+0.00  -O2  composite_eval_span_2d       ← get_y_offset_inches
+0.00  -Os  retainNode                   ← get_x_offset_inches
+0.40  -O1  toml_free                    ← psa_hash_free
+0.00  -O0  do_byte_change               ← v06_isSkipFrame
+0.00  -O0  http_new_headers             ← v06_decompress
+0.40  -O2  Random_i32                   ← randombytes_internal_random
+0.00  -O2  input_form                   ← inflateGetDictSize
+0.00  -O2  cvvdp_temporal_filter_destroy ← v06_decompress
+0.00  -Os  catmull_rom_eval_span_2d     ← v06_decompress
+0.00  -O2  cex_str__slice__strip        ← getDictID_fromDict
+0.00  -O2  blst_scalar_from_be_bytes    ← v06_decompress
+0.00  -O2  toks_ctx_identity            ← v06_isFrameSize
+0.00  -O1  HiAEx2_enc_partial_noupdate_aesni_avx ← crypto_auth_hmacsha512_128
+0.67  -Os  parse_join                   ← join
+0.00  -O2  cyaml_delete_at              ← json_object_iterate
+0.00  -O0  nth_of_class                 ← psa_hash
+0.00  -O1  toks_spm_model               ← json_object_set
+0.00  -O1  InitCellDomains              ← v06_decompressBound
+0.00  -O1  cyaml_doc_new                ← psa_hash_init
+0.00  -O0  strip_guard                  ← v06_decompress
+0.00  -O0  enqueue_token                ← psa_hash
+0.00  -O0  kvstoreEncDeriveKey          ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -Os  blst_sign_pk2_in_g1          ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O1  zerocast_parse_args          ← gz_write
+0.00  -O0  trajectory_eval_span_2d      ← v06_decompress
+0.00  -O0  unixFcntlExternalReader      ← F_close
+0.00  -Os  emit_anchor                  ← psa_hash_update
+0.00  -O2  meta_op                      ← isError
+0.00  -Os  blst_fp2_lshift              ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O0  scan_init                    ← v06_decompress
+0.00  -Os  closest_eval_2d              ← get_y_offset_inches
+0.33  -O1  sqlite3BtreeTableMoveto      ← BtreeCheckpoint
+0.00  -O1  clothoid_eval_span_3d        ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -Os  nc_ref_MatchLinearColorSpace ← get_y_offset_inches
+0.00  -O2  qaws_surface_create_ruled    ← v06_decompress
+0.00  -O0  secp256k1_hmac_sha256_finalize ← crypto_auth_hmacsha512_update
+0.00  -Os  stbtt_GetCodepointBox        ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O2  append_str                   ← realloc
+0.00  -O0  evaluate_update              ← BtreeCreateTable
+0.00  -O1  Matrix33Mult33               ← get_y_offset_inches
+0.00  -O1  arena_destroy                ← XXH32_freeState
+0.00  -Os  nc_ref_InitColorSpaceLibrary ← math_1
+0.00  -O1  sqlite3DequoteExpr           ← inflateGetDictSize
+0.00  -O0  zeroPage                     ← inflateEnd
+0.00  -O0  eat_mem_name_sep             ← entity6
+0.00  -O1  tok_skip                     ← get_y_offset_inches
+0.00  -O0  arc_destroy_impl             ← psa_hash_free
+0.00  -Os  mu_str_find_cstr             ← v06_decompressBound
+0.00  -O1  checkList                    ← page_read
+0.00  -Os  sqlite3PcacheOpen            ← inflateInit_
+0.00  -O0  update_state_offset          ← v06_decompress
+0.00  -O1  sqlite3_enable_shared_cache  ← {"ad": "ssl_tls13_psk_psk_psk_psk_psk_psk_psk_psk_psk_psk_ps
+0.00  -O1  fsm_create                   ← assert
+0.67  -O2  parse_from                   ← FROM
+0.00  -Os  secp256k1_scalar_get_b32     ← XXH64_copyState
+0.00  -O1  create_identifier_node       ← strdup
+0.00  -Os  _coverage__parse_i64_prefix  ← cex_str_to_signed_num
+0.00  -O1  errx                         ← json_dump
+0.00  -O0  matmul_i4                    ← get_y_offset_inches
+0.00  -Os  carquet_bitunpack8_6bit      ← COVER_best_init
+0.00  -O0  vec_xor                      ← v06_decompress
+0.00  -O0  matmul                       ← v06_decompressBound
+0.00  -O0  cyaml_strerror               ← emitter_emit_key
+0.00  -O2  eval_subcurve                ← math_sincos
+0.00  -O3  emit_cls                     ← split_regex
+0.00  -O2  fmag_cg_builder_create       ← inflateInit
+0.00  -O1  inline_c3                    ← {"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar
+0.00  -O1  cyaml_utf8_encode            ← set64
+0.00  -O0  test_bool                    ← is64bits
+0.00  -O1  sqlite3BtreeCursorUnpin      ← v07_isNotUtf8
+0.00  -O2  releaseInodeInfo             ← os_unix_close
+0.00  -O0  pagerOpenSavepoint           ← v06_decompress
+0.00  -O1  mu_str_parse_int8            ← get_y_offset_inches
+0.00  -O0  add_row                      ← realloc
+0.00  -O1  cmp_pdesc                    ← FSE_isEqual
+0.00  -O1  _cexds__hmdel_key            ← assert
+0.00  -O0  inverse_fp12                 ← crypto_auth
+0.00  -O3  traversal_map_time_to_distance ← math_ceil
+0.00  -O1  zerocast_decompress          ← error_set
+0.00  -O0  pack_int2                    ← get_y_offset_inches
+0.00  -O1  pool_worker                  ← adam_run
+ortalama F1 0.044  (n=500, tam isabet 0)  süre 1030s
+ayrıntı → sonuc/sabit500-lora15-v3-baglam-ozet.jsonl
+mod çöküşü: en sık 3 tahmin 'v06_decompress': 13.6%, '{"ad": "crypto_pwhash_argon2id_argon2id_argon2id_argon2id_ar': 9.4%, 'get_y_offset_inches': 4.8%; benzersiz oranı 35.2%
