@@ -1,0 +1,61 @@
+name: test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  birim:
+    name: pytest + duman (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.9: README'deki en düşük sürüm ve macOS sistem Python'u; 3.12: Colab'a yakın.
+        python: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install pytest
+      - name: pytest
+        run: python -m pytest -q -rs
+      - name: Duman — örnek veri üzerinde veri hattı
+        run: |
+          set -eu
+          D="$RUNNER_TEMP/ornek"
+          python tests/ornek.py "$D"
+          cd "$D"
+          python "$GITHUB_WORKSPACE/test_seti.py" -k 3
+          python "$GITHUB_WORKSPACE/lora/hazirla.py" --veri veri --cikti lora/veri \
+            --token-tavan 0 --baglam ozet --onek-at --aciklama
+          python "$GITHUB_WORKSPACE/lora/hazirla_olcek.py" --veri veri/bin/olcek --cikti lora/veri-olcek \
+            --token-tavan 0 --proje-tavan 5
+          wc -l veri/test.jsonl lora/veri/*.jsonl lora/veri-olcek/*.jsonl
+          cat lora/veri-olcek/ozet.json
+
+  macos-link:
+    # Gerçek link + strip -x regresyonları (test_cikar_bin.GercekLinkTesti) Apple araç zinciri ister.
+    name: cikar_bin gerçek link (macOS)
+    # Veri hattı Apple clang 21.0.0 (clang-2100) ile üretildi. macos-14 (Xcode 15.4, clang 15) imajında objdump
+    # kod içi bir veri baytını <unknown> komut olarak çözüyor ve cikar_bin bunu reddediyor; en yeni imaj kullanılır.
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install pytest
+      - run: clang --version && which objdump strip
+      - run: python -m pytest -q -rs test_cikar_bin.py

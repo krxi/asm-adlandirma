@@ -92,7 +92,11 @@ def main():
     ap.add_argument("--devam", action="store_true",
                     help="var olan sonuç dosyasındaki sağlam satırları koru, yalnız eksik/HATA olanları sor")
     ap.add_argument("--kesik-de", action="store_true", help="--devam ile: tavana çarpıp boş kalanları da yeniden sor")
+    ap.add_argument("--oneksiz", action="store_true",
+                    help="gerçek ad F1'inin yanına öneksiz F1'i de (ozet.py tanımı) yaz ve raporla")
     a = ap.parse_args()
+    if a.oneksiz:
+        from ozet import f1_oneksiz  # ozet taban'ı içe aktarır; döngü olmasın diye burada
 
     satirlar = [json.loads(l) for l in a.veri.open()]
     random.Random(a.tohum).shuffle(satirlar)
@@ -117,6 +121,9 @@ def main():
         return {"id": r["id"], "gercek": r["ad"], "tahmin": c.get("ad"), "aciklama": c.get("aciklama"),
                 "f1": round(s, 3), "opt": r["opt"], "token": c.get("token", 0), "bitis": c.get("bitis")}
 
+    def iki_f1(r):
+        return {**r, "f1_oneksiz": round(f1_oneksiz(r), 3)} if a.oneksiz else r
+
     # Satırlar geldikçe ara dosyaya yazılır; koşu yarıda kesilse de --devam kaldığı yerden alır.
     ara = sonuc.with_suffix(".ara")
     yeni = {}
@@ -138,17 +145,21 @@ def main():
             f.write(json.dumps(yeni[r["id"]], ensure_ascii=False) + "\n")
             f.flush()
 
-    hepsi = [eski.get(r["id"]) or yeni[r["id"]] for r in ornek]
+    hepsi = [iki_f1(eski.get(r["id"]) or yeni[r["id"]]) for r in ornek]
     with sonuc.open("w") as f:
         for r in hepsi:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     ara.unlink(missing_ok=True)
-    skorlar = {}
+    skorlar, oneksiz = {}, {}
     for r in hepsi:
         skorlar.setdefault(r["opt"], []).append(r["f1"])
+        oneksiz.setdefault(r["opt"], []).append(r.get("f1_oneksiz", 0.0))
         print(f"{r['f1']:.2f}  {r['opt']}  {r['gercek']:<28} ← {r['tahmin']}")
     for opt, l in sorted(skorlar.items()):
         print(f"{opt}: ortalama F1 {sum(l) / len(l):.2f}  (n={len(l)}, tam isabet {sum(x == 1 for x in l)})")
+        if a.oneksiz:
+            o = oneksiz[opt]
+            print(f"{opt}: öneksiz F1 {sum(o) / len(o):.2f}  (tam isabet {sum(x == 1 for x in o)})")
     print(f"yeni token: {sum(r.get('token', 0) for r in yeni.values())}")
     print(f"ayrıntı → {sonuc}")
 
