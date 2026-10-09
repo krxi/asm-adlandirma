@@ -6,7 +6,7 @@
 
 ## Current status
 
-The v4 dataset contains 228,177 functions from 341 projects across 5 optimization levels and is published on [Hugging Face](https://huggingface.co/datasets/krxi123/asm-adlandirma) under the `v4` config. The Ghidra script is ready, and training of the 7-8B model is in progress. The model currently generates its descriptions in Turkish.
+The v4 dataset contains 228,177 functions from 341 projects across 5 optimization levels and is published on [Hugging Face](https://huggingface.co/datasets/krxi123/asm-adlandirma) under the `v4` config. The Ghidra script is ready. The best small model so far, Qwen3-8B + LoRA, reaches name F1 0.106 on the v4 test set and 0.094 on `eval_115` (large models: about 0.17-0.20 on `eval_115`); see Results, section 6. The model currently generates its descriptions in Turkish.
 
 Open a stripped program in Ghidra or IDA and you will see hundreds of functions named `FUN_00401a30`. Much of reverse engineering consists of understanding and naming these functions one by one. This project aims to teach a model that first step:
 
@@ -149,6 +149,19 @@ Qwen2.5-Coder-0.5B (4-bit), 1,500 steps (~1 hour 40 minutes, 4,8 GB memory). Nei
 
 The 0.5B model and half an epoch appear insufficient for this task. Next experiments: a larger base model (1.5B-3B), longer training, and call context in the input.
 
+### 6. Larger small models: 1.5B and 8B LoRA (v4 data)
+
+Same fixed v4 test sample (`lora/test_sabit_idler.txt`, little-known test projects) and the `eval_115` set. Name F1 compares with the real name; prefix-stripped F1 removes the project prefix from both sides. Details: [rapor/MOLAB_IKI_F1.md](rapor/MOLAB_IKI_F1.md), [sonuc/SABIT500_LORA15_V3.md](sonuc/SABIT500_LORA15_V3.md).
+
+| Model | Test set | n | Name F1 (-O0 / -O2 / all) | Prefix-stripped F1 (all) | Exact matches (real / prefix-stripped) |
+|---|---|---:|---|---:|---|
+| **Qwen3-8B + LoRA** (cloud GPU) | v4 test, fixed sample | 2,000 | 0.108 / 0.093 / **0.106** | 0.108 | 25 / 33 |
+| **Qwen3-8B + LoRA** (cloud GPU) | `eval_115` | 115 | 0.102 / 0.085 / **0.094** | 0.111 | 1 / 4 |
+| Qwen2.5-Coder-1.5B + LoRA v3, with call context (MLX, laptop) | first 500 of the fixed sample | 500 | 0.044 | 0.045 | 0 |
+| Qwen2.5-Coder-1.5B + LoRA v3, assembly only | first 500 of the fixed sample | 500 | 0.037 | 0.038 | 0 |
+
+On the same 500 rows the 8B model scores 0.108 versus 0.044 for 1.5B. The 1.5B adapter does not generalize to new projects and shows strong mode collapse (the most frequent prediction covers 13.6% of rows). The 8B model is the first small model that is clearly above zero, but it is still well below the best large model on `eval_115` (mimo-v2.6-pro: 0.17 name F1, 0.20 prefix-stripped).
+
 ### Note: the zlib warm-up and pipeline leakage
 
 The first zlib evaluation (v1, 60 functions) used a simpler data pipeline that inadvertently leaked clues to the model: global variable names (`crc_table`, `configuration_table`), alphabetical `sub_` numbers, and `.o` offsets. After an audit with a reverse-engineering model (Codex), these leaks were closed in v3. The v1 results remain under `sonuc/zlib-*.jsonl`, but all comparisons above use the v3 pipeline.
@@ -167,7 +180,8 @@ The first zlib evaluation (v1, 60 functions) used a simpler data pipeline that i
 
 **3. Small model**
 - [x] First LoRA attempts (0.5B): unsuccessful due to prefix memorization and mode collapse
-- [ ] 1.5B model, contextual data, longer training
+- [x] 1.5B model with call context: name F1 0.044, does not generalize
+- [x] Qwen3-8B + LoRA: name F1 0.106 (v4 test), 0.094 (`eval_115`)
 - [x] Distillation data: a teacher model with access to source code (mimo-v2.6-pro) wrote a one-sentence Turkish description for all 17,581 functions (12,5 words on average)
 - [ ] Have the small model generate both a name and a description
 

@@ -6,7 +6,7 @@
 
 ## Güncel durum
 
-v4 veri seti, 5 optimizasyon seviyesinde 341 projeden 228.177 fonksiyon içeriyor ve [Hugging Face'te](https://huggingface.co/datasets/krxi123/asm-adlandirma) `v4` config'iyle yayımlanıyor. Ghidra betiği hazır; 7-8B model eğitimi sürüyor.
+v4 veri seti, 5 optimizasyon seviyesinde 341 projeden 228.177 fonksiyon içeriyor ve [Hugging Face'te](https://huggingface.co/datasets/krxi123/asm-adlandirma) `v4` config'iyle yayımlanıyor. Ghidra betiği hazır. Şimdiye kadarki en iyi küçük model Qwen3-8B + LoRA: v4 testinde ad F1 0.106, `eval_115`'te 0.094 (büyük modeller `eval_115`'te yaklaşık 0.17-0.20); bkz. Sonuçlar, bölüm 6.
 
 Ghidra ya da IDA ile stripped bir programı açtığınızda yüzlerce `FUN_00401a30` görürsünüz. Tersine mühendisliğin büyük kısmı, bunların ne iş yaptığını tek tek anlayıp adlandırmaktır. Bu proje o ilk adımı bir modele öğretmeyi amaçlıyor:
 
@@ -149,6 +149,19 @@ Qwen2.5-Coder-0.5B (4-bit), 1.500 adım (~1 saat 40 dk, 4,8 GB bellek). İki den
 
 0.5B model ve yarım epoch bu iş için yetersiz görünüyor. Sıradaki denemeler: daha büyük taban (1.5B-3B), daha uzun eğitim, girdiye çağrı bağlamı.
 
+### 6. Daha büyük küçük modeller: 1.5B ve 8B LoRA (v4 verisi)
+
+Aynı sabit v4 test örneklemi (`lora/test_sabit_idler.txt`, az bilinen test projeleri) ve `eval_115` seti. Gerçek ad F1'i tahmini gerçek adla karşılaştırır; öneksiz F1 proje önekini iki taraftan atar. Ayrıntı: [rapor/MOLAB_IKI_F1.md](rapor/MOLAB_IKI_F1.md), [sonuc/SABIT500_LORA15_V3.md](sonuc/SABIT500_LORA15_V3.md).
+
+| model | test | n | gerçek ad F1 (-O0 / -O2 / hepsi) | öneksiz F1 (hepsi) | tam isabet (gerçek / öneksiz) |
+|---|---|---:|---|---:|---|
+| **Qwen3-8B + LoRA** (bulut GPU) | v4 test, sabit örneklem | 2.000 | 0.108 / 0.093 / **0.106** | 0.108 | 25 / 33 |
+| **Qwen3-8B + LoRA** (bulut GPU) | `eval_115` | 115 | 0.102 / 0.085 / **0.094** | 0.111 | 1 / 4 |
+| Qwen2.5-Coder-1.5B + LoRA v3, çağrı bağlamlı (MLX, laptop) | sabit örneklemin ilk 500'ü | 500 | 0.044 | 0.045 | 0 |
+| Qwen2.5-Coder-1.5B + LoRA v3, yalnız assembly | sabit örneklemin ilk 500'ü | 500 | 0.037 | 0.038 | 0 |
+
+Aynı 500 satırda 8B 0.108, 1.5B 0.044 alıyor. 1.5B adaptörü yeni projelere genellemiyor ve ciddi mod çöküşü var (en sık tahmin satırların %13,6'sı). 8B, sıfırın belirgin üstüne çıkan ilk küçük model; ama `eval_115`'te en iyi büyük modelin hâlâ epey altında (mimo-v2.6-pro: gerçek ad F1 0.17, öneksiz 0.20).
+
 ### Not: zlib ısınma turu ve veri hattındaki sızıntılar
 
 İlk zlib ölçümü (v1, 60 fonksiyon) daha basit bir veri hattıyla yapıldı ve o hat modele farkında olmadan ipucu sızdırıyordu: global değişken adları (`crc_table`, `configuration_table`), alfabetik `sub_` numaraları, `.o` ofsetleri. Bir tersine mühendislik modeliyle (Codex) yapılan denetimden sonra bu sızıntılar kapatıldı (v3). v1 sonuçları `sonuc/zlib-*.jsonl` altında duruyor ama yukarıdaki karşılaştırmalar v3 hatla yapıldı.
@@ -167,7 +180,8 @@ Qwen2.5-Coder-0.5B (4-bit), 1.500 adım (~1 saat 40 dk, 4,8 GB bellek). İki den
 
 **3. Küçük model**
 - [x] İlk LoRA denemeleri (0.5B): işe yaramadı, önek ezberi ve mod çöküşü
-- [ ] 1.5B model, bağlamlı veri, daha uzun eğitim
+- [x] 1.5B model, çağrı bağlamlı: gerçek ad F1 0.044, genellemiyor
+- [x] Qwen3-8B + LoRA: gerçek ad F1 0.106 (v4 test), 0.094 (`eval_115`)
 - [x] Damıtma verisi: kaynak kodu gören öğretmen model (mimo-v2.6-pro) 17.581 fonksiyonun hepsine tek cümlelik Türkçe açıklama yazdı (ort. 12,5 kelime)
 - [ ] Küçük model ad + açıklama birlikte üretsin
 
