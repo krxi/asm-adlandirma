@@ -129,6 +129,16 @@ def _():
                 for i in sorted(indisler[bas:bas + 800], key=uzunluk, reverse=True)]
 
 
+    def sablon_ids(tokenizer, mesajlar, uret):
+        # transformers 5: tokenize=True varsayılan olarak BatchEncoding döndürür; list() anahtarları verir.
+        cikti = tokenizer.apply_chat_template(
+            mesajlar, tokenize=True, add_generation_prompt=uret, enable_thinking=False, return_dict=False,
+        )
+        if hasattr(cikti, "keys"):
+            cikti = cikti["input_ids"]
+        return list(cikti)
+
+
     def kodla(satir, tokenizer, max_uzunluk=3072):
         mesajlar = satir["messages"]
         if [m["role"] for m in mesajlar] != ["system", "user", "assistant"]:
@@ -136,12 +146,8 @@ def _():
         hedef = json.loads(mesajlar[-1]["content"])
         if not isinstance(hedef, dict) or not isinstance(hedef.get("ad"), str):
             raise ValueError("Assistant hedefi ad alanlı JSON olmalı.")
-        istem = list(tokenizer.apply_chat_template(
-            mesajlar[:2], tokenize=True, add_generation_prompt=True, enable_thinking=False,
-        ))
-        tumu = list(tokenizer.apply_chat_template(
-            mesajlar, tokenize=True, add_generation_prompt=False, enable_thinking=False,
-        ))
+        istem = sablon_ids(tokenizer, mesajlar[:2], True)
+        tumu = sablon_ids(tokenizer, mesajlar, False)
         if tumu[:len(istem)] != istem or len(tumu) <= len(istem):
             raise ValueError("Assistant sınırı doğrulanamadı; tokenizer şablonunu denetleyin.")
         # Tüm train kullanılır; taşma sessiz filtrelenmez/kesilmez, veri yeniden hazırlanır.
@@ -396,9 +402,7 @@ def _():
             try:
                 with Path(yol).open("w", encoding="utf-8") as dosya, torch.inference_mode():
                     for r in satirlar:
-                        ids = list(tokenizer.apply_chat_template(
-                            r["messages"][:2], tokenize=True, add_generation_prompt=True, enable_thinking=False,
-                        ))
+                        ids = sablon_ids(tokenizer, r["messages"][:2], True)
                         if len(ids) > 3072:
                             raise ValueError(f"{r['id']}: üretim girdisi 3072 tokenı aşıyor.")
                         girdi = torch.tensor([ids], device=model.device)
