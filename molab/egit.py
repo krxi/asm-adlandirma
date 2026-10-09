@@ -600,8 +600,30 @@ def _():
 
 
 @app.cell
-def _(egitim_ayarlari):
-    # molab Secrets: HF_TOKEN; diğer ayarlar ortam değişkenleri (README).
+def _(mo):
+    # Ortam değişkeni yoksa token ve kip buradan girilir; token ekrana/loga yazılmaz.
+    form = mo.ui.dictionary({
+        "token": mo.ui.text(kind="password", label="HF write token (molab Secrets'ta HF_TOKEN varsa boş bırak)",
+                            full_width=True),
+        "kip": mo.ui.dropdown(["duman (20 adım)", "tam eğitim", "devam (kesilen tam eğitimi sürdür)"],
+                              value="duman (20 adım)", label="Kip"),
+    }).form(submit_button_label="Başlat")
+    form
+    return (form,)
+
+
+@app.cell
+def _(egitim_ayarlari, form, mo):
+    import os as _os
+
+    mo.stop(form.value is None, mo.md("Token'ı gir, kipi seç, **Başlat**'a bas."))
+    if form.value["token"].strip():
+        _os.environ["HF_TOKEN"] = form.value["token"].strip()
+    _kip = form.value["kip"]
+    _os.environ["MAX_ADIM"] = "20" if _kip.startswith("duman") else "0"
+    _os.environ["DEVAM"] = "1" if _kip.startswith("devam") else "0"
+    if _kip.startswith("duman"):
+        _os.environ.setdefault("ASM_KOK", "asm-calisma-v5-duman")
     ayar = egitim_ayarlari("molab")
     return (ayar,)
 
