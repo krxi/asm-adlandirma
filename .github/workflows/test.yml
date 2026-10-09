@@ -47,7 +47,9 @@ jobs:
   macos-link:
     # Gerçek link + strip -x regresyonları (test_cikar_bin.GercekLinkTesti) Apple araç zinciri ister.
     name: cikar_bin gerçek link (macOS)
-    runs-on: macos-14
+    # Veri hattı Apple clang 21.0.0 (clang-2100) ile üretildi. macos-14 (Xcode 15.4, clang 15) imajında objdump
+    # kod içi bir veri baytını <unknown> komut olarak çözüyor ve cikar_bin bunu reddediyor; en yeni imaj kullanılır.
+    runs-on: macos-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
