@@ -1,13 +1,13 @@
 # /// script
 # requires-python = ">=3.11"
 # dependencies = [
-#     "transformers",
-#     "peft",
-#     "bitsandbytes>=0.46.1",
-#     "accelerate",
-#     "datasets",
-#     "torch",
-#     "marimo",
+#     "transformers==5.3.0",
+#     "peft==0.18.1",
+#     "accelerate>=1.12,<2",
+#     "datasets>=3,<5",
+#     "huggingface_hub>=1.0,<2",
+#     "torch>=2.6",
+#     "marimo>=0.15.2",
 # ]
 # ///
 
@@ -18,19 +18,26 @@ app = marimo.App(width="medium")
 
 
 @app.cell
+def _():
+    import marimo as mo
+    return (mo,)
+
+
+@app.cell
 def _(mo):
     mo.md(
         r"""
-        # Sembolsüz x86-64 fonksiyon adlandırma — QLoRA
+        # Fonksiyon adlandırma — v5 bf16 LoRA
 
-        Bu notebook, v4 ölçek verisini Qwen2.5-Coder üzerinde 4-bit QLoRA ile
-        yalnız `ad` hedefi için eğitir. Kayıp yalnız assistant yanıtında
-        hesaplanır. Tam eğitimden sonra tohumlu en çok 2.000 test örneği ile
-        sabit 115 örneklik eski küme ayrı ölçülür.
+        Tüm train, 1 epoch, etkin batch 16, tohum 7. Kayıp yalnız assistant JSON cevabında.
+        Her 500 adımda valid_300: loss + greedy ad F1 + geçerli JSON oranı.
+        HF private repo zorunlu; `MAX_ADIM=20` yalnız duman denemesidir (valid'den 10 satır).
+        `DEVAM=1` son adaptörle birlikte optimizer/scheduler/RNG/adımı geri yükler.
+        Tam eğitim sonunda yalnız valid F1 ile seçilen adaptör test_sabit ve eval115'te ölçülür.
 
-        Çalışma kökü `ASM_KOK` ortam değişkeniyle seçilebilir. Kısa bir hız
-        denemesi için çalıştırmadan önce örneğin `MAX_ADIM=20` verin; bu modda
-        değerlendirme ve kayıt adımları atlanır.
+        Paketleme: `group_by_length`. SDPA ve Qwen3.5 hibrit attention için dolgusuz
+        örnek sınırları doğrulanmadığından DataCollatorWithFlattening kullanılmaz.
+        Sıra ortak ham metin uzunluğuyla önceden hazırlanır; tokenizer ve mikro batch'ten bağımsızdır.
         """
     )
     return
@@ -38,695 +45,580 @@ def _(mo):
 
 @app.cell
 def _():
-    import gc
-    import importlib.util
+    import hashlib
+    import inspect
     import json
+    import logging
     import math
     import os
     import random
     import re
     import shutil
+    import sys
     import time
     import urllib.request
     import zipfile
     from pathlib import Path
 
-    import marimo as mo
-    import torch
-    from datasets import load_dataset
-    from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-    from tqdm.auto import tqdm
-    from transformers import (
-        AutoModelForCausalLM,
-        AutoTokenizer,
-        BitsAndBytesConfig,
-        DataCollatorForSeq2Seq,
-        Trainer,
-        TrainerCallback,
-        TrainingArguments,
-        set_seed,
-    )
-    from transformers.trainer_utils import get_last_checkpoint
 
-    return (
-        AutoModelForCausalLM,
-        AutoTokenizer,
-        BitsAndBytesConfig,
-        DataCollatorForSeq2Seq,
-        LoraConfig,
-        Path,
-        Trainer,
-        TrainerCallback,
-        TrainingArguments,
-        gc,
-        get_last_checkpoint,
-        get_peft_model,
-        importlib,
-        json,
-        load_dataset,
-        math,
-        mo,
-        os,
-        prepare_model_for_kbit_training,
-        random,
-        re,
-        set_seed,
-        shutil,
-        time,
-        torch,
-        tqdm,
-        urllib,
-        zipfile,
-    )
+    # lora/cikti.py ile aynı tutulmalı. Tek dosya notebook için çevrimdışı kopya.
+    def ad_ayikla(metin: str) -> tuple[str, str, str, bool]:
+        """JSON, kesik JSON ve düz metin için (ad, İngilizce, Türkçe, geçerli JSON)."""
+        metin = metin.strip()
+        # Kod çiti veya ön açıklama içindeki tamamlanmış JSON da kabul edilir.
+        decoder = json.JSONDecoder()
+        for bas in (m.start() for m in re.finditer(r"\{", metin)):
+            try:
+                veri, _ = decoder.raw_decode(metin[bas:])
+            except ValueError:
+                continue
+            if isinstance(veri, dict) and isinstance(veri.get("ad"), str):
+                return (veri["ad"], veri.get("aciklama_en") or "", veri.get("aciklama") or "", True)
 
+        def alan(ad):
+            es = re.search(r'"' + ad + r'"\s*:\s*("(?:\\.|[^"\\])*")', metin)
+            if es:
+                try:
+                    return json.loads(es[1])
+                except ValueError:
+                    pass
+            return ""
 
-@app.cell
-def _(Path, importlib, os, torch):
-    def ortam_tamsayisi(ad: str, varsayilan: int) -> int:
-        ham = os.environ.get(ad)
-        if ham is None:
-            return varsayilan
-        try:
-            return int(ham)
-        except ValueError as hata:
-            raise ValueError(f"{ad} bir tamsayı olmalı; gelen değer: {ham!r}") from hata
-
-
-    KOK = Path(os.environ.get("ASM_KOK", Path.cwd() / "asm-calisma")).expanduser().resolve()
-    KOK.mkdir(parents=True, exist_ok=True)
-
-    MODEL = os.environ.get("MODEL", "Qwen/Qwen2.5-Coder-7B-Instruct")
-    L4_MODELI = os.environ.get("L4_MODELI", "Qwen/Qwen2.5-Coder-3B-Instruct")
-    BELLEGE_GORE_MODEL_SEC = os.environ.get("BELLEGE_GORE_MODEL_SEC", "1") == "1"
-
-    MAX_UZUNLUK = ortam_tamsayisi("MAX_UZUNLUK", 2304)
-    ETKIN_BATCH = 16
-    MIKRO_BATCH = ortam_tamsayisi("MIKRO_BATCH", 8)
-    GRAD_CKPT = ortam_tamsayisi("GRAD_CKPT", 0)
-    MAX_ADIM = ortam_tamsayisi("MAX_ADIM", 0)
-    EPOCH = 2.0
-    MAX_ORNEK = 41000
-    VALID_TAVAN = 500
-    TEST_TAVAN = 2000
-    TOHUM = 7
-
-    if GRAD_CKPT not in (0, 1):
-        raise ValueError("GRAD_CKPT yalnız 0 veya 1 olabilir.")
-    if MIKRO_BATCH <= 0 or ETKIN_BATCH % MIKRO_BATCH:
-        raise ValueError("MIKRO_BATCH pozitif olmalı ve 16 değerini tam bölmeli.")
-    if MAX_ADIM < 0:
-        raise ValueError("MAX_ADIM negatif olamaz.")
-    if not torch.cuda.is_available():
-        raise RuntimeError("CUDA GPU bulunamadı; molab oturumunda GPU seçin.")
-    if not torch.cuda.is_bf16_supported():
-        raise RuntimeError("Bu notebook bf16 destekli bir GPU bekliyor.")
-
-    _gpu = torch.cuda.get_device_properties(0)
-    bellek_gb = _gpu.total_memory / 1024**3
-    SECILEN_MODEL = (
-        MODEL if not (BELLEGE_GORE_MODEL_SEC and bellek_gb < 35) else L4_MODELI
-    )
-    model_kisa = SECILEN_MODEL.rsplit("/", 1)[-1]
-    BIRIKIM_ADIMI = ETKIN_BATCH // MIKRO_BATCH
-    DENEME_MODU = MAX_ADIM > 0
-    # molab'da flash-attn-4 kurulu; transformers'ın flash_attention_2 yolu onu kullanamıyor.
-    ATTN_IMPLEMENTATION = os.environ.get("ATTN", "sdpa")
-
-    print(f"Çalışma kökü: {KOK}")
-    print(f"GPU: {_gpu.name} ({bellek_gb:.1f} GB)")
-    print(f"Model: {SECILEN_MODEL}")
-    print(f"Attention: {ATTN_IMPLEMENTATION}")
-    print(f"Etkin batch: {MIKRO_BATCH} × {BIRIKIM_ADIMI} = {ETKIN_BATCH}")
-    print(f"Gradient checkpointing: {bool(GRAD_CKPT)}")
-    print(f"Mod: {'deneme' if DENEME_MODU else 'tam eğitim'}")
-
-    return (
-        ATTN_IMPLEMENTATION,
-        BIRIKIM_ADIMI,
-        DENEME_MODU,
-        EPOCH,
-        ETKIN_BATCH,
-        GRAD_CKPT,
-        KOK,
-        MAX_ADIM,
-        MAX_ORNEK,
-        MAX_UZUNLUK,
-        MIKRO_BATCH,
-        SECILEN_MODEL,
-        TEST_TAVAN,
-        TOHUM,
-        VALID_TAVAN,
-        model_kisa,
-    )
-
-
-@app.cell
-def _(KOK, Path, urllib, zipfile):
-    VERI_URL = "https://github.com/krxi/asm-adlandirma-veri/releases/download/v4/veri-olcek-v4.zip"
-    veri_zip_yolu = KOK / "veri-olcek-v4.zip"
-    veri_acma_dizini = KOK / "veri-olcek-v4"
-    zorunlu_dosyalar = ("train.jsonl", "valid.jsonl", "test.jsonl", "eval115.jsonl")
-
-    def veri_dizinini_bul(kok: Path) -> Path | None:
-        _adaylar = [kok]
-        if kok.is_dir():
-            _adaylar.extend(sorted({_p.parent for _p in kok.rglob("train.jsonl")}))
-        for _aday in _adaylar:
-            if all((_aday / _ad).is_file() for _ad in zorunlu_dosyalar):
-                return _aday
-        return None
-
-
-    if veri_zip_yolu.is_file():
-        print(f"Veri arşivi hazır, indirme atlandı: {veri_zip_yolu}")
-    else:
-        _gecici_zip = veri_zip_yolu.with_suffix(".zip.part")
-        print(f"Veri indiriliyor: {VERI_URL}")
-        with urllib.request.urlopen(VERI_URL) as _yanit, _gecici_zip.open("wb") as _cikti:
-            while True:
-                _parca = _yanit.read(1024 * 1024)
-                if not _parca:
-                    break
-                _cikti.write(_parca)
-        _gecici_zip.replace(veri_zip_yolu)
-
-    VERI_DIZINI = veri_dizinini_bul(veri_acma_dizini)
-    if VERI_DIZINI is None:
-        veri_acma_dizini.mkdir(parents=True, exist_ok=True)
-        print(f"Veri arşivi açılıyor: {veri_acma_dizini}")
-        with zipfile.ZipFile(veri_zip_yolu) as _arsiv:
-            _arsiv.extractall(veri_acma_dizini)
-        VERI_DIZINI = veri_dizinini_bul(veri_acma_dizini)
-    if VERI_DIZINI is None:
-        raise FileNotFoundError(
-            f"Arşivde gerekli JSONL dosyaları bulunamadı: {zorunlu_dosyalar}"
-        )
-
-    for _ad in ("train", "valid", "test", "eval115"):
-        _yol = VERI_DIZINI / f"{_ad}.jsonl"
-        with _yol.open(encoding="utf-8") as _dosya:
-            _adet = sum(1 for _satir in _dosya if _satir.strip())
-        print(f"{_ad:>7}: {_adet:>6} satır  ({_yol})")
-
-    return VERI_DIZINI, VERI_URL, veri_zip_yolu
-
-
-@app.cell
-def _(
-    ATTN_IMPLEMENTATION,
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    BitsAndBytesConfig,
-    GRAD_CKPT,
-    LoraConfig,
-    SECILEN_MODEL,
-    TOHUM,
-    get_peft_model,
-    os,
-    prepare_model_for_kbit_training,
-    set_seed,
-    torch,
-):
-    set_seed(TOHUM)
-    tokenizer = AutoTokenizer.from_pretrained(SECILEN_MODEL, use_fast=True)
-    tokenizer.padding_side = "right"
-    if tokenizer.pad_token_id is None:
-        tokenizer.pad_token = tokenizer.eos_token
-
-    # NICELEME=0: 96 GB'lık kartta 4-bit'e gerek yok; bf16 taban + aynı LoRA çok daha hızlı.
-    NICELEME = os.environ.get("NICELEME", "1") == "1"
-    niceleme = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_compute_dtype=torch.bfloat16,
-    ) if NICELEME else None
-    model = AutoModelForCausalLM.from_pretrained(
-        SECILEN_MODEL,
-        quantization_config=niceleme,
-        torch_dtype=torch.bfloat16,
-        device_map={"": 0},
-        attn_implementation=ATTN_IMPLEMENTATION,
-    )
-    model.config.use_cache = False
-    if NICELEME:
-        model = prepare_model_for_kbit_training(
-            model,
-            use_gradient_checkpointing=GRAD_CKPT,
-            gradient_checkpointing_kwargs={"use_reentrant": False},
-        )
-    elif GRAD_CKPT:
-        model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
-        model.enable_input_require_grads()
-    print(f"4-bit niceleme: {NICELEME}")
-    model = get_peft_model(
-        model,
-        LoraConfig(
-            r=16,
-            lora_alpha=32,
-            lora_dropout=0.05,
-            bias="none",
-            task_type="CAUSAL_LM",
-            target_modules="all-linear",
-        ),
-    )
-    model.print_trainable_parameters()
-    return model, tokenizer
-
-
-@app.cell
-def _(
-    EPOCH,
-    ETKIN_BATCH,
-    MAX_ADIM,
-    MAX_ORNEK,
-    MAX_UZUNLUK,
-    TOHUM,
-    VALID_TAVAN,
-    VERI_DIZINI,
-    json,
-    load_dataset,
-    math,
-    tokenizer,
-):
-    ham_veri = load_dataset(
-        "json",
-        data_files={
-            "train": str(VERI_DIZINI / "train.jsonl"),
-            "validation": str(VERI_DIZINI / "valid.jsonl"),
-        },
-    )
-    if MAX_ORNEK and len(ham_veri["train"]) > MAX_ORNEK:
-        ham_veri["train"] = ham_veri["train"].shuffle(seed=TOHUM).select(
-            range(MAX_ORNEK)
-        )
-    ham_veri["validation"] = ham_veri["validation"].shuffle(seed=TOHUM).select(
-        range(min(VALID_TAVAN, len(ham_veri["validation"])))
-    )
-
-    def kodla(ornek):
-        _mesajlar = ornek["messages"]
-        if [_m["role"] for _m in _mesajlar] != ["system", "user", "assistant"]:
-            raise ValueError("Beklenen mesaj sırası: system, user, assistant")
-        _hedef = json.loads(_mesajlar[2]["content"])
-        if set(_hedef) != {"ad"}:
-            raise ValueError(f"Hedef yalnız ad içermeli: {_hedef}")
-
-        _istem = tokenizer.apply_chat_template(
-            _mesajlar[:2], tokenize=True, add_generation_prompt=True, return_dict=False, enable_thinking=False
-        )
-        _tumu = tokenizer.apply_chat_template(
-            _mesajlar, tokenize=True, add_generation_prompt=False, return_dict=False, enable_thinking=False
-        )
-        if _tumu[: len(_istem)] != _istem:
-            raise ValueError("Sohbet şablonunda assistant başlangıcı belirlenemedi.")
-
-        _tumu = _tumu[:MAX_UZUNLUK]
-        _etiketler = [-100] * min(len(_istem), len(_tumu)) + _tumu[len(_istem) :]
-        if not any(_x != -100 for _x in _etiketler):
-            raise ValueError(
-                "Yanıt MAX_UZUNLUK dışında kaldı; veri hazırlama tavanını düşürün."
-            )
-        return {
-            "input_ids": _tumu,
-            "attention_mask": [1] * len(_tumu),
-            "labels": _etiketler,
-            "uzunluk": len(_tumu),
-        }
-
-
-    tokenli_veri = ham_veri.map(
-        kodla,
-        remove_columns=ham_veri["train"].column_names,
-        desc="Qwen sohbet şablonu uygulanıyor",
-    )
-
-    egitim_uzunluklari = tokenli_veri["train"]["uzunluk"]
-    for _bolum in ("train", "validation"):
-        _uzunluklar = tokenli_veri[_bolum]["uzunluk"]
-        _p95 = sorted(_uzunluklar)[math.ceil(0.95 * len(_uzunluklar)) - 1]
-        print(
-            f"{_bolum:>10}: {len(_uzunluklar)} örnek; "
-            f"ortalama {sum(_uzunluklar) / len(_uzunluklar):.0f}, "
-            f"p95 {_p95}, en uzun {max(_uzunluklar)} token"
-        )
-
-    _ortalama_token = sum(egitim_uzunluklari) / len(egitim_uzunluklari)
-    _adim_epoch = math.ceil(len(egitim_uzunluklari) / ETKIN_BATCH)
-    _dogal_adim = math.ceil(_adim_epoch * EPOCH)
-    _planlanan_adim = MAX_ADIM if MAX_ADIM > 0 else _dogal_adim
-    _planlanan_token = round(_planlanan_adim * ETKIN_BATCH * _ortalama_token)
-    print(
-        f"Plan: {_planlanan_adim:,} adım, yaklaşık {_planlanan_token:,} token"
-    )
-
-    tokenli_veri = tokenli_veri.remove_columns("uzunluk")
-    return ham_veri, kodla, tokenli_veri
-
-
-@app.cell
-def _(
-    BIRIKIM_ADIMI,
-    DENEME_MODU,
-    DataCollatorForSeq2Seq,
-    EPOCH,
-    GRAD_CKPT,
-    KOK,
-    MAX_ADIM,
-    MIKRO_BATCH,
-    Path,
-    TOHUM,
-    Trainer,
-    TrainerCallback,
-    TrainingArguments,
-    get_last_checkpoint,
-    json,
-    model,
-    model_kisa,
-    time,
-    tokenizer,
-    tokenli_veri,
-):
-    class DosyaLogCallback(TrainerCallback):
-        """Eğitim kaybını dışarıdan tail edilebilen bir dosyaya yazar."""
-
-        def __init__(self, log_yolu):
-            self.log_yolu = log_yolu
-            self.son_zaman = None
-            self.son_adim = None
-
-        def on_train_begin(self, args, state, control, **kwargs):
-            self.son_zaman = time.monotonic()
-            self.son_adim = state.global_step
-
-        def on_log(self, args, state, control, logs=None, **kwargs):
-            _loglar = logs or {}
-            if "loss" not in _loglar or "learning_rate" not in _loglar:
-                return
-            _simdi = time.monotonic()
-            _onceki_zaman = self.son_zaman if self.son_zaman is not None else _simdi
-            _onceki_adim = self.son_adim if self.son_adim is not None else state.global_step
-            _sure = max(_simdi - _onceki_zaman, 1e-9)
-            _adim = max(state.global_step - _onceki_adim, 0)
-            _it_s = _adim / _sure
-            _satir = (
-                f"step={state.global_step} "
-                f"loss={float(_loglar['loss']):.6f} "
-                f"lr={float(_loglar['learning_rate']):.8g} "
-                f"it/s={_it_s:.4f}\n"
-            )
-            with self.log_yolu.open("a", encoding="utf-8") as _dosya:
-                _dosya.write(_satir)
-            self.son_zaman = _simdi
-            self.son_adim = state.global_step
-
-
-    DENETIM_DIZINI = KOK / f"denetim-{model_kisa}"
-    DENETIM_DIZINI.mkdir(parents=True, exist_ok=True)
-    EGITIM_LOGU = KOK / "egitim.log"
-
-    _ayar = dict(
-        output_dir=str(DENETIM_DIZINI),
-        num_train_epochs=EPOCH,
-        max_steps=MAX_ADIM if MAX_ADIM > 0 else -1,
-        per_device_train_batch_size=MIKRO_BATCH,
-        per_device_eval_batch_size=1,
-        gradient_accumulation_steps=BIRIKIM_ADIMI,
-        learning_rate=1e-4,
-        lr_scheduler_type="cosine",
-        warmup_ratio=0.03,
-        optim="paged_adamw_8bit",
-        bf16=True,
-        tf32=True,
-        gradient_checkpointing=GRAD_CKPT,
-        gradient_checkpointing_kwargs={"use_reentrant": False},
-        max_grad_norm=0.3,
-        eval_strategy="no" if DENEME_MODU else "steps",
-        eval_steps=250,
-        save_strategy="no" if DENEME_MODU else "steps",
-        save_steps=250,
-        save_total_limit=3,
-        logging_steps=10,
-        report_to="none",
-        seed=TOHUM,
-        data_seed=TOHUM,
-        group_by_length=True,
-        dataloader_num_workers=2,
-        remove_unused_columns=False,
-    )
-    # transformers 5 bazı eski argümanları kaldırdı; kabul edilmeyenleri düşür ve yaz.
-    import inspect as _inspect
-    _kabul = set(_inspect.signature(TrainingArguments.__init__).parameters)
-    if "warmup_ratio" not in _kabul and "warmup_ratio" in _ayar:
-        _ayar["warmup_steps"] = _ayar.pop("warmup_ratio")  # v5: float oran kabul ediyor
-    if "group_by_length" not in _kabul and "train_sampling_strategy" in _kabul:
-        _ayar["train_sampling_strategy"] = "group_by_length" if _ayar.pop("group_by_length") else "random"
-    _dusen = sorted(k for k in _ayar if k not in _kabul)
-    if _dusen:
-        print(f"TrainingArguments bu sürümde desteklemiyor, atlandı: {_dusen}")
-    egitim_ayari = TrainingArguments(**{k: v for k, v in _ayar.items() if k in _kabul})
-
-    veri_toplayici = DataCollatorForSeq2Seq(
-        tokenizer=tokenizer,
-        padding=True,
-        label_pad_token_id=-100,
-        pad_to_multiple_of=8,
-        return_tensors="pt",
-    )
-    egitici = Trainer(
-        model=model,
-        args=egitim_ayari,
-        train_dataset=tokenli_veri["train"],
-        eval_dataset=None if DENEME_MODU else tokenli_veri["validation"],
-        data_collator=veri_toplayici,
-        callbacks=[DosyaLogCallback(EGITIM_LOGU)],
-    )
-    son_checkpoint = get_last_checkpoint(str(DENETIM_DIZINI))
-    if son_checkpoint:
-        _durum_yolu = Path(son_checkpoint) / "trainer_state.json"
-        if _durum_yolu.is_file():
-            with _durum_yolu.open(encoding="utf-8") as _dosya:
-                baslangic_adimi = int(json.load(_dosya).get("global_step", 0))
-        else:
-            baslangic_adimi = 0
-    else:
-        baslangic_adimi = 0
-    print(f"Devam checkpoint'i: {son_checkpoint or 'yok; sıfırdan başlanacak'}")
-    print(f"Dışarıdan izlenebilir log: {EGITIM_LOGU}")
-
-    egitim_sonucu = egitici.train(resume_from_checkpoint=son_checkpoint)
-    if not DENEME_MODU:
-        egitici.evaluate()
-
-    _train_runtime = float(egitim_sonucu.metrics.get("train_runtime", 0.0))
-    _calisan_adim = max(egitici.state.global_step - baslangic_adimi, 0)
-    _saniye_adim = _train_runtime / _calisan_adim if _calisan_adim else float("nan")
-    _it_s = _calisan_adim / _train_runtime if _train_runtime else float("nan")
-    print(f"train_runtime/adım: {_saniye_adim:.4f} s")
-    print(f"it/s: {_it_s:.4f}")
-
-    return (
-        DENETIM_DIZINI,
-        DosyaLogCallback,
-        EGITIM_LOGU,
-        baslangic_adimi,
-        egitici,
-        egitim_ayari,
-        egitim_sonucu,
-        son_checkpoint,
-        veri_toplayici,
-    )
-
-
-@app.cell
-def _(
-    DENEME_MODU,
-    KOK,
-    Path,
-    egitici,
-    egitim_sonucu,
-    mo,
-    model_kisa,
-    shutil,
-    tokenizer,
-):
-    _ = egitim_sonucu
-    ADAPTOR_DIZINI = KOK / f"adaptor-{model_kisa}"
-    if DENEME_MODU:
-        adaptor_zip_yolu = None
-        adaptor_indirme = mo.md(
-            "Deneme modunda adaptör kaydı ve zip oluşturma atlandı."
-        )
-        print("Deneme modu: adaptör kaydı atlandı.")
-    else:
-        egitici.save_model(str(ADAPTOR_DIZINI))
-        tokenizer.save_pretrained(str(ADAPTOR_DIZINI))
-        adaptor_zip_yolu = KOK / f"{ADAPTOR_DIZINI.name}.zip"
-        _olusan_zip = shutil.make_archive(
-            str(adaptor_zip_yolu.with_suffix("")),
-            "zip",
-            root_dir=ADAPTOR_DIZINI.parent,
-            base_dir=ADAPTOR_DIZINI.name,
-        )
-        adaptor_zip_yolu = Path(_olusan_zip)
-        print(f"Adaptör: {ADAPTOR_DIZINI}")
-        print(
-            f"İndirilebilir arşiv: {adaptor_zip_yolu} "
-            f"({adaptor_zip_yolu.stat().st_size / 1024**2:.0f} MB)"
-        )
-        adaptor_indirme = mo.download(
-            data=lambda: adaptor_zip_yolu.read_bytes(),
-            filename=adaptor_zip_yolu.name,
-            label="Adaptör zip'ini indir",
-        )
-    adaptor_indirme
-    return ADAPTOR_DIZINI, adaptor_indirme, adaptor_zip_yolu
-
-
-@app.cell
-def _(
-    DENEME_MODU,
-    KOK,
-    MAX_UZUNLUK,
-    TEST_TAVAN,
-    TOHUM,
-    VERI_DIZINI,
-    adaptor_zip_yolu,
-    gc,
-    json,
-    mo,
-    model,
-    model_kisa,
-    random,
-    re,
-    tokenizer,
-    torch,
-    tqdm,
-):
-    _ = adaptor_zip_yolu
+        ad = alan("ad")
+        if ad:
+            return ad, alan("aciklama_en"), alan("aciklama"), False
+        es = re.search(r"[A-Za-z_][A-Za-z0-9_]*", metin)
+        return (es[0] if es else ""), "", "", False
 
     def kelimeler(ad: str) -> list[str]:
-        _ad = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", ad)
-        return [_k for _k in re.split(r"[_\W]+", _ad.lower()) if _k]
+        ad = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", ad)
+        return [k for k in re.split(r"[_\W]+", ad.lower()) if k]
 
 
     def f1(tahmin: str, gercek: str) -> float:
-        _t, _g = kelimeler(tahmin), kelimeler(gercek)
-        _ortak = len(set(_t) & set(_g))
-        if not _ortak:
+        t, g = kelimeler(tahmin), kelimeler(gercek)
+        ortak = len(set(t) & set(g))
+        if not ortak:
             return 0.0
-        _p, _r = _ortak / len(set(_t)), _ortak / len(set(_g))
-        return 2 * _p * _r / (_p + _r)
+        p, r = ortak / len(set(t)), ortak / len(set(g))
+        return 2 * p * r / (p + r)
 
 
-    def oku_ve_ornekle(yol, tavan: int) -> list[dict]:
-        with yol.open(encoding="utf-8") as _dosya:
-            _satirlar = [json.loads(_satir) for _satir in _dosya if _satir.strip()]
-        if tavan and len(_satirlar) > tavan:
-            _satirlar = random.Random(TOHUM).sample(_satirlar, tavan)
-        return _satirlar
+    def hf_klasoru(adim):
+        if isinstance(adim, bool) or not isinstance(adim, int) or adim < 0:
+            raise ValueError("Adım negatif olmayan tamsayı olmalı.")
+        return f"adim-{adim:05d}"
 
 
-    def olc(dosya: str, etiket: str, tavan: int):
-        _satirlar = oku_ve_ornekle(VERI_DIZINI / dosya, tavan)
-        _sonuclar = []
-        for _kayit in tqdm(_satirlar, desc=f"Greedy {etiket} üretimi"):
-            _mesajlar = _kayit["messages"][:2]
-            _girdi = tokenizer.apply_chat_template(
-                _mesajlar,
-                tokenize=True,
-                add_generation_prompt=True,
-                return_tensors="pt",
-                return_dict=False,
-                enable_thinking=False,
-            ).to(model.device)
-            if _girdi.shape[1] > MAX_UZUNLUK:
-                raise ValueError(
-                    f"Girdi {MAX_UZUNLUK} tokenı aşıyor: {_kayit.get('id')}"
-                )
-            with torch.inference_mode():
-                _uretilen = model.generate(
-                    input_ids=_girdi,
-                    attention_mask=torch.ones_like(_girdi),
-                    max_new_tokens=48,
-                    do_sample=False,
-                    use_cache=True,
-                    pad_token_id=tokenizer.pad_token_id,
-                    eos_token_id=tokenizer.eos_token_id,
-                )
-            _yeni_tokenlar = _uretilen[0, _girdi.shape[1] :]
-            _metin = tokenizer.decode(_yeni_tokenlar, skip_special_tokens=True)
-            _eslesmeler = re.findall(r"\{[^{}]*\}", _metin)
+    def jsonl_oku(yol):
+        with Path(yol).open(encoding="utf-8") as dosya:
+            return [json.loads(satir) for satir in dosya if satir.strip()]
+
+
+    def json_yaz(yol, veri):
+        Path(yol).write_text(json.dumps(veri, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+    def veri_sirasi(satirlar, tohum=7):
+        # group_by_length: ortak ham metin uzunluğu; tokenizer/mikro batch bağımsız.
+        # 16*50'lik karışık pencereler içinde uzunluğa göre grupla, sonra sabit sırayla tüket.
+        indisler = list(range(len(satirlar)))
+        random.Random(tohum).shuffle(indisler)
+        uzunluk = lambda i: sum(len(m["content"]) for m in satirlar[i]["messages"])
+        return [i for bas in range(0, len(indisler), 800)
+                for i in sorted(indisler[bas:bas + 800], key=uzunluk, reverse=True)]
+
+
+    def kodla(satir, tokenizer, max_uzunluk=3072):
+        mesajlar = satir["messages"]
+        if [m["role"] for m in mesajlar] != ["system", "user", "assistant"]:
+            raise ValueError("Mesaj sırası system/user/assistant olmalı.")
+        hedef = json.loads(mesajlar[-1]["content"])
+        if not isinstance(hedef, dict) or not isinstance(hedef.get("ad"), str):
+            raise ValueError("Assistant hedefi ad alanlı JSON olmalı.")
+        istem = list(tokenizer.apply_chat_template(
+            mesajlar[:2], tokenize=True, add_generation_prompt=True, enable_thinking=False,
+        ))
+        tumu = list(tokenizer.apply_chat_template(
+            mesajlar, tokenize=True, add_generation_prompt=False, enable_thinking=False,
+        ))
+        if tumu[:len(istem)] != istem or len(tumu) <= len(istem):
+            raise ValueError("Assistant sınırı doğrulanamadı; tokenizer şablonunu denetleyin.")
+        # Tüm train kullanılır; taşma sessiz filtrelenmez/kesilmez, veri yeniden hazırlanır.
+        if len(tumu) > max_uzunluk:
+            raise ValueError(f"{satir['id']}: {len(tumu)} token > {max_uzunluk}; veriyi bu tokenizer ile kısaltın.")
+        return {"input_ids": tumu, "attention_mask": [1] * len(tumu),
+                "labels": [-100] * len(istem) + tumu[len(istem):]}
+
+
+
+    def hf_paketle(kaynak, paket, adim):
+        """Adaptör alanlarına yalnız iki dosya; devam durumu tek ayrı dizine."""
+        kaynak, paket = Path(kaynak), Path(paket)
+        paket.mkdir(parents=True, exist_ok=True)
+        for hedef in (paket / hf_klasoru(adim), paket / "son"):
+            hedef.mkdir(exist_ok=True)
+            for ad in ("adapter_model.safetensors", "adapter_config.json"):
+                shutil.copy2(kaynak / ad, hedef / ad)
+        durum = paket / "durum/son"
+        durum.mkdir(parents=True, exist_ok=True)
+        for ad in ("optimizer.pt", "scheduler.pt", "rng_state.pth", "trainer_state.json", "training_args.bin"):
+            shutil.copy2(kaynak / ad, durum / ad)
+
+
+    def egitim_ayarlari(ortam):
+        deneme = int(os.environ.get("MAX_ADIM", "0"))
+        mikro = int(os.environ.get("MIKRO_BATCH", "1" if ortam == "colab" else "4"))
+        if deneme < 0 or mikro <= 0 or 16 % mikro:
+            raise ValueError("MAX_ADIM >= 0; MIKRO_BATCH pozitif ve 16'nın böleni olmalı.")
+        token = os.environ.get("HF_TOKEN", "").strip()
+        if not token and not deneme:
+            raise RuntimeError("HF_TOKEN eksik: tam eğitim başlamaz. Secret olarak write token tanımlayın.")
+        if not token:
+            print("!!! HF_TOKEN YOK: yalnız duman modu; HF yedeği alınamayacak !!!")
+        if deneme and os.environ.get("DEVAM", "0") == "1":
+            raise ValueError("Duman modu DEVAM=1 ile kullanılamaz; tam koşu durumunu değiştirmeyin.")
+        return {
+            "ortam": ortam,
+            "model": os.environ.get("MODEL", "Qwen/Qwen3.5-9B" if ortam == "colab" else "Qwen/Qwen3-8B"),
+            "veri_url": os.environ.get(
+                "VERI_URL", "https://github.com/krxi/asm-adlandirma-veri/releases/download/v5/veri-v5.zip",
+            ),
+            "repo": os.environ.get("HF_REPO", "krxi123/asm-adlandirma-lora-v5"),
+            "kok": Path(os.environ.get("ASM_KOK", "asm-calisma-v5")).expanduser().resolve(),
+            "drive": Path(os.environ["DRIVE_KOK"]) if os.environ.get("DRIVE_KOK") else None,
+            "max_adim": deneme, "mikro": mikro,
+            "grad_ckpt": os.environ.get("GRAD_CKPT", "1") == "1",
+            "devam": os.environ.get("DEVAM", "0") == "1",
+        }
+
+
+    def egit(ayar):
+        import torch
+        import transformers
+        from datasets import Dataset
+        from huggingface_hub import HfApi, snapshot_download
+        from peft import LoraConfig, get_peft_model, set_peft_model_state_dict
+        from peft.utils.save_and_load import load_peft_weights
+        from torch.utils.data import SequentialSampler
+        from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
+        from transformers import DataCollatorForSeq2Seq, Trainer, TrainerCallback, TrainingArguments, set_seed
+
+        # Repo içindeyken asıl ayrıştırıcı; tek dosya çalışmada yukarıdaki kopya.
+        for aday in (Path.cwd() / "lora", Path.cwd().parent / "lora"):
+            if (aday / "cikti.py").is_file():
+                sys.path.insert(0, str(aday))
+                break
+        try:
+            from cikti import ad_ayikla as ayikla
+        except ModuleNotFoundError as hata:
+            if hata.name != "cikti":
+                raise
+            ayikla = ad_ayikla
+
+        kok = ayar["kok"]
+        deneme = ayar["max_adim"] > 0
+        if deneme:
+            kok = kok / "duman" / time.strftime("%Y%m%d-%H%M%S")
+        elif (kok / "kosu.json").exists() and not ayar["devam"]:
+            raise FileExistsError("Yerel koşu var: DEVAM=1 veya yeni ASM_KOK seçin.")
+        kok.mkdir(parents=True, exist_ok=True)
+        token = os.environ.get("HF_TOKEN", "").strip() or None
+        logger = logging.getLogger("asm-v5")
+        for eski in list(logger.handlers):
+            eski.close()
+            logger.removeHandler(eski)
+        logger.setLevel(logging.INFO)
+        logger.propagate = False
+
+        class Gizle(logging.Filter):
+            def filter(self, record):
+                metin = record.getMessage()
+                if token:
+                    metin = metin.replace(token, "[GİZLİ]")
+                record.msg, record.args = metin, ()
+                return True
+
+        for handler in (logging.FileHandler(kok / "egitim.log", encoding="utf-8"), logging.StreamHandler()):
+            handler.addFilter(Gizle())
+            handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
+            logger.addHandler(handler)
+
+        def tekrar(islem, etiket):
+            for deneme_no in range(3):
+                try:
+                    islem()
+                    return True
+                except Exception as hata:
+                    # HTTP hata metni/token/headers hiçbir zaman çıktıya taşınmaz.
+                    logger.error("!!! HF YEDEK BAŞARISIZ: %s (%s), deneme %s/3 !!!",
+                                 etiket, type(hata).__name__, deneme_no + 1)
+                    if deneme_no < 2:
+                        time.sleep(2 ** (deneme_no + 1))
+            return False
+
+        api = HfApi(token=token) if token else None
+        if api:
+            def repo_hazirla():
+                api.create_repo(repo_id=ayar["repo"], repo_type="model", private=True, exist_ok=True)
+                if not api.repo_info(ayar["repo"]).private:
+                    raise ValueError("HF_REPO private olmalı; mevcut public repo kabul edilmez.")
+            if not tekrar(repo_hazirla, "private repo denetimi"):
+                raise RuntimeError("Private HF repo doğrulanamadı; repo erişimini ve write token yetkisini denetleyin.")
+
+        # Duman çıktısı tam koşunun son/ ve durum/ klasörlerini asla ezmez.
+        hf_onek = f"duman/{time.strftime('%Y%m%d-%H%M%S')}/" if deneme else ""
+        uzak = None
+        if api and not deneme:
             try:
-                _cevap = (
-                    json.loads(_eslesmeler[-1])
-                    if _eslesmeler
-                    else {"ad": _metin.strip()[:60]}
-                )
-            except json.JSONDecodeError:
-                _cevap = {}
-            _tahmin = str(_cevap.get("ad", ""))
-            _gercek = str(json.loads(_kayit["messages"][2]["content"])["ad"])
-            _skor = f1(_tahmin, _gercek)
-            _sonuclar.append(
-                {
-                    "id": _kayit.get("id", ""),
-                    "gercek": _gercek,
-                    "tahmin": _tahmin,
-                    "aciklama": "",
-                    "ogretmen": "",
-                    "f1": round(_skor, 3),
-                    "opt": _kayit.get("opt", ""),
-                    "proje": _kayit.get("proje", ""),
-                    "token": int(_girdi.shape[1] + _yeni_tokenlar.shape[0]),
-                }
-            )
+                var = api.file_exists(ayar["repo"], "son/adapter_config.json")
+                if var and not ayar["devam"]:
+                    raise FileExistsError("HF_REPO'da son/ var: DEVAM=1 veya yeni HF_REPO seçin.")
+                if var:
+                    uzak = Path(snapshot_download(
+                        ayar["repo"], token=token,
+                        allow_patterns=["son/*", "durum/son/*", "kosu.json", "en_iyi.json", "olcum.jsonl",
+                                        "*-sonuc.jsonl", "*-tamam.json", "egitim.log"],
+                    ))
+                elif ayar["devam"]:
+                    raise FileNotFoundError("DEVAM=1 fakat HF_REPO/son bulunamadı.")
+            except (FileExistsError, FileNotFoundError):
+                raise
+            except Exception:
+                raise RuntimeError("HF devam durumu okunamadı; bağlantıyı ve repo yetkisini denetleyin.") from None
 
-        _sonuc_yolu = KOK / f"sonuc-{etiket}-{model_kisa}-lora.jsonl"
-        with _sonuc_yolu.open("w", encoding="utf-8") as _dosya:
-            for _sonuc in _sonuclar:
-                _dosya.write(json.dumps(_sonuc, ensure_ascii=False) + "\n")
-        _ortalama = sum(_r["f1"] for _r in _sonuclar) / len(_sonuclar)
-        _tam = sum(_r["f1"] == 1 for _r in _sonuclar)
-        print(
-            f"{etiket}: ortalama F1 {_ortalama:.3f} "
-            f"(n={len(_sonuclar)}, tam isabet {_tam})"
+        arsiv = kok / "veri-v5.zip"
+        if not arsiv.exists():
+            gecici = arsiv.with_suffix(".part")
+            with urllib.request.urlopen(ayar["veri_url"]) as yanit, gecici.open("wb") as dosya:
+                shutil.copyfileobj(yanit, dosya)
+            gecici.replace(arsiv)
+        acilmis = kok / "veri-v5"
+        gerekli = (
+            "train.jsonl", "valid.jsonl", "valid_300.jsonl", "test.jsonl",
+            "test_sabit.jsonl", "eval115.jsonl", "ozet.json",
         )
-        for _opt in ("-O0", "-O1", "-O2", "-O3", "-Os"):
-            _alt = [_r["f1"] for _r in _sonuclar if _r["opt"] == _opt]
-            if _alt:
-                print(f"  {_opt}: {sum(_alt) / len(_alt):.3f} (n={len(_alt)})")
-        print(f"ayrıntı → {_sonuc_yolu}")
-        return _sonuc_yolu
+        with zipfile.ZipFile(arsiv) as z:
+            for bilgi in z.infolist():
+                hedef = (acilmis / bilgi.filename).resolve()
+                if acilmis.resolve() not in hedef.parents:
+                    raise ValueError("Arşiv yolu çalışma dizini dışına taşıyor.")
+            z.extractall(acilmis)
+        adaylar = [acilmis] + sorted({p.parent for p in acilmis.rglob("train.jsonl")})
+        veri = next((p for p in adaylar if all((p / ad).is_file() for ad in gerekli)), None)
+        if veri is None:
+            raise FileNotFoundError(f"v5 dosyaları eksik: {gerekli}")
+        train = jsonl_oku(veri / "train.jsonl")
+        valid = jsonl_oku(veri / "valid_300.jsonl")
+        if not train or len(valid) != 300:
+            raise ValueError("Train boş olamaz; valid_300 tam 300 satır olmalı.")
+        if deneme:
+            valid = valid[:10]
+        sira = veri_sirasi(train)
+        train = [train[i] for i in sira]
+        # Dataset fingerprint + kimlik sırası, model/hiperparametre değişimini devamda reddeder.
+        ozet = hashlib.sha256()
+        for ad in gerekli:
+            ozet.update(ad.encode())
+            with (veri / ad).open("rb") as dosya:
+                for parca in iter(lambda: dosya.read(1024 * 1024), b""):
+                    ozet.update(parca)
+        kosu = {"model": ayar["model"], "veri_sha256": ozet.hexdigest(), "tohum": 7,
+                "max_uzunluk": 3072, "etkin_batch": 16, "epoch": 1,
+                "lr": 1e-4, "scheduler": "cosine", "warmup_ratio": 0.03,
+                "r": 16, "alpha": 32, "dropout": 0.05, "target_modules": "all-linear",
+                "max_adim": ayar["max_adim"], "mikro": ayar["mikro"], "grad_ckpt": ayar["grad_ckpt"],
+                "transformers": transformers.__version__, "torch": torch.__version__,
+                "sira_sha256": hashlib.sha256(json.dumps([r["id"] for r in train]).encode()).hexdigest()}
+        if uzak and json.loads((uzak / "kosu.json").read_text()) != kosu:
+            raise ValueError("Devam ayarları/veri/paket sürümü değişmiş; aynı koşu ayarlarını kullanın.")
+        json_yaz(kok / "kosu.json", kosu)
+        olcum_yolu = kok / "olcum.jsonl"
+        if uzak:
+            if (uzak / "egitim.log").exists():
+                for handler in logger.handlers:
+                    handler.flush()
+                yeni_log = (kok / "egitim.log").read_text()
+                (kok / "egitim.log").write_text((uzak / "egitim.log").read_text() + yeni_log)
+            shutil.copy2(uzak / "olcum.jsonl", olcum_yolu)
+            for dosya in list(uzak.glob("*-sonuc.jsonl")) + list(uzak.glob("*-tamam.json")):
+                shutil.copy2(dosya, kok / dosya.name)
+        else:
+            olcum_yolu.write_text("", encoding="utf-8")
+        if not torch.cuda.is_available() or not torch.cuda.is_bf16_supported():
+            raise RuntimeError("CUDA ve bf16 destekli GPU gerekli.")
+        if int(os.environ.get("WORLD_SIZE", "1")) != 1:
+            raise ValueError("Karşılaştırılabilir sıra için tek GPU kullanın.")
+        set_seed(7)
+        tokenizer = AutoTokenizer.from_pretrained(ayar["model"])
+        tokenizer.padding_side = "right"
+        if tokenizer.pad_token_id is None:
+            tokenizer.pad_token = tokenizer.eos_token
+        config = AutoConfig.from_pretrained(ayar["model"])
+        metin_config = config.get_text_config()
+        hibrit = "linear_attention" in getattr(metin_config, "layer_types", [])
+        logger.info("Mimari=%s; text_model_type=%s; katmanlar=%s", config.architectures,
+                    metin_config.model_type, getattr(metin_config, "layer_types", []))
+        sinif = AutoModelForCausalLM
+        if config.model_type == "qwen3_5":
+            from transformers import Qwen3_5ForCausalLM
+            sinif = Qwen3_5ForCausalLM
+        model, yukleme = sinif.from_pretrained(
+            ayar["model"], config=metin_config, dtype=torch.bfloat16,
+            device_map={"": 0}, attn_implementation="sdpa", output_loading_info=True,
+        )
+        if yukleme.get("missing_keys") or yukleme.get("mismatched_keys"):
+            raise RuntimeError("Model ağırlıkları eksik/uyumsuz yüklendi; eğitimi başlatmıyorum.")
+        lineer = {ad for ad, katman in model.named_modules()
+                  if isinstance(katman, torch.nn.Linear) and katman is not model.get_output_embeddings()}
+        if not lineer or (hibrit and not any("linear_attn" in ad for ad in lineer)):
+            raise RuntimeError("Beklenen lineer attention LoRA hedefleri bulunamadı.")
+        logger.info("LoRA all-linear: %s modül; türler=%s",
+                    len(lineer), sorted({ad.rsplit(".", 1)[-1] for ad in lineer}))
+        model.config.use_cache = False
+        model = get_peft_model(model, LoraConfig(
+            r=16, lora_alpha=32, lora_dropout=0.05, target_modules="all-linear", bias="none", task_type="CAUSAL_LM",
+        ))
+        eksik = [ad for ad in lineer if not any(n.endswith(ad) and hasattr(m, "lora_A")
+                                               for n, m in model.named_modules())]
+        if eksik:
+            raise RuntimeError(f"LoRA kapsamı eksik: {eksik[:5]}")
+        model.print_trainable_parameters()
+        logger.info("Paketleme: group_by_length. SDPA/hibrit durum sınırları için dolgusuz birleştirme kapalı.")
+        train_ds = Dataset.from_list([kodla(r, tokenizer) for r in train])
+        valid_ds = Dataset.from_list([kodla(r, tokenizer) for r in valid])
+        logger.info("Tüm train=%s; etkin batch=16; beklenen adım=%s", len(train), math.ceil(len(train) / 16))
+
+        def uret(satirlar, yol):
+            once_egitim = model.training
+            model.eval()
+            sonuclar = []
+            try:
+                with Path(yol).open("w", encoding="utf-8") as dosya, torch.inference_mode():
+                    for r in satirlar:
+                        ids = list(tokenizer.apply_chat_template(
+                            r["messages"][:2], tokenize=True, add_generation_prompt=True, enable_thinking=False,
+                        ))
+                        if len(ids) > 3072:
+                            raise ValueError(f"{r['id']}: üretim girdisi 3072 tokenı aşıyor.")
+                        girdi = torch.tensor([ids], device=model.device)
+                        sonuc = model.generate(input_ids=girdi, attention_mask=torch.ones_like(girdi),
+                                               do_sample=False, max_new_tokens=160, use_cache=True,
+                                               pad_token_id=tokenizer.pad_token_id)
+                        yeni = sonuc[0, len(ids):]
+                        ad, en, tr, gecerli = ayikla(tokenizer.decode(yeni, skip_special_tokens=True))
+                        satir = {"id": r["id"], "gercek": r["gercek_ad"], "tahmin": ad,
+                                 "aciklama_en": en, "aciklama": tr, "gecerli_json": gecerli,
+                                 "f1": f1(ad, r["gercek_ad"]), "opt": r["opt"], "proje": r["proje"],
+                                 "token": len(ids) + len(yeni)}
+                        dosya.write(json.dumps(satir, ensure_ascii=False) + "\n")
+                        dosya.flush()
+                        sonuclar.append(satir)
+            finally:
+                model.train(once_egitim)
+            return {"f1": sum(r["f1"] for r in sonuclar) / len(sonuclar),
+                    "gecerli_json_orani": sum(r["gecerli_json"] for r in sonuclar) / len(sonuclar), "n": len(sonuclar)}
+
+        devam_yolu = None
+        en_iyi = {"adim": 0, "f1": -1.0}
+        en_iyi_yol = kok / "en-iyi-adaptor"
+        if uzak:
+            en_iyi = json.loads((uzak / "en_iyi.json").read_text())
+            try:
+                en_iyi_uzak = Path(snapshot_download(ayar["repo"], token=token,
+                                                    allow_patterns=[f"{hf_klasoru(en_iyi['adim'])}/*"]))
+            except Exception:
+                raise RuntimeError("En iyi adaptör indirilemedi.") from None
+            shutil.copytree(en_iyi_uzak / hf_klasoru(en_iyi["adim"]), en_iyi_yol, dirs_exist_ok=True)
+            json_yaz(kok / "en_iyi.json", en_iyi)
+            devam_yolu = kok / "devam-checkpoint"
+            if devam_yolu.exists():
+                shutil.rmtree(devam_yolu)
+            shutil.copytree(uzak / "durum/son", devam_yolu)
+            shutil.copytree(uzak / "son", devam_yolu, dirs_exist_ok=True)
+            for ad in ("optimizer.pt", "scheduler.pt", "rng_state.pth", "trainer_state.json"):
+                if not (devam_yolu / ad).is_file():
+                    raise ValueError(f"Devam durumu eksik: {ad}; ağırlıkla sıfırdan devam edilmeyecek.")
+
+        kuyruk = []
+
+        def kuyrugu_it():
+            if not api:
+                return
+            while kuyruk:
+                paket = kuyruk[0]
+                for handler in logger.handlers:
+                    handler.flush()
+                shutil.copy2(kok / "egitim.log", paket / "egitim.log")
+                basarili = tekrar(lambda: api.upload_folder(
+                    repo_id=ayar["repo"], repo_type="model", folder_path=str(paket), path_in_repo=hf_onek or None,
+                    commit_message=f"v5 {paket.name}",
+                    # Aynı atomik commit: son adaptörü + optimizer/trainer/RNG + ölçümler.
+                ), paket.name)
+                if not basarili:
+                    logger.error("!!! YEDEK YEREL KUYRUKTA; sonraki checkpoint/sonda yeniden denenecek !!!")
+                    break
+                logger.info("HF yedeği doğrulandı: %s", paket.name)
+                kuyruk.pop(0)
+                shutil.rmtree(paket)
+
+        def drive_yedekle(paket):
+            if ayar["drive"]:
+                try:
+                    shutil.copytree(paket, ayar["drive"] / hf_onek, dirs_exist_ok=True)
+                except Exception as hata:
+                    logger.error("!!! DRIVE YEDEK BAŞARISIZ (%s); HF yüklemesine devam ediliyor !!!",
+                                 type(hata).__name__)
+
+        class SabitSiraliTrainer(Trainer):
+            def _get_train_sampler(self, train_dataset=None):
+                # Uzunluk gruplaması önceden yapıldı; iki model aynı 16 satırı aynı adımda görür.
+                return SequentialSampler(train_dataset if train_dataset is not None else self.train_dataset)
+
+        adim_sureleri = []
+
+        class KaydetOlc(TrainerCallback):
+            def on_step_begin(self, args, state, control, **kwargs):
+                self.adim_baslangici = time.monotonic()
+
+            def on_log(self, args, state, control, logs=None, **kwargs):
+                logger.info("adim=%s %s", state.global_step, json.dumps(logs or {}, ensure_ascii=False))
+
+            def on_step_end(self, args, state, control, **kwargs):
+                adim_sureleri.append(time.monotonic() - self.adim_baslangici)
+                # Son adım 500'ün katı olmasa da ölçülür ve TAM trainer checkpoint'i kaydedilir.
+                if state.global_step == state.max_steps:
+                    control.should_evaluate = True
+                    control.should_save = True
+                return control
+
+            def on_evaluate(self, args, state, control, metrics=None, **kwargs):
+                nonlocal en_iyi
+                olcum = uret(valid, kok / "valid-sonuc.jsonl")
+                olcum.update({"adim": state.global_step, "eval_loss": metrics["eval_loss"], "model": ayar["model"]})
+                with olcum_yolu.open("a", encoding="utf-8") as dosya:
+                    dosya.write(json.dumps(olcum, ensure_ascii=False) + "\n")
+                logger.info("VALID %s", json.dumps(olcum, ensure_ascii=False))
+                if olcum["f1"] > en_iyi["f1"]:
+                    en_iyi = {"adim": state.global_step, "f1": olcum["f1"]}
+                    model.save_pretrained(en_iyi_yol, safe_serialization=True, save_embedding_layers=False)
+                json_yaz(kok / "en_iyi.json", en_iyi)
+
+            def on_save(self, args, state, control, **kwargs):
+                kaynak = Path(args.output_dir) / f"checkpoint-{state.global_step}"
+                paket = kok / "hf-kuyruk" / hf_klasoru(state.global_step)
+                hf_paketle(kaynak, paket, state.global_step)
+                for ad in ("kosu.json", "en_iyi.json", "olcum.jsonl", "valid-sonuc.jsonl", "egitim.log"):
+                    shutil.copy2(kok / ad, paket / ad)
+                drive_yedekle(paket)
+                if api:
+                    kuyruk.append(paket)
+                    kuyrugu_it()
+                else:
+                    logger.warning("!!! HF_TOKEN yok: checkpoint yalnız yerelde/Drive'da !!!")
+
+        toplam_adim = ayar["max_adim"] if deneme else math.ceil(len(train) / 16)
+        argumanlar = dict(
+            output_dir=str(kok / "checkpoints"), num_train_epochs=1,
+            max_steps=ayar["max_adim"] if deneme else -1,
+            per_device_train_batch_size=ayar["mikro"], gradient_accumulation_steps=16 // ayar["mikro"],
+            per_device_eval_batch_size=1, learning_rate=1e-4, lr_scheduler_type="cosine",
+            warmup_steps=math.ceil(toplam_adim * 0.03), optim="adamw_torch", weight_decay=0.0,
+            bf16=True, tf32=True, gradient_checkpointing=ayar["grad_ckpt"],
+            gradient_checkpointing_kwargs={"use_reentrant": False}, max_grad_norm=0.3,
+            eval_strategy="steps", eval_steps=500, save_strategy="steps", save_steps=500,
+            save_total_limit=2, save_only_model=False, logging_steps=1 if deneme else 10,
+            report_to="none", seed=7, data_seed=7, remove_unused_columns=False,
+            prediction_loss_only=True, dataloader_num_workers=0, disable_tqdm=True,
+        )
+        # Transformers 5.3 yeni ad; 4.x/5.2 için eski ad.
+        alanlar = inspect.signature(TrainingArguments).parameters
+        argumanlar.update({"train_sampling_strategy": "group_by_length"} if "train_sampling_strategy" in alanlar
+                         else {"group_by_length": True})
+        trainer = SabitSiraliTrainer(
+            model=model, args=TrainingArguments(**argumanlar), train_dataset=train_ds, eval_dataset=valid_ds,
+            data_collator=DataCollatorForSeq2Seq(
+                tokenizer, padding=True, label_pad_token_id=-100, pad_to_multiple_of=8,
+            ),
+            callbacks=[KaydetOlc()],
+        )
+        # PEFT modeli doğru kuruldu; Trainer adaptör + optimizer/scheduler/RNG/adımı birlikte yükler.
+        baslangic = time.monotonic()
+        tamam_adim = json.loads((devam_yolu / "trainer_state.json").read_text())["global_step"] if devam_yolu else 0
+        if tamam_adim < toplam_adim:
+            trainer.train(resume_from_checkpoint=str(devam_yolu) if devam_yolu else None)
+        else:
+            logger.info("Eğitim zaten tamamlanmış; yalnız eksik final çıktıları hazırlanıyor.")
+        logger.info("Eğitim süresi %.1f sn; en iyi=%s", time.monotonic() - baslangic, en_iyi)
+        if adim_sureleri:
+            saniye = sum(adim_sureleri) / len(adim_sureleri)
+            logger.info("Ölçüm/yükleme hariç %.2f sn/adım; 5938 adım için %.2f saat", saniye, saniye * 5938 / 3600)
+        kuyrugu_it()
+        dosyalar = [kok / "egitim.log", olcum_yolu, kok / "valid-sonuc.jsonl"]
+        if not deneme:
+            # Yalnız valid F1 seçimi; test kümeleri eğitim/erken seçim sırasında açılmaz.
+            agirliklar = load_peft_weights(str(en_iyi_yol), device="cpu")
+            set_peft_model_state_dict(model, agirliklar)
+            for bolum, beklenen in (("test_sabit", 2000), ("eval115", 115)):
+                satirlar = jsonl_oku(veri / f"{bolum}.jsonl")
+                if len(satirlar) != beklenen:
+                    raise ValueError(f"{bolum}: {beklenen} satır bekleniyordu, {len(satirlar)} bulundu.")
+                sonuc_yolu = kok / f"{bolum}-sonuc.jsonl"
+                # Tamamlanmış testi DEVAM=1 tekrar ölçmez; yarım dosya tamamlanmış sayılmaz.
+                damga = kok / f"{bolum}-tamam.json"
+                test_kimligi = {"en_iyi": en_iyi, "kosu": kosu}
+                if not (damga.exists() and sonuc_yolu.exists() and json.loads(damga.read_text()) == test_kimligi):
+                    olcum = uret(satirlar, sonuc_yolu)
+                    logger.info("TEST %s en_iyi=%s %s", bolum, en_iyi, olcum)
+                    json_yaz(damga, test_kimligi)
+                    # Uzun ikinci test sırasında oturum kaybolursa biten ilk test tekrar edilmesin.
+                    test_paketi = kok / "hf-kuyruk" / f"sonuc-{bolum}"
+                    test_paketi.mkdir(parents=True, exist_ok=True)
+                    for tamam in (sonuc_yolu, damga):
+                        shutil.copy2(tamam, test_paketi / tamam.name)
+                    drive_yedekle(test_paketi)
+                    if api:
+                        kuyruk.append(test_paketi)
+                        kuyrugu_it()
+                dosyalar.extend([sonuc_yolu, damga])
+        zip_yolu = Path(shutil.make_archive(str(kok / "adaptor-en-iyi"), "zip", en_iyi_yol))
+        dosyalar.append(zip_yolu)
+        sonuc_paketi = kok / "hf-sonuclar"
+        sonuc_paketi.mkdir(exist_ok=True)
+        for dosya in dosyalar:
+            shutil.copy2(dosya, sonuc_paketi / dosya.name)
+        drive_yedekle(sonuc_paketi)
+        # Duman modunda checkpoint upload'u tek HF itişidir; bu dosyalar zaten onun içindedir.
+        if api and not deneme:
+            kuyruk.append(sonuc_paketi)
+            kuyrugu_it()
+        if kuyruk:
+            logger.error("!!! %s PAKET HF'YE GİTMEDİ; oturumu kapatmadan hf-kuyruk dizinini kurtarın !!!", len(kuyruk))
+        return dosyalar
+
+    return egit, egitim_ayarlari
 
 
-    if DENEME_MODU:
-        sonuc_yollari = []
-        sonuc_indirmeleri = mo.md(
-            "Deneme modunda `test` ve `eval115` değerlendirmesi atlandı."
-        )
-        print("Deneme modu: test/eval115 değerlendirmesi atlandı.")
-    else:
-        gc.collect()
-        torch.cuda.empty_cache()
-        model.config.use_cache = True
-        model.eval()
-        sonuc_yollari = [
-            olc("test.jsonl", "test", TEST_TAVAN),
-            olc("eval115.jsonl", "eval115", 0),
-        ]
-        sonuc_indirmeleri = mo.vstack(
-            [
-                mo.download(
-                    data=lambda _yol=_yol: _yol.read_bytes(),
-                    filename=_yol.name,
-                    label=f"{_yol.name} indir",
-                )
-                for _yol in sonuc_yollari
-            ]
-        )
-    sonuc_indirmeleri
-    return f1, kelimeler, oku_ve_ornekle, olc, sonuc_indirmeleri, sonuc_yollari
+@app.cell
+def _(egitim_ayarlari):
+    # molab Secrets: HF_TOKEN; diğer ayarlar ortam değişkenleri (README).
+    ayar = egitim_ayarlari("molab")
+    return (ayar,)
+
+
+@app.cell
+def _(ayar, egit):
+    indirilecekler = egit(ayar)
+    return (indirilecekler,)
+
+
+@app.cell
+def _(indirilecekler, mo):
+    mo.vstack([
+        mo.download(data=_yol.read_bytes(), filename=_yol.name, label=f"İndir: {_yol.name}")
+        for _yol in indirilecekler if _yol.exists()
+    ])
+    return
 
 
 if __name__ == "__main__":
