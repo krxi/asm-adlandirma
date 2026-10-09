@@ -1,0 +1,13 @@
+molab (RTX PRO 6000 Blackwell 96 GB) — Qwen/Qwen3-8B + bf16 LoRA (r16 a32 all-linear, dropout 0.05)
+betik: molab/egit.py @67cc1c7, NICELEME=0 MIKRO_BATCH=2 GRAD_CKPT=0, etkin batch 16, lr 1e-4 cosine, 2 epoch, 41.000 örnek, tohum 7, MAX_UZUNLUK 2304
+başlangıç 2026-10-08 20:11 UTC, bitiş ~2026-10-09 01:40 UTC; 5.126 adım planı, train_runtime/adım 3.84 s
+
+loss (ekrandan okunan değerler):
+step=10 5.776  step=20 4.985  step=30 3.899  step=40 2.716  step=50 2.350
+step=5070 0.811  step=5080 0.673  step=5090 0.758  step=5100 0.824  step=5110 0.778  step=5120 0.810
+
+ölçüm (greedy, egit.py içindeki F1):
+test: ortalama F1 0.106 (n=2000, tam isabet 25) | O0 0.108 (729) O1 0.107 (470) O2 0.093 (210) O3 0.128 (91)
+eval115: ortalama F1 0.094 (n=115, tam isabet 1) | O0 0.102 (60) O2 0.085 (55)
+
+Not: tam egitim.log (28 KB) ve sonuç jsonl'leri molab'da /marimo/is/kok altında; henüz yerele indirilmedi.
