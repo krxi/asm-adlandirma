@@ -65,6 +65,7 @@ python3 taban.py veri/test.jsonl -n 1000 -m <model> --baglam             # özet
 python3 taban.py veri/test.jsonl -n 1000 -m <model> --baglam-derin       # derin bağlam → ...-baglam2.jsonl
 python3 taban.py veri/test.jsonl -n 1000 -m <model> --devam --kesik-de   # yarıda kalan/kesik satırları tamamla
 python3 ozet.py --md test                                                # README tablosu
+python3 iki_f1.py                                                        # gerçek ad + öneksiz F1 → rapor/F1_IKI_TANIM.md
 python3 analiz.py veri/test.jsonl -o grafik/test-hata.png                # tür bazlı hata analizi
 ```
 
@@ -157,4 +158,7 @@ sonuç JSONL'i yazar. `python3 ozet.py` ile diğer koşularla aynı tabloda gör
    aynı puanlama). `hazirla_olcek.py` ise önek atmayı test dahil bütün bölümlere uygular. `olc.py` ve Colab
    ölçümü hedefteki adla puanladığı için v4 test F1'i öneksiz adlara göredir. Bu yüzden büyük modellerin düz F1'i ile
    doğrudan karşılaştırılamaz. `ozet.py`'deki öneksiz F1 ile karşılaştırmak daha doğru olur.
+   Ayrıca varsayılan önek kuralı proje adından bağımsızdır (sajs'ta `eat_`, picomatch'te `emit_` atılır).
+   Yeni koşularda `--test-ham-ad` ve `--onek-kurali proje` kullanın. Eski sonuç dosyalarını iki tanımla
+   puanlamak için `python3 iki_f1.py <dosya.jsonl>` ([rapor/F1_IKI_TANIM.md](rapor/F1_IKI_TANIM.md)).
 4. Model uç noktaları (Evren) ve öğretmen modelleri zamanla değişebilir. `sonuc/` altındaki ham çıktılar asıl kayıttır.

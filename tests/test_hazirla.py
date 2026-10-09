@@ -189,3 +189,55 @@ def test_hazirla_olcek_uctan_uca(ornek_kok):
                   "--token-tavan", 0, "--proje-tavan", 5, cwd=ornek_kok)
     assert s2.returncode == 0, s2.stderr
     assert (cikti / "train.jsonl").read_bytes() == (ornek_kok / "iki" / "train.jsonl").read_bytes()
+
+
+# --- önek kuralı ve test hedefi ----------------------------------------------------------------
+
+@pytest.mark.parametrize("onek, proje, beklenen", [
+    ("cyaml", "cyaml", True), ("mu", "mu_json_x", True), ("sqlite3", "sqlite", True),
+    ("png", "libpng", True), ("pm", "picomatch", True), ("toml", "tomlc17", True),
+    ("eat", "sajs", False), ("emit", "picomatch", False), ("get", "zlib", False),
+])
+def test_proje_ile_ilgili(onek, proje, beklenen):
+    assert ho.proje_ile_ilgili(onek, proje) is beklenen
+
+
+def test_onekler_proje_kurali_fiilleri_atmaz():
+    satirlar = ([{"proje": "sajs", "ad": f"eat_x{i}"} for i in range(6)] + [{"proje": "sajs", "ad": "parse"}]
+                + [{"proje": "cyaml", "ad": f"cyaml_f{i}"} for i in range(6)])
+    assert ho.onekler(satirlar) == {"sajs": {"eat"}, "cyaml": {"cyaml"}}          # varsayılan: eski davranış
+    assert ho.onekler(satirlar, "proje") == {"cyaml": {"cyaml"}}
+
+
+def sentetik_olcek(kok):
+    """sajs (eğitim, 'eat_' fiili) + cyaml (test, gerçek önek) ile küçük v4 ağacı."""
+    def r(proje, ad, i):
+        return {"id": f"{proje}/a.c:-O0:{ad}", "proje": proje, "opt": "-O0", "ad": ad, "sizinti": False,
+                "asm": f"mov\teax, {i}\nret", "baglam": "", "baglam_derin": ""}
+    roller = {"egitim": [r("sajs", f"eat_x{i}", i) for i in range(6)] + [r("sajs", "parse", 99)],
+              "dogrulama": [r("mu_json_x", f"mu_f{i}", 100 + i) for i in range(6)],
+              "test": [r("cyaml", f"cyaml_f{i}", 200 + i) for i in range(6)]}
+    d = kok / "veri" / "bin" / "olcek"
+    d.mkdir(parents=True)
+    for rol, satirlar in roller.items():
+        (d / f"{rol}.jsonl").write_text("".join(json.dumps(x) + "\n" for x in satirlar))
+
+
+def hedefler(yol):
+    return sorted(json.loads(r["messages"][2]["content"])["ad"] for r in oku_jsonl(yol))
+
+
+@pytest.mark.parametrize("bayraklar, egitim, test, ozet_test", [
+    ([], ["parse"] + [f"x{i}" for i in range(6)], [f"f{i}" for i in range(6)], "oneksiz"),
+    (["--test-ham-ad"], ["parse"] + [f"x{i}" for i in range(6)], [f"cyaml_f{i}" for i in range(6)], "gercek"),
+    (["--onek-kurali", "proje"], ["parse"] + [f"eat_x{i}" for i in range(6)], [f"f{i}" for i in range(6)], "oneksiz"),
+    (["--ham-ad"], ["parse"] + [f"eat_x{i}" for i in range(6)], [f"cyaml_f{i}" for i in range(6)], "gercek"),
+])
+def test_hazirla_olcek_hedef_bayraklari(tmp_path, bayraklar, egitim, test, ozet_test):
+    sentetik_olcek(tmp_path)
+    s = calistir("lora/hazirla_olcek.py", "--veri", "veri/bin/olcek", "--cikti", "c", "--token-tavan", 0,
+                 *bayraklar, cwd=tmp_path)
+    assert s.returncode == 0, s.stderr
+    assert hedefler(tmp_path / "c" / "train.jsonl") == sorted(egitim)
+    assert hedefler(tmp_path / "c" / "test.jsonl") == test
+    assert json.loads((tmp_path / "c" / "ozet.json").read_text())["test_hedefi"] == ozet_test
