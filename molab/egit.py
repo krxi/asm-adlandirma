@@ -630,6 +630,9 @@ def _(egitim_ayarlari, form, mo):
     _os.environ.setdefault("GRAD_CKPT", "0")
     # ckpt kapalıyken mikro 4 × 3072 token 95 GB'a sığmadı (OOM); ilk molab koşusu mikro 2 idi.
     _os.environ.setdefault("MIKRO_BATCH", "2")
+    # Her tam koşuya ayrı yerel dizin: yarım kalan koşunun klasörü "Yerel koşu var" hatası vermesin (devam HF'den yüklenir).
+    if not _kip.startswith("duman"):
+        _os.environ["ASM_KOK"] = f"asm-calisma-v5-{int(__import__('time').time())}"
     if _kip.startswith("duman"):
         _os.environ.setdefault("ASM_KOK", "asm-calisma-v5-duman")
     ayar = egitim_ayarlari("molab")
