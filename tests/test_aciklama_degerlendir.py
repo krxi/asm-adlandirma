@@ -31,7 +31,9 @@ def girdiler(tmp_path, monkeypatch):
         )
         a.append({"id": kimlik, "aciklama_en": f"A description {no}"})
         b.append({"id": kimlik, "aciklama_en": f"B description {no}"})
-        kaynak.append({"anahtar": f"{proje}/x.c:synthetic_f{no}", "kaynak": f"int synthetic_f{no}(void) {{ return {no}; }}"})
+        kaynak.append(
+            {"anahtar": f"{proje}/x.c:synthetic_f{no}", "kaynak": f"int synthetic_f{no}(void) {{ return {no}; }}"}
+        )
     sabit = {r["id"]: {"gercek": r["ad"], "proje": r["proje"], "opt": r["opt"]} for r in veri}
     monkeypatch.setattr(dg, "dayanaklar", lambda: (sabit, {"sentetik-test", "sentetik-eval"}))
     monkeypatch.setattr(dg, "git_izi", lambda: {"commit": "sentetik-commit", "tree": "sentetik-tree"})
@@ -227,3 +229,22 @@ def test_kappa_tek_sinif_ve_normal_durum():
     assert ad.cohen_kappa(["dogru", "yanlis"], ["dogru", "yanlis"]) == 1.0
     assert ad.cohen_kappa(["dogru"] * 3, ["yanlis"] * 3) == 0.0
     assert ad.cohen_kappa([], []) is None
+
+
+def test_cli_dosya_hatasi_kisisel_yol_yazmaz(tmp_path, capsys):
+    yol = tmp_path / "olmayan.jsonl"
+    with pytest.raises(SystemExit):
+        ad.main(["plan", "--veri", str(yol), "--tahmin", f"aday={yol}", "-n", "2"])
+    hata = capsys.readouterr().err
+    assert str(tmp_path) not in hata and "Traceback" not in hata
+
+
+def test_cli_kapsam_hatasi_sayaclari_yazar_yolu_yazmaz(girdiler, capsys):
+    veri, tahminler, _ = girdiler
+    yol = tahminler[0][1]
+    _jsonl(yol, ad.jsonl_oku(yol)[1:])
+    with pytest.raises(SystemExit):
+        ad.main(["plan", "--veri", str(veri), "--tahmin", f"aday={yol}", "-n", "2"])
+    hata = capsys.readouterr().err
+    assert "beklenen=6" in hata and "mevcut=5" in hata
+    assert str(veri.parent) not in hata and "Traceback" not in hata
