@@ -1,4 +1,4 @@
-"""GPU/ağ olmadan iki tek-dosya notebook'un saf v5 sözleşmesini denetle."""
+"""GPU/ağ olmadan sürümlü molab notebook sözleşmesini denetle."""
 
 import ast
 import importlib.util
@@ -18,29 +18,24 @@ KOK = Path(__file__).resolve().parents[1]
 SAF = {"ad_ayikla", "kelimeler", "f1", "hf_klasoru", "veri_sirasi", "sablon_ids", "kodla", "egitim_ayarlari", "hf_paketle"}
 
 
-def kaynaklar():
+def molab_kaynagi():
     agac = ast.parse((KOK / "molab/egit.py").read_text())
     hucre = next(n for n in agac.body if isinstance(n, ast.FunctionDef)
                  and any(isinstance(f, ast.FunctionDef) and f.name == "egit" for f in n.body))
-    molab = ast.Module(body=hucre.body[:-1], type_ignores=[])
-    notebook = json.loads((KOK / "colab/egit_sonraki.ipynb").read_text())
-    kod = next("".join(c["source"]) for c in notebook["cells"]
-               if c["cell_type"] == "code" and "def egit(" in "".join(c["source"]))
-    return molab, ast.parse(kod)
+    return ast.Module(body=hucre.body[:-1], type_ignores=[])
 
 
-@pytest.fixture(params=[0, 1], ids=["molab", "colab"])
-def yardimci(request):
-    agac = kaynaklar()[request.param]
+@pytest.fixture
+def yardimci():
+    agac = molab_kaynagi()
     govde = [n for n in agac.body if isinstance(n, ast.FunctionDef) and n.name in SAF]
     alan = {"json": json, "re": re, "random": random, "os": os, "Path": Path, "math": math, "shutil": shutil}
     exec(compile(ast.Module(body=govde, type_ignores=[]), "notebook-saf", "exec"), alan)
     return alan
 
 
-def test_notebook_motorlari_ayni():
-    a, b = kaynaklar()
-    assert ast.dump(a) == ast.dump(b)
+def test_molab_notebook_motoru_ayristirilabilir():
+    assert any(isinstance(n, ast.FunctionDef) and n.name == "egit" for n in molab_kaynagi().body)
 
 
 @pytest.mark.parametrize("tahmin,gercek", [
@@ -71,9 +66,8 @@ def test_ayristirma_asil_modulle_ayni(yardimci):
         pytest.skip("lora/cikti.py paralel veri işinde hazırlanıyor")
     asil = next(n for n in ast.parse(yol.read_text()).body
                 if isinstance(n, ast.FunctionDef) and n.name == "ad_ayikla")
-    for agac in kaynaklar():
-        kopya = next(n for n in agac.body if isinstance(n, ast.FunctionDef) and n.name == "ad_ayikla")
-        assert ast.dump(kopya) == ast.dump(asil)
+    kopya = next(n for n in molab_kaynagi().body if isinstance(n, ast.FunctionDef) and n.name == "ad_ayikla")
+    assert ast.dump(kopya) == ast.dump(asil)
     spec = importlib.util.spec_from_file_location("v5_cikti_sozlesme", yol)
     modul = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(modul)
@@ -148,10 +142,45 @@ def test_tokensiz_tam_egitim_engellenir(yardimci, monkeypatch):
     assert yardimci["egitim_ayarlari"]("molab")["max_adim"] == 20
 
 
+def test_v6_varsayilanlari_ve_v5_yeniden_uretim_ayari(yardimci, monkeypatch):
+    for ad in ("VERI_SURUM", "VERI_URL", "HF_REPO", "ASM_KOK", "MIKRO_BATCH", "GRAD_CKPT"):
+        monkeypatch.delenv(ad, raising=False)
+    monkeypatch.setenv("HF_TOKEN", "hf_test")
+    monkeypatch.setenv("MAX_ADIM", "0")
+    v6 = yardimci["egitim_ayarlari"]("molab")
+    assert v6["surum"] == "v6"
+    assert v6["veri_url"].endswith("/download/v6/veri-v6.zip")
+    assert v6["repo"] == "krxi123/asmsense-lora-v6"
+    assert v6["kok"].name == "asm-calisma-v6"
+    assert v6["mikro"] == 2 and not v6["grad_ckpt"]
+
+    monkeypatch.setenv("VERI_SURUM", "v5")
+    v5 = yardimci["egitim_ayarlari"]("molab")
+    assert v5["veri_url"].endswith("/download/v5/veri-v5.zip")
+    assert v5["repo"] == "krxi123/asmsense-lora-v5"
+    assert v5["kok"].name == "asm-calisma-v5"
+    monkeypatch.setenv("VERI_SURUM", "v7")
+    with pytest.raises(ValueError, match="v5 veya v6"):
+        yardimci["egitim_ayarlari"]("molab")
+
+
+def test_molab_hiperparametreleri_ve_devam_durumu_sabit():
+    kaynak = (KOK / "molab/egit.py").read_text()
+    for parca in (
+        "r=16, lora_alpha=32, lora_dropout=0.05", 'target_modules="all-linear"',
+        "learning_rate=1e-4", 'lr_scheduler_type="cosine"', "warmup_steps=math.ceil(toplam_adim * 0.03)",
+        "gradient_accumulation_steps=16 // ayar[\"mikro\"]", "num_train_epochs=1", "seed=7, data_seed=7",
+        "eval_steps=500", "save_steps=500", "enable_thinking=False, return_dict=False",
+        'for ad in ("optimizer.pt", "scheduler.pt", "rng_state.pth", "trainer_state.json")',
+        "resume_from_checkpoint=str(devam_yolu)",
+    ):
+        assert parca in kaynak
+
+
 def test_token_ayarlara_ve_ciktiya_sizmaz(yardimci, monkeypatch, capsys):
     monkeypatch.setenv("HF_TOKEN", "hf_test_gizli_deger")
     monkeypatch.setenv("MAX_ADIM", "0")
-    ayar = yardimci["egitim_ayarlari"]("colab")
+    ayar = yardimci["egitim_ayarlari"]("molab")
     assert "hf_test_gizli_deger" not in repr(ayar) + capsys.readouterr().out
 
 

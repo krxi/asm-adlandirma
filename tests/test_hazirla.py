@@ -521,6 +521,59 @@ def test_v6_sizinti_tam_tanimlayici_eslesmesidir(monkeypatch):
     assert s["decompile_ham_sizinti"]
 
 
+def test_v6_proje_adlari_yalniz_islev_konumunda_anonimlesir():
+    metin = """int x = fsm_dispatch(a) + fsm_dispatch(b);
+void *cb = &fsm_super;
+obj->copy();
+model = block;
+char *s = "fsm_dispatch() &fsm_super";
+char c = 'x';
+param_1 = xVar2;
+"""
+    sonuc, sayac = hs.proje_adlarini_anonimlestir(
+        metin,
+        {"fsm_dispatch", "fsm_super", "copy", "model", "block", "param_1", "xVar2"},
+    )
+    assert "FUN_x1(a) + FUN_x1(b)" in sonuc
+    assert "&FUN_x2" in sonuc
+    assert "obj->copy()" in sonuc and "model = block" in sonuc
+    assert '"fsm_dispatch() &fsm_super"' in sonuc
+    assert "param_1 = xVar2" in sonuc
+    assert sayac == {"islev_adres_eslesmesi": 3, "diger_konum_eslesmesi": 3,
+                     "degisim": 3, "degisen_satir": 2}
+
+
+def test_v6_proje_adi_import_libc_ve_alt_cizgi_istisnalari():
+    metin = "_ozel();\nmemcpy();\n_ithal();\nyerli();"
+    sonuc, sayac = hs.proje_adlarini_anonimlestir(
+        metin, {"ozel", "memcpy", "ithal", "yerli"}, {"_ithal"},
+    )
+    assert sonuc.splitlines() == ["FUN_x1();", "memcpy();", "_ithal();", "FUN_x2();"]
+    assert sayac["degisim"] == 2 and sayac["degisen_satir"] == 2
+
+
+def test_v6_hedef_adi_string_sabitinde_sizinti_sayilmaz():
+    assert hs.ad_sizintisi('puts("p_oku"); char c = \'p\';', ("p_oku", "oku")) is None
+    assert hs.ad_sizintisi("return _p_oku();", ("p_oku",)) == "_p_oku"
+    assert hs.ad_sizintisi("/* can't mask following code */ p_oku();", ("p_oku",)) == "p_oku"
+
+
+def test_v6_proje_ad_kumesi_filtresiz_hami_da_okur(tmp_path):
+    veri, ham = tmp_path / "olcek", tmp_path / "ham"
+    veri.mkdir()
+    for bolum in ("egitim", "dogrulama", "test"):
+        yaz = [{"id": f"p/{bolum}", "proje": "p", "ad": f"ad_{bolum}", "asm": "; -> ithal"}]
+        (veri / f"{bolum}.jsonl").write_text("".join(json.dumps(r) + "\n" for r in yaz))
+    (ham / "egitim").mkdir(parents=True)
+    (ham / "egitim/p.jsonl").write_text(json.dumps({
+        "id": "p/ham", "proje": "p", "ad": "filtrelenmis_ad", "asm": "ret",
+    }) + "\n")
+    adlar, ithaller, ozet = hs.proje_adlarini_oku(veri, ham)
+    assert adlar["p"] == {"ad_egitim", "ad_dogrulama", "ad_test", "filtrelenmis_ad"}
+    assert ithaller["p/egitim"] == {"ithal"}
+    assert ozet["dosya"] == 4 and ozet["benzersiz_ad"] == 4
+
+
 def test_v6_butce_alt_sinirinda_decompile_konmaz(monkeypatch):
     monkeypatch.setattr(h, "TOK", SohbetTok())
     a = SimpleNamespace(satir_tavan=200, token_tavan=2500, max_uzunluk=0,

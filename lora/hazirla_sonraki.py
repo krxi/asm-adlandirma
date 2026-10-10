@@ -66,6 +66,11 @@ LIBC_ADLARI = {
     "printf", "puts", "qsort", "read", "realloc", "snprintf", "sprintf", "strcat", "strchr",
     "strcmp", "strcpy", "strdup", "strlen", "strncmp", "strncpy", "strrchr", "strstr", "write",
 }
+GHIDRA_YEREL_ADI = re.compile(
+    r"(?:param_[0-9]+|local_[0-9a-f]+|[A-Za-z]+Var[0-9]+|[A-Za-z]+Stack_[0-9a-f]+|"
+    r"extraout_[A-Za-z0-9_]+|in_[A-Za-z0-9_]+|unaff_[A-Za-z0-9_]+|register0x[0-9a-f]+)",
+    re.IGNORECASE,
+)
 
 
 def anahtar(r):
@@ -121,12 +126,128 @@ def _toplam_token(satir):
                                          return_dict=False))
 
 
+def _sabit_maskesi(metin):
+    """C string/char sabitlerindeki karakterleri işaretle; kaçışları koru."""
+    maske = bytearray(len(metin))
+    durum = "kod"
+    i = 0
+    while i < len(metin):
+        c = metin[i]
+        sonraki = metin[i + 1] if i + 1 < len(metin) else ""
+        if durum == "kod":
+            if c in "\"'":
+                durum = "string" if c == '"' else "char"
+                maske[i] = 1
+            elif c == "/" and sonraki == "/":
+                durum = "satir_yorum"
+                i += 1
+            elif c == "/" and sonraki == "*":
+                durum = "blok_yorum"
+                i += 1
+        elif durum == "satir_yorum":
+            if c == "\n":
+                durum = "kod"
+        elif durum == "blok_yorum":
+            if c == "*" and sonraki == "/":
+                durum = "kod"
+                i += 1
+        else:
+            maske[i] = 1
+            if c == "\\" and i + 1 < len(metin):
+                i += 1
+                maske[i] = 1
+            elif (durum == "string" and c == '"') or (durum == "char" and c == "'"):
+                durum = "kod"
+        i += 1
+    return maske
+
+
+def _ad_aliaslari(adlar):
+    """Gerçek ada ek olarak Mach-O baştaki alt çizgi biçimini kabul et."""
+    if isinstance(adlar, dict):
+        return adlar
+    gercek = sorted({ad for ad in adlar if TANIMLAYICI.fullmatch(ad)})
+    alias = {ad: ad for ad in gercek}
+    for ad in gercek:
+        alias.setdefault("_" + ad, ad)
+    return alias
+
+
+def _istisna_mi(token, gercek_ad, istisnalar):
+    yalniz = token[1:] if token.startswith("_") else token
+    gercek_yalniz = gercek_ad[1:] if gercek_ad.startswith("_") else gercek_ad
+    return (token in istisnalar or yalniz in istisnalar or gercek_ad in istisnalar or
+            gercek_yalniz in istisnalar or GHIDRA_YEREL_ADI.fullmatch(token) is not None)
+
+
+def _islev_konumu(metin, bas, son):
+    """Doğrudan çağrı/bildirim veya açık `&ad` adres konumunu tanı."""
+    once = bas - 1
+    while once >= 0 and metin[once].isspace():
+        once -= 1
+    sonra = son
+    while sonra < len(metin) and metin[sonra].isspace():
+        sonra += 1
+    alan = once >= 0 and (metin[once] == "." or
+                           (metin[once] == ">" and once and metin[once - 1] == "-"))
+    return (sonra < len(metin) and metin[sonra] == "(" and not alan) or (once >= 0 and metin[once] == "&")
+
+
+def proje_ad_eslesmeleri(metin, adlar, istisnalar=()):
+    """String/char dışındaki gerçek proje adlarını konumlarıyla döndür."""
+    alias = _ad_aliaslari(adlar)
+    istisnalar = set(istisnalar) | LIBC_ADLARI
+    istisnalar.update(ad[1:] for ad in list(istisnalar) if ad.startswith("_") and len(ad) > 1)
+    maske = _sabit_maskesi(metin)
+    sonuc = []
+    for es in TANIMLAYICI.finditer(metin):
+        token = es.group()
+        gercek_ad = alias.get(token)
+        if gercek_ad is None or maske[es.start()] or _istisna_mi(token, gercek_ad, istisnalar):
+            continue
+        sonuc.append((es, gercek_ad, "islev" if _islev_konumu(metin, *es.span()) else "diger"))
+    return sonuc
+
+
+def proje_adlarini_anonimlestir(metin, adlar, istisnalar=()):
+    """Yalnız güvenli işlev/adres konumlarını FUN_xN biçimine çevir."""
+    aliaslar = _ad_aliaslari(adlar)
+    eslesmeler = proje_ad_eslesmeleri(metin, aliaslar, istisnalar)
+    mevcut = set(TANIMLAYICI.findall(metin)) | set(aliaslar)
+    ad_haritasi = {}
+    sira = 1
+    parcalar, konum = [], 0
+    degisen_satirlar = set()
+    for es, gercek_ad, tur in eslesmeler:
+        if tur != "islev":
+            continue
+        if gercek_ad not in ad_haritasi:
+            while f"FUN_x{sira}" in mevcut:
+                sira += 1
+            ad_haritasi[gercek_ad] = f"FUN_x{sira}"
+            mevcut.add(ad_haritasi[gercek_ad])
+            sira += 1
+        parcalar.extend((metin[konum:es.start()], ad_haritasi[gercek_ad]))
+        konum = es.end()
+        degisen_satirlar.add(metin.count("\n", 0, es.start()) + 1)
+    parcalar.append(metin[konum:])
+    islev = sum(tur == "islev" for _, _, tur in eslesmeler)
+    diger = len(eslesmeler) - islev
+    return "".join(parcalar), {
+        "islev_adres_eslesmesi": islev,
+        "diger_konum_eslesmesi": diger,
+        "degisim": islev,
+        "degisen_satir": len(degisen_satirlar),
+    }
+
+
 def ad_sizintisi(metin, adlar):
-    """Adları tam C tanımlayıcısı olarak, baştaki `_` biçimiyle birlikte ara."""
-    for ad in {x for x in adlar if x}:
-        if re.search(rf"(?<![A-Za-z0-9_])_?{re.escape(ad)}(?![A-Za-z0-9_])",
-                     metin, re.IGNORECASE):
-            return ad
+    """Adları string/char dışında tam C tanımlayıcısı olarak ara."""
+    aranan = {x.casefold() for ad in adlar if ad for x in (ad, "_" + ad)}
+    maske = _sabit_maskesi(metin)
+    for es in TANIMLAYICI.finditer(metin):
+        if not maske[es.start()] and es.group().casefold() in aranan:
+            return es.group()
     return None
 
 
@@ -162,19 +283,26 @@ def decompile_kirp(satir, decompile, max_uzunluk, alt_sinir):
         satir["messages"][1]["content"] = taban
 
 
-def satir_v6(r, tr, en, a, decompile_kaydi=None, ham=False, esleme="id", taban_satir=None):
+def satir_v6(r, tr, en, a, decompile_kaydi=None, ham=False, esleme="id", taban_satir=None,
+             proje_adlari=()):
     """v5 satırını ve asm/bağlamını koruyup güvenli decompile ekle."""
     s = (satir_v5(r, tr, en, a, ham) if taban_satir is None else
          {**taban_satir, "messages": [dict(m) for m in taban_satir["messages"]]})
     s["messages"][0]["content"] = h.SISTEM_V6
     s.update({"decompile_var": False, "decompile_kirpildi": False,
               "decompile_sizinti": False, "decompile_ham_sizinti": False,
+              "decompile_ad_anonim_degisim": 0, "decompile_ad_anonim_satir": 0,
               "decompile_esleme": esleme if decompile_kaydi else "yok",
               "decompile_yok_neden": "eksik" if not decompile_kaydi else None})
     if not decompile_kaydi or not decompile_kaydi.get("decompile"):
         return s
     metin = decompile_kaydi["decompile"]
     s["decompile_ham_sizinti"] = bool(decompile_kaydi.get("sizinti"))
+    metin, ad_anonim = proje_adlarini_anonimlestir(
+        metin, proje_adlari, ITHAL_YORUM.findall(r.get("asm", "")),
+    )
+    s["decompile_ad_anonim_degisim"] = ad_anonim["degisim"]
+    s["decompile_ad_anonim_satir"] = ad_anonim["degisen_satir"]
     sizan = ad_sizintisi(metin, (r["ad"], h.oneksiz(r)))
     if sizan:
         s["decompile_sizinti"] = True
@@ -342,28 +470,87 @@ def tokenizer_v5(a):
                      "yedek_nedeni": f"{type(e).__name__}: Qwen3 indirilemedi/önbellekte yok"}
 
 
-def baska_ad_olc(decompile, proje_adlari, proje_ithalleri=None, ornek_tavan=200):
-    """Proje başına belirlenimci bir örneklemde kalan başka gerçek adları ölç."""
+def proje_adlarini_oku(veri, ham_yolu=None):
+    """Üç ana bölme ve varsa filtresiz v6 ham çıktısından proje ad kümesi kur."""
+    yollar = [veri / f"{ad}.jsonl" for ad in ("egitim", "dogrulama", "test")]
+    if ham_yolu and ham_yolu.is_dir():
+        yollar.extend(sorted(ham_yolu.rglob("*.jsonl")))
+    adlar, id_ithalleri = defaultdict(set), defaultdict(set)
+    satir_sayisi = 0
+    for yol in yollar:
+        if not yol.is_file():
+            continue
+        for r in jsonl_oku(yol):
+            if not {"proje", "ad"} <= r.keys():
+                continue
+            satir_sayisi += 1
+            adlar[r["proje"]].add(r["ad"])
+            if r.get("id") and r.get("asm"):
+                id_ithalleri[r["id"]].update(ITHAL_YORUM.findall(r["asm"]))
+    return adlar, id_ithalleri, {
+        "dosya": len([yol for yol in yollar if yol.is_file()]),
+        "satir": satir_sayisi,
+        "proje": len(adlar),
+        "benzersiz_ad": sum(map(len, adlar.values())),
+        "filtresiz_ham": str(ham_yolu) if ham_yolu and ham_yolu.is_dir() else None,
+    }
+
+
+def baska_ad_olc(decompile, proje_adlari, id_ithalleri=None, ornek_tavan=200):
+    """Dönüşümü tüm kayıtlarda, kalan oranı proje başına örneklemde ölç."""
     gruplar = defaultdict(list)
     for kimlik, kayit in decompile.items():
         gruplar[kimlik.split("/", 1)[0]].append((kimlik, kayit["decompile"]))
-    denetlenen = sizintili = 0
-    ornekler = []
+    toplam = Counter()
+    degisen_kayit = 0
     for proje in sorted(gruplar):
-        adlar = (set(proje_adlari.get(proje, ())) - LIBC_ADLARI -
-                 set((proje_ithalleri or {}).get(proje, ())))
+        aliaslar = _ad_aliaslari(proje_adlari.get(proje, ()))
+        for kimlik, metin in gruplar[proje]:
+            _, sayac = proje_adlarini_anonimlestir(
+                metin, aliaslar, (id_ithalleri or {}).get(kimlik, ()),
+            )
+            toplam.update(sayac)
+            degisen_kayit += bool(sayac["degisim"])
+
+    denetlenen = once_sizintili = kalan_sizintili = diger_konumlu = 0
+    ornekler, diger_ornekler = [], []
+    for proje in sorted(gruplar):
+        tum_adlar = set(proje_adlari.get(proje, ()))
         for kimlik, metin in sorted(gruplar[proje])[:ornek_tavan]:
             denetlenen += 1
             hedef = kimlik.rsplit(":", 1)[-1]
-            bulunan = sorted((set(TANIMLAYICI.findall(metin)) & adlar) - {hedef, "_" + hedef})
-            if bulunan:
-                sizintili += 1
+            adlar = tum_adlar - {hedef}
+            istisnalar = (id_ithalleri or {}).get(kimlik, ())
+            once = proje_ad_eslesmeleri(metin, adlar, istisnalar)
+            anonim, _ = proje_adlarini_anonimlestir(metin, adlar, istisnalar)
+            kalan = proje_ad_eslesmeleri(anonim, adlar, istisnalar)
+            once_islev = sorted({gercek for _, gercek, tur in once if tur == "islev"})
+            kalan_islev = sorted({gercek for _, gercek, tur in kalan if tur == "islev"})
+            kalan_diger = sorted({gercek for _, gercek, tur in kalan if tur == "diger"})
+            if once_islev:
+                once_sizintili += 1
+            if kalan_islev:
+                kalan_sizintili += 1
                 if len(ornekler) < 20:
-                    ornekler.append({"id": kimlik, "adlar": bulunan[:8]})
-    return {"orneklem": denetlenen, "sizintili": sizintili,
-            "oran": sizintili / denetlenen if denetlenen else 0, "ornekler": ornekler,
+                    ornekler.append({"id": kimlik, "adlar": kalan_islev[:8]})
+            if kalan_diger:
+                diger_konumlu += 1
+                if len(diger_ornekler) < 20:
+                    diger_ornekler.append({"id": kimlik, "adlar": kalan_diger[:8]})
+    return {"orneklem": denetlenen, "sizintili": kalan_sizintili,
+            "oran": kalan_sizintili / denetlenen if denetlenen else 0,
+            "donusum_oncesi_islevsel_sizintili": once_sizintili,
+            "donusum_oncesi_islevsel_oran": once_sizintili / denetlenen if denetlenen else 0,
+            "diger_konumlu": diger_konumlu,
+            "diger_konumlu_oran": diger_konumlu / denetlenen if denetlenen else 0,
+            "islev_adres_eslesmesi": toplam["islev_adres_eslesmesi"],
+            "diger_konum_eslesmesi": toplam["diger_konum_eslesmesi"],
+            "degistirilen_kayit": degisen_kayit,
+            "degistirilen_satir": toplam["degisen_satir"],
+            "degisim": toplam["degisim"],
+            "ornekler": ornekler, "diger_konum_ornekleri": diger_ornekler,
             "proje_basi_tavan": ornek_tavan,
-            "not": "Yalnız proje gerçek-ad listesiyle tam tanımlayıcı kesişimi; asm'de görünen importlar ve yaygın libc adları hariç."}
+            "not": "String/char sabitleri, satır ASM importları, libc/sistem adları, hedef ad ve Ghidra yerelleri hariç. Yalnız çağrı/bildirim ve açık &ad konumları değiştirilir; diğer konumlar ölçülür ama korunur."}
 
 
 def decompile_ham_olcumunu_ekle(olcumler, r, taban_satir, kayit, max_uzunluk, satir_tavan=200):
@@ -516,6 +703,9 @@ def hazirla_v6(a):
     sistem_token_farki = len(h.TOK.encode(h.SISTEM_V6)) - len(h.TOK.encode(h.SISTEM_V5))
 
     decompile, tamam_projeler, yinelenen = decompile_dizinlerini_oku(a.decompile)
+    ham_adlar = getattr(a, "ham_adlar", Path("veri/olcek-v6/ham"))
+    proje_adlari, id_ithalleri, ad_kaynagi = proje_adlarini_oku(a.veri, ham_adlar)
+    proje_aliaslari = {proje: _ad_aliaslari(adlar) for proje, adlar in proje_adlari.items()}
     asm_uyusmaz = ({r["id"] for r in jsonl_oku(a.asm_uyusmaz)} if a.asm_uyusmaz.exists() else set())
     eval_satirlari = list(jsonl_oku(a.eval115))
     eval_indeksi = eval_esleme_indeksi((yollar[x] for x in ("train", "valid", "test")), eval_satirlari)
@@ -528,8 +718,9 @@ def hazirla_v6(a):
             "proje_tavan": a.proje_tavan, "kapsam_onceligi": a.kapsam_onceligi == "kapsam",
             "opt_agirlik": OPT_AGIRLIK, "filtreler": {},
             "decompile": {"dizinler": [str(x) for x in a.decompile], "kayit": len(decompile),
-                          "tamam_proje": len(tamam_projeler), "yinelenen_id": yinelenen}}
-    bolumler, proje_adlari, proje_ithalleri, gerekli_projeler = {}, defaultdict(set), defaultdict(set), set()
+                          "tamam_proje": len(tamam_projeler), "yinelenen_id": yinelenen,
+                          "proje_ad_kaynagi": ad_kaynagi}}
+    bolumler, gerekli_projeler = {}, set()
     ham_olcum = defaultdict(lambda: defaultdict(list))
     olculen_decompile = set()
     for ad, yol in yollar.items():
@@ -539,8 +730,6 @@ def hazirla_v6(a):
         kaynak_satirlar = eval_satirlari if ad == "eval115" else jsonl_oku(yol)
         for r in kaynak_satirlar:
             filtre["girdi"] += 1
-            proje_adlari[r["proje"]].add(r["ad"])
-            proje_ithalleri[r["proje"]].update(ITHAL_YORUM.findall(r["asm"]))
             if ad != "eval115":
                 gerekli_projeler.add(r["proje"])
             key = anahtar(r)
@@ -570,7 +759,7 @@ def hazirla_v6(a):
                                             a.satir_tavan)
                 olculen_decompile.add(kayit["id"])
             s = satir_v6(r, tr.get(key), en.get(key), a, kayit, ham=ham, esleme=esleme,
-                         taban_satir=taban)
+                         taban_satir=taban, proje_adlari=proje_aliaslari.get(r["proje"], {}))
             if not kayit:
                 if ad == "eval115":
                     s["decompile_yok_neden"] = "eval_eslesmedi"
@@ -612,7 +801,7 @@ def hazirla_v6(a):
                               "eksik_proje_ornek": eksik_projeler[:20],
                               "ham_token_olcumu": ham_olcum_ozeti(ham_olcum),
                               "baska_ad_sizintisi": baska_ad_olc(decompile, proje_adlari,
-                                                                 proje_ithalleri)})
+                                                                 id_ithalleri)})
     print(f"decompile tamam proje: {len(tamam_projeler)}; eksik proje: {len(eksik_projeler)}",
           file=sys.stderr)
     a.cikti.mkdir(parents=True, exist_ok=True)
@@ -644,6 +833,8 @@ def hazirla_v6(a):
                     "decompile_kirpildi_oran": sum(s["decompile_kirpildi"] for s in ss) / len(ss) if ss else 0,
                     "decompile_sizinti": sum(s["decompile_sizinti"] for s in ss),
                     "decompile_sizinti_oran": sum(s["decompile_sizinti"] for s in ss) / len(ss) if ss else 0,
+                    "decompile_ad_anonim_degisim": sum(s["decompile_ad_anonim_degisim"] for s in ss),
+                    "decompile_ad_anonim_satir": sum(s["decompile_ad_anonim_satir"] for s in ss),
                     "decompile_esleme": dict(sorted(Counter(s["decompile_esleme"] for s in ss).items())),
                     "decompile_yok": len(ss) - sum(s["decompile_var"] for s in ss),
                     "decompile_yok_neden": dict(sorted(neden.items()))}
@@ -676,6 +867,8 @@ def main():
                     help="v6'da herhangi bir kaynak projenin tamamlanmış JSONL'i yoksa hata ver")
     ap.add_argument("--asm-uyusmaz", type=Path, default=Path("veri/olcek-v6/asm-uyusmaz.jsonl"),
                     help="v6 ikilisiyle asm'si uyuşmayan ve decompile beklenmeyen id'ler")
+    ap.add_argument("--ham-adlar", type=Path, default=Path("veri/olcek-v6/ham"),
+                    help="varsa proje ad kümesine eklenecek filtresiz v6 ham JSONL kökü")
     ap.add_argument("--aciklama-detay", type=Path, default=Path("veri/aciklama-v4/codex-detay.jsonl"))
     ap.add_argument("--eval115", type=Path, default=Path("veri/test.jsonl"))
     ap.add_argument("--test-idler", type=Path, default=Path(__file__).with_name("test_sabit_idler.txt"))

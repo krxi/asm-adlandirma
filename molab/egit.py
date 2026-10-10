@@ -27,13 +27,17 @@ def _():
 def _(mo):
     mo.md(
         r"""
-        # Fonksiyon adlandırma — v5 bf16 LoRA
+        # Fonksiyon adlandırma — v6 bf16 LoRA
 
         Tüm train, 1 epoch, etkin batch 16, tohum 7. Kayıp yalnız assistant JSON cevabında.
         Her 500 adımda valid_300: loss + greedy ad F1 + geçerli JSON oranı.
         HF private repo zorunlu; `MAX_ADIM=20` yalnız duman denemesidir (valid'den 10 satır).
         `DEVAM=1` son adaptörle birlikte optimizer/scheduler/RNG/adımı geri yükler.
         Tam eğitim sonunda yalnız valid F1 ile seçilen adaptör test_sabit ve eval115'te ölçülür.
+
+        Varsayılan veri sürümü `v6`dır; v5'i yeniden üretmek için çalıştırmadan önce
+        `VERI_SURUM=v5` ayarla. **Başlat hücresini aynı koşu sürerken yeniden çalıştırma:**
+        benzersiz `ASM_KOK` ve ikinci bir eğitim süreci oluşturabilir.
 
         Paketleme: `group_by_length`. SDPA ve Qwen3.5 hibrit attention için dolgusuz
         örnek sınırları doğrulanmadığından DataCollatorWithFlattening kullanılmaz.
@@ -173,8 +177,11 @@ def _():
 
 
     def egitim_ayarlari(ortam):
+        surum = os.environ.get("VERI_SURUM", "v6").strip().lower()
+        if surum not in {"v5", "v6"}:
+            raise ValueError("VERI_SURUM yalnız v5 veya v6 olabilir.")
         deneme = int(os.environ.get("MAX_ADIM", "0"))
-        mikro = int(os.environ.get("MIKRO_BATCH", "1" if ortam == "colab" else "4"))
+        mikro = int(os.environ.get("MIKRO_BATCH", "1" if ortam == "colab" else "2"))
         if deneme < 0 or mikro <= 0 or 16 % mikro:
             raise ValueError("MAX_ADIM >= 0; MIKRO_BATCH pozitif ve 16'nın böleni olmalı.")
         token = os.environ.get("HF_TOKEN", "").strip()
@@ -185,16 +192,16 @@ def _():
         if deneme and os.environ.get("DEVAM", "0") == "1":
             raise ValueError("Duman modu DEVAM=1 ile kullanılamaz; tam koşu durumunu değiştirmeyin.")
         return {
-            "ortam": ortam,
+            "ortam": ortam, "surum": surum,
             "model": os.environ.get("MODEL", "Qwen/Qwen3.5-9B" if ortam == "colab" else "Qwen/Qwen3-8B"),
             "veri_url": os.environ.get(
-                "VERI_URL", "https://github.com/krxi/asmsense-data/releases/download/v5/veri-v5.zip",
+                "VERI_URL", f"https://github.com/krxi/asmsense-data/releases/download/{surum}/veri-{surum}.zip",
             ),
-            "repo": os.environ.get("HF_REPO", "krxi123/asmsense-lora-v5"),
-            "kok": Path(os.environ.get("ASM_KOK", "asm-calisma-v5")).expanduser().resolve(),
+            "repo": os.environ.get("HF_REPO", f"krxi123/asmsense-lora-{surum}"),
+            "kok": Path(os.environ.get("ASM_KOK", f"asm-calisma-{surum}")).expanduser().resolve(),
             "drive": Path(os.environ["DRIVE_KOK"]) if os.environ.get("DRIVE_KOK") else None,
             "max_adim": deneme, "mikro": mikro,
-            "grad_ckpt": os.environ.get("GRAD_CKPT", "1") == "1",
+            "grad_ckpt": os.environ.get("GRAD_CKPT", "0") == "1",
             "devam": os.environ.get("DEVAM", "0") == "1",
         }
 
@@ -230,7 +237,7 @@ def _():
             raise FileExistsError("Yerel koşu var: DEVAM=1 veya yeni ASM_KOK seçin.")
         kok.mkdir(parents=True, exist_ok=True)
         token = os.environ.get("HF_TOKEN", "").strip() or None
-        logger = logging.getLogger("asm-v5")
+        logger = logging.getLogger(f"asm-{ayar['surum']}")
         for eski in list(logger.handlers):
             eski.close()
             logger.removeHandler(eski)
@@ -293,13 +300,13 @@ def _():
             except Exception:
                 raise RuntimeError("HF devam durumu okunamadı; bağlantıyı ve repo yetkisini denetleyin.") from None
 
-        arsiv = kok / "veri-v5.zip"
+        arsiv = kok / f"veri-{ayar['surum']}.zip"
         if not arsiv.exists():
             gecici = arsiv.with_suffix(".part")
             with urllib.request.urlopen(ayar["veri_url"]) as yanit, gecici.open("wb") as dosya:
                 shutil.copyfileobj(yanit, dosya)
             gecici.replace(arsiv)
-        acilmis = kok / "veri-v5"
+        acilmis = kok / f"veri-{ayar['surum']}"
         gerekli = (
             "train.jsonl", "valid.jsonl", "valid_300.jsonl", "test.jsonl",
             "test_sabit.jsonl", "eval115.jsonl", "ozet.json",
@@ -313,7 +320,17 @@ def _():
         adaylar = [acilmis] + sorted({p.parent for p in acilmis.rglob("train.jsonl")})
         veri = next((p for p in adaylar if all((p / ad).is_file() for ad in gerekli)), None)
         if veri is None:
-            raise FileNotFoundError(f"v5 dosyaları eksik: {gerekli}")
+            raise FileNotFoundError(f"{ayar['surum']} dosyaları eksik: {gerekli}")
+        veri_ozeti = json.loads((veri / "ozet.json").read_text(encoding="utf-8"))
+        if veri_ozeti.get("surum") != ayar["surum"]:
+            raise ValueError(f"Arşiv sürümü uyuşmuyor: {veri_ozeti.get('surum')!r} != {ayar['surum']!r}")
+        if ayar["surum"] == "v6":
+            for bolum in ("test_sabit", "eval115"):
+                denetim = jsonl_oku(veri / f"{bolum}.jsonl")
+                if not denetim or not all("decompile_var" in r for r in denetim) or not any(
+                    r["decompile_var"] for r in denetim
+                ):
+                    raise ValueError(f"v6 {bolum} decompile metadata/girdisi eksik.")
         train = jsonl_oku(veri / "train.jsonl")
         valid = jsonl_oku(veri / "valid_300.jsonl")
         if not train or len(valid) != 300:
@@ -329,7 +346,7 @@ def _():
             with (veri / ad).open("rb") as dosya:
                 for parca in iter(lambda: dosya.read(1024 * 1024), b""):
                     ozet.update(parca)
-        kosu = {"model": ayar["model"], "veri_sha256": ozet.hexdigest(), "tohum": 7,
+        kosu = {"surum": ayar["surum"], "model": ayar["model"], "veri_sha256": ozet.hexdigest(), "tohum": 7,
                 "max_uzunluk": 3072, "etkin_batch": 16, "epoch": 1,
                 "lr": 1e-4, "scheduler": "cosine", "warmup_ratio": 0.03,
                 "r": 16, "alpha": 32, "dropout": 0.05, "target_modules": "all-linear",
@@ -456,7 +473,7 @@ def _():
                 shutil.copy2(kok / "egitim.log", paket / "egitim.log")
                 basarili = tekrar(lambda: api.upload_folder(
                     repo_id=ayar["repo"], repo_type="model", folder_path=str(paket), path_in_repo=hf_onek or None,
-                    commit_message=f"v5 {paket.name}",
+                    commit_message=f"{ayar['surum']} {paket.name}",
                     # Aynı atomik commit: son adaptörü + optimizer/trainer/RNG + ölçümler.
                 ), paket.name)
                 if not basarili:
@@ -556,7 +573,8 @@ def _():
         logger.info("Eğitim süresi %.1f sn; en iyi=%s", time.monotonic() - baslangic, en_iyi)
         if adim_sureleri:
             saniye = sum(adim_sureleri) / len(adim_sureleri)
-            logger.info("Ölçüm/yükleme hariç %.2f sn/adım; 5938 adım için %.2f saat", saniye, saniye * 5938 / 3600)
+            logger.info("Ölçüm/yükleme hariç %.2f sn/adım; %s adım için %.2f saat",
+                        saniye, toplam_adim, saniye * toplam_adim / 3600)
         kuyrugu_it()
         dosyalar = [kok / "egitim.log", olcum_yolu, kok / "valid-sonuc.jsonl"]
         if not deneme:
@@ -605,9 +623,9 @@ def _():
 
 @app.cell
 def _(mo):
-    # Ortam değişkeni yoksa token ve kip buradan girilir; token ekrana/loga yazılmaz.
+    # Token yalnız bu formdan alınır; ekrana/loga yazılmaz.
     form = mo.ui.dictionary({
-        "token": mo.ui.text(kind="password", label="HF write token (molab Secrets'ta HF_TOKEN varsa boş bırak)",
+        "token": mo.ui.text(kind="password", label="HF private repo write token",
                             full_width=True),
         "kip": mo.ui.dropdown(["duman (20 adım)", "tam eğitim", "devam (kesilen tam eğitimi sürdür)"],
                               value="duman (20 adım)", label="Kip"),
@@ -621,6 +639,7 @@ def _(egitim_ayarlari, form, mo):
     import os as _os
 
     mo.stop(form.value is None, mo.md("Token'ı gir, kipi seç, **Başlat**'a bas."))
+    _os.environ.pop("HF_TOKEN", None)
     if form.value["token"].strip():
         _os.environ["HF_TOKEN"] = form.value["token"].strip()
     _kip = form.value["kip"]
@@ -631,10 +650,11 @@ def _(egitim_ayarlari, form, mo):
     # ckpt kapalıyken mikro 4 × 3072 token 95 GB'a sığmadı (OOM); ilk molab koşusu mikro 2 idi.
     _os.environ.setdefault("MIKRO_BATCH", "2")
     # Her tam koşuya ayrı yerel dizin: yarım kalan koşunun klasörü "Yerel koşu var" hatası vermesin (devam HF'den yüklenir).
+    _surum = _os.environ.get("VERI_SURUM", "v6").strip().lower()
     if not _kip.startswith("duman"):
-        _os.environ["ASM_KOK"] = f"asm-calisma-v5-{int(__import__('time').time())}"
+        _os.environ["ASM_KOK"] = f"asm-calisma-{_surum}-{int(__import__('time').time())}"
     if _kip.startswith("duman"):
-        _os.environ.setdefault("ASM_KOK", "asm-calisma-v5-duman")
+        _os.environ.setdefault("ASM_KOK", f"asm-calisma-{_surum}-duman")
     ayar = egitim_ayarlari("molab")
     return (ayar,)
 
