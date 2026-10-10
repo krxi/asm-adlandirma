@@ -49,7 +49,7 @@ def puanla(satirlar: list[dict], adlar: dict[str, str]) -> dict:
             asil = r["gercek"]
         elif asil != r["gercek"]:
             hedef_farkli += 1
-        if "f1" in r and abs(r["f1"] - round(f1(tahmin, r["gercek"]), 3)) > 1e-9:
+        if "f1" in r and abs(round(r["f1"], 3) - round(f1(tahmin, r["gercek"]), 3)) > 1e-9:
             kayitli_uyumsuz += 1
         duz = {**r, "gercek": asil, "tahmin": tahmin}
         for opt in (r.get("opt", ""), "hepsi"):

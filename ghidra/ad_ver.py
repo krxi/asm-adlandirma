@@ -31,10 +31,12 @@ if BETIK_DIZINI not in sys.path:
     sys.path.insert(0, BETIK_DIZINI)
 
 from bicim import (asm_bicimle, cevap_ayristir, fonksiyon_ozeti, gecerli_ad,
-                   model_girdisi, model_yorumu_birlestir)
+                   model_girdisi)
+from uygulama import uygula as degisiklikleri_uygula
 
 from ghidra.program.model.listing import CodeUnit
 from ghidra.program.model.symbol import SourceType
+from ghidra.util.exception import CancelledException, DuplicateNameException
 
 
 # taban.py:SISTEM ile aynı tutulur.
@@ -251,41 +253,11 @@ def aday_fonksiyonlar(program):
     return sonuc
 
 
-def plate_yorumu_yaz(program, adres, aciklama):
-    """Analistin eski yorumunu koru, önceki model yorumunu güncelle."""
-    liste = program.getListing()
-    eski = liste.getComment(CodeUnit.PLATE_COMMENT, adres) or ""
-    liste.setComment(adres, CodeUnit.PLATE_COMMENT,
-                     model_yorumu_birlestir(eski, aciklama, YORUM_ON_EKI))
-
-
-def fonksiyon_yorumu_yaz(fonksiyon, aciklama):
-    """Fonksiyon yorumunda analist satırlarını koruyup model satırını güncelle."""
-    eski = fonksiyon.getComment() or ""
-    fonksiyon.setComment(model_yorumu_birlestir(eski, aciklama, YORUM_ON_EKI))
-
-
 def uygula(program, fonksiyon, ad, aciklama):
-    islem = program.startTransaction("asmsense")
-    basarili = False
-    try:
-        if ad:
-            try:
-                fonksiyon.setName(ad, SourceType.USER_DEFINED)
-            except Exception:
-                # Aynı ad varsa tahmini kaybetmeden adresle benzersizleştir.
-                ekli = "%s_%x" % (ad, fonksiyon.getEntryPoint().getOffset() & 0xffff)
-                fonksiyon.setName(ekli, SourceType.USER_DEFINED)
-                ad = ekli
-        if aciklama.strip():
-            if YORUM_HEDEFI in ("ikisi", "plate"):
-                plate_yorumu_yaz(program, fonksiyon.getEntryPoint(), aciklama)
-            if YORUM_HEDEFI in ("ikisi", "fonksiyon"):
-                fonksiyon_yorumu_yaz(fonksiyon, aciklama)
-        basarili = True
-        return ad
-    finally:
-        program.endTransaction(islem, basarili)
+    return degisiklikleri_uygula(
+        program, fonksiyon, ad, aciklama, YORUM_HEDEFI,
+        SourceType.USER_DEFINED, CodeUnit.PLATE_COMMENT, DuplicateNameException,
+        monitor.checkCancelled, YORUM_ON_EKI)
 
 
 def ana():
@@ -315,18 +287,29 @@ def ana():
             aciklama = cevap.get("aciklama", "").strip()
             if not yeni_ad:
                 raise ValueError("model geçerli bir ad döndürmedi")
-            if not kuru:
-                yeni_ad = uygula(currentProgram, fonksiyon, yeni_ad, aciklama)
-            println("[%d/%d] %s -> %s%s" %
-                    (sira, len(adaylar), eski_ad, yeni_ad, "  [kuru]" if kuru else ""))
-            if kuru:
-                println("  açıklama: " + (aciklama or "(yok)"))
-                println("  bağlam: " + ("kesildi" if baglam_kesildi else
-                                         ("kesilmedi" if baglamli else "kapalı")))
-            elif aciklama:
-                println("  " + aciklama)
+        except CancelledException:
+            raise
         except Exception as hata:
             printerr("[%d/%d] %s: HATA: %s" % (sira, len(adaylar), eski_ad, hata))
+            continue
+        if not kuru:
+            try:
+                yeni_ad = uygula(currentProgram, fonksiyon, yeni_ad, aciklama)
+            except CancelledException:
+                raise
+            except Exception as hata:
+                printerr("[%d/%d] %s: UYGULAMA HATASI: %s. Betik durduruldu; "
+                         "Ghidra'nın ortak dış işlemi varsa önceki değişiklikler de geri alınır." %
+                         (sira, len(adaylar), eski_ad, hata))
+                raise
+        println("[%d/%d] %s -> %s%s" %
+                (sira, len(adaylar), eski_ad, yeni_ad, "  [kuru]" if kuru else ""))
+        if kuru:
+            println("  açıklama: " + (aciklama or "(yok)"))
+            println("  bağlam: " + ("kesildi" if baglam_kesildi else
+                                     ("kesilmedi" if baglamli else "kapalı")))
+        elif aciklama:
+            println("  " + aciklama)
 
 
 ana()

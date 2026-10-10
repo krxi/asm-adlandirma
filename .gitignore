@@ -27,3 +27,6 @@ veri/bin/
 /veri-v5.zip
 rapor/veri-v5-inceleme.html
 rapor/veri-v6-inceleme.html
+# Kör değerlendirme anahtarları normalde repo dışında yazılır.
+*.asmsense-kor-anahtar.json
+/asmsense-ozel/

@@ -165,9 +165,12 @@ ruff format --check tests/test_arastirma_belgesi.py
 
 Belge regresyonları mevcut main dosyalarına yapılan atıfları, v6 önceliğini,
 geliştirmede kullanılmış test tanımını ve küme/çoklu-karşılaştırma protokolünü
-korur. **Tam pytest gerçek arşiv tahminlerini rapor regresyonu için de yeniden
-puanlar**; yalnız sentetik diye sunulmaz. Yeni GPU eğitimi, model çıkarımı,
-test-altgrup analizi veya insan puanlaması bu belge değişikliğinde **not run**.
+korur. Varsayılan pytest gerçek arşiv tahminlerini yeniden puanlamaz; arşiv
+rapor regresyonu yalnız `ASMSENSE_ARCHIVE_REPORT=1` ile etkinleşir. `iki_f1.py`
+kayıtlı puan tutarlılığını iki değeri aynı üç ondalık hassasiyete yuvarlayarak
+denetler; tam hassasiyetli kesirleri yanlış uyumsuz saymaz, F1 hesabı değişmez.
+Yeni GPU eğitimi, model çıkarımı, test-altgrup analizi veya insan puanlaması
+bu belge değişikliğinde **not run**.
 Güncel halka açık commit/tree ve CI PR #2'de kayıtlıdır. Eski makineye özgü
 çalışma günlüğü ve yerel commit kayıtları çıkarılmıştır. Yeni kod/özet özgün
 MIT ekidir; lisansı doğrulanmamış dış kod/veri/ağırlık içe aktarılmaz.

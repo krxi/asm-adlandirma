@@ -1,0 +1,14 @@
+{
+  "surum": 1,
+  "sabit_dogrulama": {
+    "dosya": "sonuc/valid300-molab-qwen3-8b-v5.jsonl",
+    "sha256": "88f7bfb32ed87f5c43a43d670c5ca5e80bfd00c3592d59dc24b9ee52e14e4faf"
+  },
+  "tam_dogrulama_sha256": "7516244ec1798b05f6c3ef09fbfb4636241b5dd6bbfd8b6814ad340b6f1beef3",
+  "dondurulmus_tahminler": {
+    "v5": "88f7bfb32ed87f5c43a43d670c5ca5e80bfd00c3592d59dc24b9ee52e14e4faf"
+  },
+  "kaynak_commit": "15e3b28f1be387d0e8655edd838e1c32f9d348d5",
+  "kaynak_tree": "6f8d4781522bc7be45839071dc7231e12d0164e5",
+  "tam_dogrulama_kaynagi": "https://huggingface.co/datasets/krxi123/asmsense/tree/6e1eb5e44c3114a06c0b4cac9b38540c33e322e0"
+}
