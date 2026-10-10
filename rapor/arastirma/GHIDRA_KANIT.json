@@ -1,0 +1,23 @@
+{
+  "sema_surumu": 2,
+  "uygulama_commit": "28a08ccd9ef1495516303dbd72c280666912ff05",
+  "uygulama_tree": "3d4896ee3b49ac328349a790e0ab1317f495254b",
+  "kaynak": "https://github.com/krxi/asmsense/commit/28a08ccd9ef1495516303dbd72c280666912ff05",
+  "kod_bloblari": {
+    "ghidra/ad_ver.py": "1853216abcdedc091f1a054ee36542752af6372e",
+    "ghidra/bicim.py": "4fd7ee98368fe0562f82f1d866e8cc89c4c314ef",
+    "ghidra/duman_uygulama.py": "75016f0e69713b2da05c6e6686c741c5476f8e93",
+    "ghidra/test_uygulama.py": "79d526126f562116e41c06a197db4fed629797ab",
+    "ghidra/uygulama.py": "2929ff5eb7a0540eb63366b425fb7374868f84ff"
+  },
+  "degisiklik": "Yalnız belge/kanıt ve belge regresyon testleri; uygulama blobları değişmedi.",
+  "komutlar": {
+    "birim": "python3 -m pytest -q",
+    "ghidrasiz": "python3 -m unittest discover -s ghidra -p 'test_*.py'",
+    "manuel_duman": "python3 ghidra/duman_uygulama.py --ghidra-kurulum \"$GHIDRA_INSTALL_DIR\" --cikti ghidra-duman-sonuc.json"
+  },
+  "manuel_duman": "not run (bu düzeltmede); CI dışında elle koşulur",
+  "gui_model_sunucusu": "not run",
+  "model_egitimi_yeni_cikarim": "not run",
+  "not": "Tam pytest arşivlenmiş sonuc/*.jsonl tahminlerini rapor regresyonu için yeniden puanlar; yalnız sentetik değildir. Güncel CI bağlantısı PR açıklamasındadır."
+}

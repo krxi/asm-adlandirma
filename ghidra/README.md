@@ -1,101 +1,62 @@
 # Ghidra entegrasyonu
 
-`ad_ver.py`, seçili fonksiyonları; seçim yoksa adı `FUN_` ile başlayan en çok
-`EN_COK` fonksiyonu OpenAI uyumlu bir modele yollar. Tahmini geçerli bir ada
-çevirir, açıklamayı hem plate comment'e hem fonksiyon yorumuna ekler. Varsayılan
-kip kurudur: modeli çağırır ama Ghidra veritabanını değiştirmez.
+`ad_ver.py`, seçili x86-64 fonksiyonlarını; seçim yoksa `FUN_` adlı en çok
+`EN_COK` fonksiyonu OpenAI uyumlu sunucuya sorar. Varsayılan **kuru kip** model
+çağrısı yapar, veritabanına yazmaz.
 
-## Kurulum ve kullanım
+## Kullanım
 
-1. `ad_ver.py` ile `bicim.py` dosyalarını aynı Ghidra script dizinine koyun ve
-   Script Manager'da dizini ekleyin. PyGhidra/Python 3 önerilir; kod eski
-   Jython 2.7 ile de uyumlu tutulmuştur.
-2. `ad_ver.py` başındaki `SUNUCU` ve `MODEL` ayarlarını değiştirin. Varsayılan
-   sunucu `http://127.0.0.1:8080/v1` adresindeki `mlx_lm.server`'dır. Sunucu
-   anahtar istiyorsa yalnız ortamda `OPENAI_API_KEY` tanımlayın; betik dosya
-   veya `.env` okumaz.
-3. Binary'yi analiz ettikten sonra isteğe bağlı bir adres aralığı seçip betiği
-   çalıştırın. Seçim yoksa yalnız `FUN_...` fonksiyonları ele alınır.
-4. Sonucu gördükten sonra `KURU_CALIS = False` yaparak yeniden çalıştırın.
-
-Sonraki deney adaptörü için varsayılan ayarlar `ISTEM = "sonraki"` ve
-`BAGLAM = True` değerleridir. Bu kip, `lora/hazirla.py` içindeki
-`SISTEM_ACIKLAMA` istemini bağlamdan söz eden ek bir sistem cümlesi olmadan
-kullanır. Kullanıcı girdisi eğitimdeki gibi assembly, boş satır ve
-`; --- çağrılan fonksiyonlar ---` başlığından sonra bağlamdır. Eğitim hedefinde
-proje öneki atılmış olabileceğinden üretilen adın proje öneki taşımaması
-beklenen bir sonuçtur.
-
-`GIRDI_KARAKTER_TAVANI = 9000`, tokenizer gerektirmeyen yaklaşık girdi
-sınırıdır. Sınır aşılırsa önce çağrı bağlamı kısaltılır ve girdiye
-`; ... bağlam kesildi` satırı eklenir. `YORUM_HEDEFI`, açıklamanın `"ikisi"`,
-`"plate"` veya `"fonksiyon"` hedeflerinden hangilerine yazılacağını seçer.
-Her iki yorum türünde analist satırları korunur ve yalnız önceki
-`[asmsense]` satırı güncellenir.
-
-Başta düzenlenebilen `EN_COK` ve `BAGLAM` seçeneklerine ek olarak headless
-çalıştırmada şu argümanlar kullanılabilir:
+`ad_ver.py`, `bicim.py` ve `uygulama.py` aynı Script Manager dizininde olmalı.
+Betikteki `SUNUCU` ve `MODEL` değerlerini yerel sunucuya göre ayarlayın.
+Kimlik bilgilerini betiğe yazmayın. Önce atılabilir bir projede kuru çalıştırın:
 
 ```text
---kuru | --uygula
---en-cok 10
---baglam | --baglamsiz
---istem=taban|sonraki|lora|lora-ad
+--kuru --en-cok 2 --baglam --istem=sonraki
 ```
 
-`--baglam`, çağrılan iç fonksiyonların `cikar.py` biçimindeki kısa özetlerini
-assembly'nin sonuna ekler. Yalnız x86-64 desteklenir. Dolaylı çağrılarda hedef
-Ghidra analizi tarafından çözülememişse import/iç fonksiyon adı da çözülemez.
-Kuru kip her fonksiyon için tahmini adı, açıklamayı ve bağlamın kesilip
-kesilmediğini konsola yazar.
+Sonuçları kontrol ettikten sonra `--uygula` kullanın. `YORUM_HEDEFI`:
+`ikisi`, `plate` veya `fonksiyon`. Eski LoRA kipleri `lora` ve `lora-ad`;
+`taban` genel model istemidir. Bu betik mevcut v6 eğitim hattının yerine geçmez.
+`GIRDI_KARAKTER_TAVANI` yaklaşık karakter sınırıdır; token garantisi değildir.
 
-Ghidra gerektirmeyen testler depo kökünden çalışır:
+## Yazma ve geri alma
 
-```bash
+Ad ve yorum aynı transaction içinde yazılır. Aynı sonuç yeniden yazılmaz.
+Yalnız `DuplicateNameException` tam 64 bit adres sonekiyle yeniden denenir.
+Her model yorum satırı `[asmsense] ` taşır; analist metni ve satır sonları korunur.
+Boş model açıklaması mevcut yorumu silmez. Yazma hatası veya iptal işleminde
+rollback yapılır ve betik durur. İç içe Ghidra transaction'ları bağımsız
+olmadığından **fonksiyon başına ayrı Undo adımı garanti edilmez**.
+Betik otomatik kaydetmez ve Undo geçmişini temizlemez.
+
+Dayanaklar: [adlandırma API'si](https://ghidra.re/ghidra_docs/api/ghidra/program/model/listing/Function.html#setName(java.lang.String,ghidra.program.model.symbol.SourceType)),
+[transaction sözleşmesi](https://ghidra.re/ghidra_docs/api/ghidra/framework/model/DomainObject.html#endTransaction(int,boolean)).
+
+## Otomatik testler
+
+```sh
+python3 -m pytest -q
 python3 -m unittest discover -s ghidra -p 'test_*.py'
 ```
 
-## Ghidra 12 (PyGhidra) ile deneme
+Normal CI Ghidra yüklemez. Birim testleri sahte program nesnelerini kullanır;
+CI'daki macOS link/strip testi de gerçek Ghidra duman testi değildir.
 
-Ghidra 12'de Jython yok; betik PyGhidra ile çalışır. Ghidra'nın kendi wheel'lerinden ayrı bir venv:
+## Elle koşulan isteğe bağlı gerçek Ghidra duman testi
 
-```bash
-python3.12 -m venv ~/ghidra-venv
-~/ghidra-venv/bin/pip install --no-index --find-links <ghidra>/Ghidra/Features/PyGhidra/pypkg/dist pyghidra
-source ~/ghidra-venv/bin/activate
-.venv/bin/python -m mlx_lm server --model mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit --adapter-path lora/adaptor-sonraki &
-<ghidra>/support/pyghidraRun --headless /tmp proje -import libtomlc17.dylib -deleteProject \
-  -scriptPath ghidra -postScript ad_ver.py --kuru --istem=sonraki \
-  --model=mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit --en-cok 100
+**Bu test CI'da koşmaz; elle koşulan isteğe bağlı bir testtir.**
+Linux x86-64, gcc/binutils, JDK 21 ve Ghidra 12.0/PyGhidra 3 ayrı ortamda gerekir.
+Ghidra kurulum yolunu `GHIDRA_INSTALL_DIR`, JDK yolunu `JAVA_HOME` ile belirtin.
+Ayrı ortamda Ghidra dağıtımındaki PyGhidra wheel'lerini kurduktan sonra:
+
+```sh
+python3 ghidra/duman_uygulama.py \
+  --ghidra-kurulum "$GHIDRA_INSTALL_DIR" --cikti ghidra-duman-sonuc.json
 ```
 
-`lora/adaptor-sonraki` örnek addır; `--adapter-path` için eğitilen ve sunucu
-biçimine dönüştürülen adaptörün gerçek dizinini kullanın.
-
-`--istem=sonraki` yeni ad + açıklama ve çağrı bağlamı adaptörünü hedefler.
-`--istem=lora` (eski ad + açıklama) ile `--istem=lora-ad` (yalnız ad) da LoRA'nın
-eğitildiği sistem istemini kullanır; `taban` büyük modeller içindir. `--model=`
-sunucuya hangi modelin sorulacağını seçer.
-
-İlk deneme (tomlc17, eğitimde görülmemiş test projesi, `-O2`, `strip -x`, 1.5B LoRA v3'ün 750. adım kaydı):
-67 `FUN_` parçası; `pool_destroy`, `pool_alloc`, `tab_find` tam isabet. Parçaların çoğu `-O2`'nin ayırdığı
-`.cold` dallarıdır (assert kolları); model bunlara ana fonksiyonun ya da `assert_rtn` adını veriyor.
-22 parçada ad yerine girdideki `sub_XXXX` yer tutucusunu kopyaladı (erken kayıt).
-
-## Toplu decompile ölçümü
-
-`cikar_bin.py --ikili-sakla DIZIN`, her proje/opt için stripped dylib ile satır
-kimliğini başlangıç adresi ve boyuta bağlayan JSONL dosyasını yazar. Bu artefaktlar
-PyGhidra ile toplu olarak decompile edilebilir:
-
-```bash
-~/araclar/ghidra-venv/bin/python decompile_ghidra.py veri/bin/decompile-ikili \
-  --idler lora/test_sabit_idler.txt -o veri/decompile/test2000.jsonl --devam
-python3 taban.py veri/bin/olcek/test.jsonl --idler lora/test_sabit_idler.txt \
-  --decompile veri/decompile/test2000.jsonl --girdi decompile -m mimo-v2.6-pro --kuru
-```
-
-Ghidra dağıtımında çalışılan platformun native `decompile` dosyası yoksa yerelde
-derlenmiş yürütülebilir `--decompiler YOL` ile verilebilir. Betik proje-içi işlev
-ve veri sembollerini anonimleştirir, Mach-O importlarını ve string sabitlerini
-korur; ham sözde kodda hedef adı görülen satırı `sizinti: true` işaretler.
+Betik kendi sentetik C kaynağını derler, strip uygular ve geçici ProgramDB açar.
+Mevcut proje/benchmark girdisi kabul etmez. Yazma, tekrar çalıştırma, Undo/Redo,
+hata ve iptal rollback'i denetlenir; geçici proje otomatik temizlenir.
+Model sunucusu ve GUI akışı bu testin kapsamı dışındadır.
+Bu belge düzeltmesinde gerçek duman testi yeniden çalıştırılmadı (`not run`).
+Kaynak kimlikleri ve kapsam [GHIDRA_KANIT.json](../rapor/arastirma/GHIDRA_KANIT.json) içindedir.

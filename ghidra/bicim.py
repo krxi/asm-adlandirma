@@ -81,12 +81,27 @@ def model_girdisi(asm, baglam, karakter_tavan=9000):
 
 
 def model_yorumu_birlestir(eski, aciklama, on_ek="[asmsense] "):
-    """Analist yorumlarını koruyup önceki model satırını yenisiyle değiştir."""
-    satirlar = [satir for satir in metin(eski).splitlines()
-                if not satir.startswith(on_ek)]
-    yeni = on_ek + metin(aciklama).strip()
-    satirlar.append(yeni)
-    return "\n".join(satirlar).strip()
+    """İşaretli model satırlarını yenile; analistin metin ve satır sonlarını koru."""
+    eski, aciklama = metin(eski), metin(aciklama).strip()
+    if not aciklama:
+        return eski
+
+    satirlar = eski.splitlines(True)
+    satir_sonu = "\n"
+    for satir in satirlar:
+        if satir.endswith("\r\n"):
+            satir_sonu = "\r\n"
+            break
+        if satir.endswith(("\n", "\r")):
+            satir_sonu = satir[-1]
+            break
+    kalan = "".join(satir for satir in satirlar if not satir.startswith(on_ek))
+    if kalan and not kalan.endswith(("\n", "\r")):
+        kalan += satir_sonu
+    # Her satır işaretli olsun; önceki sürümden kalmış işaretsiz devam
+    # satırının modelden geldiğini tahmin ederek analist notu silmeyiz.
+    yeni = satir_sonu.join(on_ek + satir for satir in aciklama.splitlines())
+    return kalan + yeni
 
 
 def islenenleri_temizle(islenenler):
