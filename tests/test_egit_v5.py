@@ -236,6 +236,55 @@ def test_notebook_kod_hucreleri_gecerli():
             assert not hucre["outputs"]
 
 
+
+def test_colab_motoru_molab_ile_ayni():
+    notebook = json.loads((KOK / "colab/egit_sonraki.ipynb").read_text())
+    motor = ast.parse("".join(notebook["cells"][5]["source"]))
+    assert ast.dump(motor) == ast.dump(molab_kaynagi())
+
+
+@pytest.fixture
+def colab_ortami(monkeypatch):
+    for ad in ("VERI_SURUM", "VERI_URL", "HF_REPO", "MODEL", "ASM_KOK", "DRIVE_KOK",
+               "MIKRO_BATCH", "GRAD_CKPT", "DEVAM", "MAX_ADIM", "HF_TOKEN"):
+        monkeypatch.delenv(ad, raising=False)
+    monkeypatch.setenv("HF_TOKEN", "hf_test")
+    notebook = json.loads((KOK / "colab/egit_sonraki.ipynb").read_text())
+    ayarlar = ast.parse("".join(notebook["cells"][3]["source"]))
+    # Drive ve secrets API'sini çağırmadan gerçek notebook varsayılanlarını çalıştır.
+    govde = [n for n in ayarlar.body if isinstance(n, ast.Assign) or (
+        isinstance(n, ast.Expr) and isinstance(n.value, ast.Call)
+        and ast.unparse(n.value.func) == "os.environ.setdefault"
+    )]
+    return compile(ast.Module(body=govde, type_ignores=[]), "colab-ayarlar", "exec")
+
+
+@pytest.mark.parametrize("surum", ["v5", "v6"])
+def test_colab_surumu_yollari_ve_molab_hiperparametreleri(yardimci, colab_ortami, monkeypatch, surum):
+    if surum == "v5":
+        monkeypatch.setenv("VERI_SURUM", surum)
+    exec(colab_ortami, {"os": os})
+    ayar = yardimci["egitim_ayarlari"]("colab")
+    assert ayar["surum"] == surum
+    assert ayar["repo"] == f"krxi123/asmsense-lora-{surum}"
+    assert ayar["veri_url"] == f"https://github.com/krxi/asmsense-data/releases/download/{surum}/veri-{surum}.zip"
+    assert ayar["kok"].name == f"asm-{surum}-Qwen3-8B"
+    assert str(ayar["drive"]).endswith(f"asm-adlandirma-{surum}/Qwen3-8B")
+    assert ayar["model"] == "Qwen/Qwen3-8B"
+    assert ayar["mikro"] == 2 and not ayar["grad_ckpt"]
+    assert ayar["max_adim"] == 20 and not ayar["devam"]
+
+
+def test_colab_devam_ortam_ayarlarini_korur(yardimci, colab_ortami, monkeypatch):
+    for ad, deger in (("MAX_ADIM", "0"), ("DEVAM", "1"), ("MIKRO_BATCH", "1"), ("GRAD_CKPT", "1"),
+                      ("MODEL", "Qwen/Qwen3.5-9B"), ("HF_REPO", "test/asmsense-v6-9b")):
+        monkeypatch.setenv(ad, deger)
+    exec(colab_ortami, {"os": os})
+    ayar = yardimci["egitim_ayarlari"]("colab")
+    assert ayar["devam"] and ayar["max_adim"] == 0
+    assert ayar["model"] == "Qwen/Qwen3.5-9B" and ayar["repo"] == "test/asmsense-v6-9b"
+    assert ayar["mikro"] == 1 and ayar["grad_ckpt"]
+
 def test_hf_paketi_adaptor_ve_tam_durumu_ayirir(yardimci, tmp_path):
     kaynak, paket = tmp_path / "checkpoint-500", tmp_path / "paket"
     kaynak.mkdir()

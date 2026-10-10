@@ -237,6 +237,14 @@ python3 cikar_bin.py --projeler projeler.json zlib lua tomlc17   # → veri/bin/
 python3 -m unittest test_cikar_bin
 ```
 
+Offline regression tests run with `python3 -m pytest -q`. The archived benchmark
+report freshness check is excluded by default: it re-scores real historical
+predictions, although it performs no model inference. At publication time,
+explicitly opt in on a clean checkout using
+`ASMSENSE_ARCHIVE_REPORT=1 python3 -m pytest -q tests/test_olcum_hatti.py::test_rapor_guncel`.
+This check requires the exact known missing-target counts; it does not authorize
+new benchmark runs or use test results for model selection.
+
 Distillation (a one-sentence description from a teacher model with access to source code):
 
 ```bash
