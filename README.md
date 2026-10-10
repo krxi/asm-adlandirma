@@ -6,7 +6,7 @@
 
 ## Current status
 
-The v4 dataset contains 228,177 functions from 341 projects across 5 optimization levels and is published on [Hugging Face](https://huggingface.co/datasets/krxi123/asm-adlandirma) under the `v4` config. The Ghidra script is ready. The best small model so far, Qwen3-8B + LoRA trained on the v5 data (description first, then name), reaches name F1 0.124 on the fixed v4 test sample and 0.155 on `eval_115`; the best large model with call context scores 0.167 on the same test sample. See Results, section 6. The model writes an English and a Turkish one-sentence description along with the name.
+The v4 dataset contains 228,177 functions from 341 projects across 5 optimization levels and is published on [Hugging Face](https://huggingface.co/datasets/krxi123/asm-adlandirma) under the `v4` config. The Ghidra script is ready. The best small model so far, Qwen3-8B + LoRA trained on the v5 data (description first, then name), reaches name F1 0.124 on the fixed v4 test sample and 0.155 on `eval_115`; the best large model with call context scores 0.167 on the same test sample. See Results, section 6. The model writes an English and a Turkish one-sentence description along with the name. The adapter is on Hugging Face: [krxi123/asm-adlandirma-qwen3-8b-lora](https://huggingface.co/krxi123/asm-adlandirma-qwen3-8b-lora).
 
 Open a stripped program in Ghidra or IDA and you will see hundreds of functions named `FUN_00401a30`. Much of reverse engineering consists of understanding and naming these functions one by one. This project aims to teach a model that first step:
 
@@ -200,7 +200,8 @@ The first zlib evaluation (v1, 60 functions) used a simpler data pipeline that i
 - [ ] Ghidra script: rename `FUN_…` functions with the local model and add descriptions (script ready: [ghidra/](ghidra/README.md); successfully ran end-to-end in Ghidra 12 headless, dry-run mode)
 
 **5. Release**
-- [ ] Publish the model and a comparative write-up
+- [x] Publish the model: [krxi123/asm-adlandirma-qwen3-8b-lora](https://huggingface.co/krxi123/asm-adlandirma-qwen3-8b-lora) (LoRA adapter for Qwen3-8B)
+- [ ] Comparative write-up
 
 ## Run it yourself
 

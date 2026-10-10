@@ -6,7 +6,7 @@
 
 ## Güncel durum
 
-v4 veri seti, 5 optimizasyon seviyesinde 341 projeden 228.177 fonksiyon içeriyor ve [Hugging Face'te](https://huggingface.co/datasets/krxi123/asm-adlandirma) `v4` config'iyle yayımlanıyor. Ghidra betiği hazır. Şimdiye kadarki en iyi küçük model, v5 verisiyle (önce açıklama, sonra ad) eğitilen Qwen3-8B + LoRA: sabit v4 test örnekleminde ad F1 0.124, `eval_115`'te 0.155; çağrı bağlamı verilen en iyi büyük model aynı test örnekleminde 0.167. Bkz. Sonuçlar, bölüm 6. Model adla birlikte tek cümlelik İngilizce ve Türkçe açıklama yazıyor.
+v4 veri seti, 5 optimizasyon seviyesinde 341 projeden 228.177 fonksiyon içeriyor ve [Hugging Face'te](https://huggingface.co/datasets/krxi123/asm-adlandirma) `v4` config'iyle yayımlanıyor. Ghidra betiği hazır. Şimdiye kadarki en iyi küçük model, v5 verisiyle (önce açıklama, sonra ad) eğitilen Qwen3-8B + LoRA: sabit v4 test örnekleminde ad F1 0.124, `eval_115`'te 0.155; çağrı bağlamı verilen en iyi büyük model aynı test örnekleminde 0.167. Bkz. Sonuçlar, bölüm 6. Model adla birlikte tek cümlelik İngilizce ve Türkçe açıklama yazıyor. Adaptör Hugging Face'te: [krxi123/asm-adlandirma-qwen3-8b-lora](https://huggingface.co/krxi123/asm-adlandirma-qwen3-8b-lora).
 
 Ghidra ya da IDA ile stripped bir programı açtığınızda yüzlerce `FUN_00401a30` görürsünüz. Tersine mühendisliğin büyük kısmı, bunların ne iş yaptığını tek tek anlayıp adlandırmaktır. Bu proje o ilk adımı bir modele öğretmeyi amaçlıyor:
 
@@ -200,7 +200,8 @@ Kırılım: [rapor/MOLAB_V5_KIRILIM.md](rapor/MOLAB_V5_KIRILIM.md); öğretmen e
 - [ ] Ghidra betiği: `FUN_…` fonksiyonlarını yerel modelle adlandırıp açıklama yazar (betik hazır: [ghidra/](ghidra/README.md); Ghidra 12 headless'ta uçtan uca çalıştı, kuru kip)
 
 **5. Yayın**
-- [ ] Modelin açık yayını ve karşılaştırma yazısı
+- [x] Modeli yayımla: [krxi123/asm-adlandirma-qwen3-8b-lora](https://huggingface.co/krxi123/asm-adlandirma-qwen3-8b-lora) (Qwen3-8B için LoRA adaptörü)
+- [ ] Karşılaştırmalı yazı
 
 ## Kendiniz çalıştırın
 
