@@ -1,6 +1,6 @@
-"""Ölçüm hattı: test_seti.py → taban.py (model çağrısı sahte) → ozet.py, örnek veri üzerinde."""
+"""Ölçüm hattı: sentetik model testleri ve arşivlenmiş gerçek sonuçların rapor denetimi."""
 
-import json, subprocess, sys
+import json, re, subprocess, sys
 from pathlib import Path
 
 import pytest
@@ -31,12 +31,10 @@ def test_test_seti_sizintisiz_ve_sinirli(ornek_kok):
         sayi[(r["proje"], r["opt"])] = sayi.get((r["proje"], r["opt"]), 0) + 1
     assert max(sayi.values()) <= 3
     assert {p for p, _ in sayi} == {"tomlc17", "picomatch"}
-    # Belirlenimci: aynı tohum aynı seti verir.
     assert [r["id"] for r in olcum_seti(ornek_kok, k=3)] == [r["id"] for r in secilen]
 
 
 def sahte_sor(model, asm, dusunme=False, tavan=4096, baglam=False):
-    # Gerçek adı asm'den bilemeyen "model": bağlam görürse "toml_parse", görmezse "parse_value" döner.
     ad = "parse_value" if "--- çağrılan fonksiyonlar ---" not in asm else "toml_parse"
     return {"ad": ad, "aciklama": "sahte", "token": 10, "bitis": "stop"}
 
@@ -71,7 +69,6 @@ def test_taban_devam_saglam_satirlari_korur(ornek_kok, monkeypatch):
     taban.main()
     yol = ornek_kok / "sonuc" / "test-sahte.jsonl"
     satirlar = oku_jsonl(yol)
-    # Bir satırı HATA'ya çevir; --devam yalnız onu yeniden sormalı.
     satirlar[0]["aciklama"] = "HATA: zaman aşımı"
     yol.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in satirlar))
     sorulan = []
@@ -89,8 +86,7 @@ def test_taban_idler_dosya_sirasini_korur_ve_n_yok_sayar(ornek_kok, monkeypatch)
     idler.write_text("\n".join(sira) + "\n")
     monkeypatch.chdir(ornek_kok)
     monkeypatch.setattr(taban, "sor", sahte_sor)
-    monkeypatch.setattr(sys, "argv", ["taban.py", "veri/test.jsonl", "-n", "1", "-m", "sahte",
-                                       "--idler", str(idler)])
+    monkeypatch.setattr(sys, "argv", ["taban.py", "veri/test.jsonl", "-n", "1", "-m", "sahte", "--idler", str(idler)])
     taban.main()
     sonuc = oku_jsonl(ornek_kok / "sonuc" / f"test{len(sira)}-sahte.jsonl")
     assert [r["id"] for r in sonuc] == sira
@@ -102,8 +98,7 @@ def test_taban_kuru_istek_atmaz_ve_token_tahmini_yazar(ornek_kok, monkeypatch, c
     idler.write_text(secilen[0]["id"] + "\n")
     monkeypatch.chdir(ornek_kok)
     monkeypatch.setattr(taban, "sor", lambda *a, **k: pytest.fail("kuru kip istek atmamalı"))
-    monkeypatch.setattr(sys, "argv", ["taban.py", "veri/test.jsonl", "--idler", str(idler),
-                                       "--baglam", "--kuru"])
+    monkeypatch.setattr(sys, "argv", ["taban.py", "veri/test.jsonl", "--idler", str(idler), "--baglam", "--kuru"])
     taban.main()
     cikti = capsys.readouterr().out
     assert "tahmini toplam girdi tokenı" in cikti
@@ -134,7 +129,6 @@ def test_taban_oneksiz_iki_f1(ornek_kok, monkeypatch, capsys):
     import ozet
 
     monkeypatch.setattr(ozet, "ONEK", {"tomlc17": {"toml"}, "picomatch": {"pm"}})
-    # Model gerçek adı öneksiz biliyor: gerçek ad F1 < 1, öneksiz F1 = 1 olmalı.
     gercek = {r["asm"]: r["ad"] for r in secilen}
     monkeypatch.setattr(
         taban,
@@ -178,7 +172,6 @@ def test_iki_f1_oneksiz_hedefi_yakalar_ve_gercek_adla_puanlar(ornek_kok, monkeyp
         if r["ad"].startswith("toml_")
     )
     oneksiz = satir["ad"][len("toml_") :]
-    # Hedefi öneksiz yazılmış bir LoRA koşusu: dosyadaki f1 = 1, ama gerçek ad F1 < 1.
     kayit = {"id": satir["id"], "gercek": oneksiz, "tahmin": oneksiz, "f1": 1.0, "opt": satir["opt"]}
     p = iki_f1.puanla([kayit], adlar)
     assert p["hedef_farkli"] == 1 and p["bilinmeyen"] == 0 and p["kayitli_uyumsuz"] == 0
@@ -203,12 +196,218 @@ def test_iki_f1_rapor(ornek_kok, monkeypatch):
     assert "## Önek tanımları test projelerinde" in md
 
 
+# Yalnız Git'te bulunmayan v4 ham hedeflerine ait mevcut koşular.
+# İzin sayıları çıktıdan veya bozulan hedef okuyucusundan türetilmez.
+TEMIZ_CHECKOUT_EKSIK = {
+    "valid300-molab-qwen3-8b-v5": 300,
+    "sabit500-lora15-v3-baglam-ozet": 500,
+    "sabit500-lora15-v3-baglam-yok": 500,
+    "test2000-deepseek-v4.1-flash-baglam": 2000,
+    "test2000-mimo-v2.6-pro-baglam": 2000,
+    "test2000-mimo-v2.6-pro-baglam-ikisi": 2000,
+    "test2000-mimo-v2.6-pro-decompile": 2000,
+    "test2000-molab-qwen3-8b": 2000,
+    "test2000-molab-qwen3-8b-v5": 2000,
+}
+RAPOR_BASLIK = (
+    "| koşu | n | gerçek ad F1 (-O0 / -O2 / hepsi) | öneksiz F1 (-O0 / -O2 / hepsi) | fark | "
+    "tam isabet gerçek / öneksiz | dosyadaki f1 | hedef |"
+)
+RAPOR_AYRAC = "|---|---:|---|---|---:|---|---:|---|"
+
+
+def bilinmeyenleri_dogrula(sonuclar, izinli):
+    """Yapılandırılmış sayaçlar: izin dışı her koşuda tam hedef kapsamı gerekir."""
+    for kosu, sonuc in sonuclar.items():
+        eksik = sonuc["bilinmeyen"]
+        beklenen = izinli.get(kosu, 0)
+        assert type(eksik) is int and eksik == beklenen, (
+            f"{kosu}: bilinmeyen={eksik}, beklenen={beklenen}; hedef okuyucusunu/veriyi denetleyin"
+        )
+
+
+def rapor_karsilastirma_metni(md, izinli=None):
+    """Yalnız adı ve sayısı açıkça izinli uyarı ile fark sütunundaki işaretli sıfırı kaldır."""
+    izinli = {} if izinli is None else izinli
+    satirlar = md.splitlines(keepends=True)
+    for i, satir in enumerate(satirlar[:-1]):
+        if satir.rstrip("\n") != RAPOR_BASLIK or satirlar[i + 1].rstrip("\n") != RAPOR_AYRAC:
+            continue
+        for j in range(i + 2, len(satirlar)):
+            if not satirlar[j].startswith("|"):
+                break
+            hucreler = satirlar[j].split("|")
+            if len(hucreler) != 10 or hucreler[0] or hucreler[-1] not in ("", "\n"):
+                continue
+            if hucreler[5] == " -0.000 ":
+                hucreler[5] = " +0.000 "
+            eslesme = re.fullmatch(
+                r"( gerçek ad| \*\*[1-9][0-9]* satırda öneksiz\*\*), ([1-9][0-9]*) id veri/'de yok ",
+                hucreler[8],
+            )
+            if eslesme and izinli.get(hucreler[1].strip()) == int(eslesme.group(2)):
+                hucreler[8] = eslesme.group(1) + " "
+            satirlar[j] = "|".join(hucreler)
+    return "".join(satirlar)
+
+
+def ornek_f1_raporu(hucreler=None):
+    if hucreler is None:
+        hucreler = [
+            "ornek-kosu",
+            "4",
+            "0.250 / 0.250 / 0.250",
+            "0.250 / 0.250 / 0.250",
+            "+0.000",
+            "1 / 1",
+            "0.250",
+            "gerçek ad",
+        ]
+    return "\n".join(
+        ["# Sentetik rapor", "", RAPOR_BASLIK, RAPOR_AYRAC, "| " + " | ".join(hucreler) + " |", "", "Dipnot.", ""]
+    )
+
+
+@pytest.mark.parametrize("hedef", ["gerçek ad", "**2 satırda öneksiz**"])
+@pytest.mark.parametrize("fark", ["+0.000", "-0.000"])
+def test_rapor_normalizasyonu_yalniz_tasinabilir_farklari_yoksayar(hedef, fark):
+    beklenen = ornek_f1_raporu().replace("gerçek ad |", hedef + " |")
+    uretilen = beklenen.replace("| +0.000 |", "| " + fark + " |")
+    uretilen = uretilen.replace(hedef + " |", hedef + ", 4 id veri/'de yok |")
+    assert rapor_karsilastirma_metni(uretilen, {"ornek-kosu": 4}) == rapor_karsilastirma_metni(beklenen)
+
+
+@pytest.mark.parametrize("kosu,sayi", [("ornek-kosu", 3), ("ornek-kosu", 5), ("baska-kosu", 4)])
+def test_izin_disindaki_eksik_hedef_gizlenmez(kosu, sayi):
+    beklenen = ornek_f1_raporu().replace("ornek-kosu", kosu)
+    uretilen = beklenen.replace("gerçek ad |", f"gerçek ad, {sayi} id veri/'de yok |")
+    assert rapor_karsilastirma_metni(uretilen, {"ornek-kosu": 4}) != rapor_karsilastirma_metni(beklenen)
+    with pytest.raises(AssertionError, match="bilinmeyen"):
+        bilinmeyenleri_dogrula({kosu: {"bilinmeyen": sayi}}, {"ornek-kosu": 4})
+
+
+def test_hedef_okuyucusunun_tamamen_bozulmasi_reddedilir():
+    import iki_f1
+
+    satir = {"id": "sentetik/a.c:-O0:tam:sub_0001:oku", "gercek": "oku", "tahmin": "oku", "opt": "-O0"}
+    sonuc = iki_f1.puanla([satir], {})
+    assert sonuc["bilinmeyen"] == 1
+    with pytest.raises(AssertionError, match="bilinmeyen"):
+        bilinmeyenleri_dogrula({"sentetik-tam-hedefli": sonuc}, TEMIZ_CHECKOUT_EKSIK)
+
+
+def test_izin_listesi_tam_sayiyi_ve_tam_kapsami_zorunlu_kilar():
+    assert len(TEMIZ_CHECKOUT_EKSIK) == 9
+    bilinmeyenleri_dogrula({"ornek": {"bilinmeyen": 0}}, {})
+    bilinmeyenleri_dogrula({"ornek": {"bilinmeyen": 4}}, {"ornek": 4})
+    for sayi in (0, 1, 3, 5, True):
+        with pytest.raises(AssertionError):
+            bilinmeyenleri_dogrula({"ornek": {"bilinmeyen": sayi}}, {"ornek": 4})
+
+
+@pytest.mark.parametrize(
+    "eski,yeni",
+    [
+        ("ornek-kosu", "baska-kosu"),
+        ("| 4 |", "| 5 |"),
+        ("0.250 / 0.250 / 0.250", "0.251 / 0.250 / 0.250"),
+        ("| +0.000 |", "| +0.001 |"),
+        ("| +0.000 |", "| -0.001 |"),
+        ("| 1 / 1 |", "| 2 / 1 |"),
+        ("| 0.250 |", "| 0.251 |"),
+        ("gerçek ad |", "**1 satırda öneksiz** |"),
+    ],
+)
+def test_rapor_normalizasyonu_gercek_sonuc_degisimini_korur(eski, yeni):
+    beklenen = ornek_f1_raporu()
+    degismis = beklenen.replace(eski, yeni, 1)
+    assert rapor_karsilastirma_metni(degismis) != rapor_karsilastirma_metni(beklenen)
+
+
+@pytest.mark.parametrize("sutun", [2, 3, 6])
+def test_rapor_normalizasyonu_diger_puan_hucrelerine_dokunmaz(sutun):
+    hucreler = [
+        "ornek-kosu",
+        "4",
+        "0.250 / 0.250 / 0.250",
+        "0.250 / 0.250 / 0.250",
+        "+0.000",
+        "1 / 1",
+        "0.250",
+        "gerçek ad",
+    ]
+    beklenen = ornek_f1_raporu(hucreler)
+    hucreler[sutun] = hucreler[sutun].replace("0.250", "0.251", 1)
+    assert rapor_karsilastirma_metni(ornek_f1_raporu(hucreler)) != rapor_karsilastirma_metni(beklenen)
+    hucreler[sutun] = "-0.000"
+    degismis = ornek_f1_raporu(hucreler)
+    assert rapor_karsilastirma_metni(degismis) == degismis
+
+
+@pytest.mark.parametrize(
+    "hedef",
+    [
+        "gerçek ad, 4 id veri/'de yok, beklenmedik uyarı",
+        "gerçek ad, dört id veri/'de yok",
+        "gerçek ad, 4 id veri'de yok",
+        "gerçek ad, 0 id veri/'de yok",
+        "gerçek ad, 04 id veri/'de yok",
+        "beklenmedik hedef, 4 id veri/'de yok",
+    ],
+)
+def test_rapor_normalizasyonu_beklenmedik_uyarilari_korur(hedef):
+    md = ornek_f1_raporu().replace("gerçek ad |", hedef + " |")
+    assert rapor_karsilastirma_metni(md, {"ornek-kosu": 4}) == md
+
+
+def test_rapor_normalizasyonu_tablo_disina_ve_sema_degisimine_dokunmaz():
+    md = ornek_f1_raporu().replace("| +0.000 |", "| -0.000 |")
+    md = md.replace("gerçek ad |", "gerçek ad, 4 id veri/'de yok |")
+    for degismis in (
+        md.replace(RAPOR_BASLIK, "| başka başlık |"),
+        md.replace(RAPOR_AYRAC, "|---|"),
+        md.replace("| ornek-kosu |", "| ek sütun | ornek-kosu |"),
+    ):
+        assert rapor_karsilastirma_metni(degismis, {"ornek-kosu": 4}) == degismis
+    dis_metin = "| -0.000 | gerçek ad, 4 id veri/'de yok |\n"
+    assert rapor_karsilastirma_metni(dis_metin) == dis_metin
+    md = ornek_f1_raporu().replace("Dipnot.", dis_metin)
+    assert rapor_karsilastirma_metni(md) == md
+
+
+@pytest.mark.parametrize("degisiklik", ["satir_sil", "satir_ekle", "sutun_sil", "dipnot"])
+def test_rapor_normalizasyonu_eski_raporu_yakalar(degisiklik):
+    beklenen = ornek_f1_raporu()
+    satir = next(s for s in beklenen.splitlines(keepends=True) if s.startswith("| ornek-kosu |"))
+    if degisiklik == "satir_sil":
+        degismis = beklenen.replace(satir, "")
+    elif degisiklik == "satir_ekle":
+        degismis = beklenen.replace(satir, satir + satir)
+    elif degisiklik == "sutun_sil":
+        degismis = beklenen.replace("| 1 / 1 |", "|")
+    else:
+        degismis = beklenen.replace("Dipnot.", "Değişmiş dipnot.")
+    assert rapor_karsilastirma_metni(degismis) != rapor_karsilastirma_metni(beklenen)
+
+
 def test_rapor_guncel(tmp_path):
-    """rapor/F1_IKI_TANIM.md, sonuc/ değişince `python3 iki_f1.py` ile yeniden üretilmeli."""
+    """Gerçek sonuc/*.jsonl arşivini yeniden puanlar; yeni model çıkarımı çalıştırmaz."""
+    import iki_f1
+
+    # Temiz, yalnız sürüm kontrollü veri içeren checkout; harici ham veriyi bu testin
+    # izinlerini kendiliğinden genişletmek için kullanmayın.
+    adlar = iki_f1.gercek_adlar(KOK / "veri")
+    sonuclar = {}
+    for yol in sorted((KOK / "sonuc").glob("*.jsonl")):
+        satirlar = oku_jsonl(yol)
+        if satirlar and "gercek" in satirlar[0]:
+            sonuclar[yol.stem] = iki_f1.puanla(satirlar, adlar)
+    bilinmeyenleri_dogrula(sonuclar, TEMIZ_CHECKOUT_EKSIK)
+    assert set(TEMIZ_CHECKOUT_EKSIK) <= set(sonuclar), "izin verilen bir arşiv koşusu kayıp"
     s = subprocess.run(
         [sys.executable, str(KOK / "iki_f1.py"), "-o", str(tmp_path / "r.md")], cwd=KOK, capture_output=True, text=True
     )
     assert s.returncode == 0, s.stderr
-    assert (tmp_path / "r.md").read_text() == (KOK / "rapor" / "F1_IKI_TANIM.md").read_text(), (
-        "rapor eski: python3 iki_f1.py çalıştırın"
-    )
+    assert rapor_karsilastirma_metni((tmp_path / "r.md").read_text(), TEMIZ_CHECKOUT_EKSIK) == (
+        rapor_karsilastirma_metni((KOK / "rapor" / "F1_IKI_TANIM.md").read_text())
+    ), "rapor eski: python3 iki_f1.py çalıştırın"
