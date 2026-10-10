@@ -61,7 +61,7 @@ jne     loc_6
 | Training | zlib, libpng, sqlite, lua, mbedtls, zstd, libsodium, expat, brotli, jansson, lz4, libyaml, xxhash, cJSON | 16,804 |
 | Test (memorization-resistant) | tomlc17, cyaml, mu_json_x, sajs, picomatch | 777 → evaluation set 115 |
 
-The dataset is available on Hugging Face: [krxi123/asmsense](https://huggingface.co/datasets/krxi123/asmsense) (16,804 training examples, 777 test examples, the `eval_115` evaluation set, and license texts).
+The dataset is available on Hugging Face: [krxi123/asmsense](https://huggingface.co/datasets/krxi123/asmsense) (16,804 training examples, 777 test examples, the `eval_115` evaluation set, and license texts). It is also mirrored on Kaggle: [krxiii/asmsense](https://www.kaggle.com/datasets/krxiii/asmsense).
 
 ### Scaled dataset (v4 pipeline, 5 optimization levels)
 

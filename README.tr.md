@@ -61,7 +61,7 @@ jne     loc_6
 | Eğitim | zlib, libpng, sqlite, lua, mbedtls, zstd, libsodium, expat, brotli, jansson, lz4, libyaml, xxhash, cJSON | 16.804 |
 | Test (ezbere dayanıklı) | tomlc17, cyaml, mu_json_x, sajs, picomatch | 777 → ölçüm seti 115 |
 
-Veri seti Hugging Face'te: [krxi123/asmsense](https://huggingface.co/datasets/krxi123/asmsense) (eğitim 16.804, test 777, `eval_115` ölçüm seti, lisans metinleri dahil).
+Veri seti Hugging Face'te: [krxi123/asmsense](https://huggingface.co/datasets/krxi123/asmsense) (eğitim 16.804, test 777, `eval_115` ölçüm seti, lisans metinleri dahil). Kaggle'da da var: [krxiii/asmsense](https://www.kaggle.com/datasets/krxiii/asmsense).
 
 ### Ölçeklenmiş veri (v4 hattı, 5 optimizasyon seviyesi)
 
