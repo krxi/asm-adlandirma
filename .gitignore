@@ -12,6 +12,10 @@ veri/egitim/
 veri/kaynak/
 veri/aciklama/
 /veri/decompile/
+/veri/decompile-v6/
+/veri/decompile-v6-test2000/
+/veri/ikili-v6/
+/veri/olcek-v6/
 sonuc/*.ara
 sonuc/*BITTI
 lora/veri-*/

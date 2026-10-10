@@ -3,6 +3,7 @@
 
   python3 olcekle.py indir    --liste projeler.json .notlar/aday-projeler.json [--ad x y] [--pilot 20]
   python3 olcekle.py cikar    --liste ... [--pilot 20] [-j 3]
+    [--olcek-kok veri/bin/olcek-yeni] [--ikili-sakla veri/ikili-v6]
   python3 olcekle.py birlestir [--pilot]
 
 Çıktılar git dışında: veri/bin/olcek/ham/<rol>/<ad>.jsonl (proje başına), veri/bin/olcek/<rol>.jsonl
@@ -35,15 +36,10 @@ def listeyi_oku(yollar, adlar=None, pilot=None):
 
 
 def pilot_sec(projeler, n):
-    """Pilot: 3 mevcut proje + dağılımı yansıtan adaylar (eğitim/doğrulama/test, farklı boylar)."""
+    """Pilot: önce zlib/lua/tomlc17, sonra listedeki adaylar; tam ``n`` proje."""
     mevcut = [p for p in projeler if "kok" not in p and p["ad"] in ("zlib", "lua", "tomlc17")]
     aday = [p for p in projeler if "kok" in p]
-    test = [p for p in aday if p["rol"] == "test"][:5]
-    dog = [p for p in aday if p["rol"] == "dogrulama"][:2]
-    egit = sorted((p for p in aday if p["rol"] == "egitim"), key=lambda p: p.get("c_kb", 0))
-    kalan = n - len(mevcut) - len(test) - len(dog)
-    adim = max(1, len(egit) // max(1, kalan))
-    return mevcut + test + dog + egit[::adim][:kalan]
+    return (mevcut + aday)[:n]
 
 
 def kok(p):
@@ -94,12 +90,35 @@ def uretilmis_dosyalar(d, dosyalar, haric):
     return sonuc
 
 
-def cikar_tek(p, opts, taslak, sure):
+def cikar_tamam(cikti, ikili_sakla, proje, opts):
+    """Satır/rapor ve istenmişse her başarılı opt artefaktı varsa checkpoint tamamdır."""
+    rapor_yolu = cikti.with_suffix(".rapor.json")
+    if not cikti.exists() or not rapor_yolu.exists():
+        return False
+    if ikili_sakla is None:
+        return True
+    try:
+        rapor = json.loads(rapor_yolu.read_text())
+    except (OSError, json.JSONDecodeError):
+        return False
+    basarili = set(rapor.get("optimizasyonlar", {}))
+    istenen = set(opts.split(","))
+    denenmis = basarili | set(rapor.get("atlanan_opt", {}))
+    if denenmis != istenen:
+        return False
+    hedef = Path(ikili_sakla) / proje
+    return all((hedef / f"{opt.lstrip('-')}.dylib").is_file() and
+               (hedef / f"{opt.lstrip('-')}.jsonl").is_file() and
+               (hedef / f"{opt.lstrip('-')}.ithal.json").is_file()
+               for opt in basarili)
+
+
+def cikar_tek(p, opts, taslak, sure, olcek=OLCEK, ikili_sakla=None):
     d = kok(p)
     rol = p.get("rol", "egitim")
-    cikti = OLCEK / "ham" / rol / f"{p['ad']}.jsonl"
-    log = OLCEK / "log" / f"{p['ad']}.log"
-    if cikti.exists() and cikti.with_suffix(".rapor.json").exists():
+    cikti = olcek / "ham" / rol / f"{p['ad']}.jsonl"
+    log = olcek / "log" / f"{p['ad']}.log"
+    if cikar_tamam(cikti, ikili_sakla, p["ad"], opts):
         return p["ad"], "var", 0
     if not d.is_dir():
         return p["ad"], "kaynak yok", 0
@@ -108,7 +127,7 @@ def cikar_tek(p, opts, taslak, sure):
     if "kok" in p:                                       # aday: üretilmiş dosyaları ayıkla, uyumluluk bayrakları
         q["haric"] = list(p.get("haric", [])) + uretilmis_dosyalar(d, p.get("dosyalar", ["*.c"]), p.get("haric", []))
         q["bayraklar"] = list(p.get("bayraklar", [])) + UYUMLULUK + [f"-I{os.path.relpath(taslak.resolve(), d.resolve())}"]
-    tek = OLCEK / "liste" / f"{p['ad']}.json"
+    tek = olcek / "liste" / f"{p['ad']}.json"
     tek.parent.mkdir(parents=True, exist_ok=True)
     tek.write_text(json.dumps([q], ensure_ascii=False))
     cikti.parent.mkdir(parents=True, exist_ok=True)
@@ -116,8 +135,11 @@ def cikar_tek(p, opts, taslak, sure):
     bas = time.time()
     with log.open("w") as f:
         try:
-            r = subprocess.run([sys.executable, "cikar_bin.py", "--projeler", str(tek), p["ad"], "--kip", "tam",
-                                "--opts=" + opts, "--hosgoru", "--veri", str(cikti.parent)],
+            komut = [sys.executable, "cikar_bin.py", "--projeler", str(tek), p["ad"], "--kip", "tam",
+                     "--opts=" + opts, "--hosgoru", "--veri", str(cikti.parent)]
+            if ikili_sakla is not None:
+                komut += ["--ikili-sakla", str(ikili_sakla)]
+            r = subprocess.run(komut,
                                stdout=f, stderr=subprocess.STDOUT, timeout=sure)
             durum = "tamam" if r.returncode == 0 else f"hata ({r.returncode})"
         except subprocess.TimeoutExpired:
@@ -135,18 +157,18 @@ def normal_asm(asm):
     return hashlib.sha1(s.encode()).hexdigest()
 
 
-def birlestir(rol_sirasi=("test", "dogrulama", "egitim"), alt=None):
+def birlestir(rol_sirasi=("test", "dogrulama", "egitim"), alt=None, olcek=OLCEK):
     """Proje bazlı ayrım korunur. Normalize asm hash'i ile tekilleştirme:
     - aynı ayrım içinde ilk görülen tutulur,
     - doğrulama/test'teki bir hash eğitimde de varsa eğitimden çıkar (değerlendirme seti küçük ve değerli),
     - test ile doğrulama çakışırsa doğrulamadan çıkar,
     - doğrulama/test'te (dosya adı, fonksiyon adı) çifti eğitimde de varsa (vendored kopya) o satır çıkar."""
-    kaynak = OLCEK / "ham"
-    hedef = OLCEK if alt is None else OLCEK / alt
+    kaynak = olcek / "ham"
+    hedef = olcek if alt is None else olcek / alt
     satirlar = {r: [] for r in rol_sirasi}
     for rol in rol_sirasi:
         for f in sorted((kaynak / rol).glob("*.jsonl")) if (kaynak / rol).exists() else []:
-            if alt is not None and f.stem not in alt_projeler(alt):
+            if alt is not None and f.stem not in alt_projeler(alt, olcek):
                 continue
             satirlar[rol] += [json.loads(s) for s in f.open()]
     ham = {r: len(v) for r, v in satirlar.items()}
@@ -195,10 +217,10 @@ def birlestir(rol_sirasi=("test", "dogrulama", "egitim"), alt=None):
     return rapor
 
 
-def md_rapor(projeler, alt, yol):
+def md_rapor(projeler, alt, yol, olcek=OLCEK):
     """Proje bazlı durum, derleme oranı, elenen nedenleri, denetim ve örnek asm."""
-    durum = json.loads((OLCEK / "durum.json").read_text())
-    birlesik = json.loads(((OLCEK / alt) if alt else OLCEK).joinpath("rapor.json").read_text())
+    durum = json.loads((olcek / "durum.json").read_text())
+    birlesik = json.loads(((olcek / alt) if alt else olcek).joinpath("rapor.json").read_text())
     s = [f"# Ölçekleme raporu{' — pilot' if alt else ''}", "",
          f"Projeler: {len(projeler)}; opt: {OPTS}; kip: tam; hedef x86_64-apple-macos12, Apple clang. "
          "gcc: sistemde gerçek gcc yok (/usr/bin/gcc = clang), x86-64 Mach-O hedefleyen gcc kurulmadı.", "",
@@ -207,7 +229,7 @@ def md_rapor(projeler, alt, yol):
     toplam = Counter()
     for p in projeler:
         rol = p.get("rol", "egitim")
-        r_yol = OLCEK / "ham" / rol / f"{p['ad']}.rapor.json"
+        r_yol = olcek / "ham" / rol / f"{p['ad']}.rapor.json"
         d = durum.get(p["ad"], {})
         if not r_yol.exists():
             s.append(f"| {p['ad']} | {rol} | {p.get('lisans')} | {d.get('indir', '')} {d.get('cikar', 'yok')} | "
@@ -232,7 +254,7 @@ def md_rapor(projeler, alt, yol):
           "## Birleştirme (tekilleştirme + ayrım)", "", "```json",
           json.dumps(birlesik, ensure_ascii=False, indent=1), "```", "", "## Örnek satırlar", ""]
     for rol in ("egitim", "test"):
-        f = ((OLCEK / alt) if alt else OLCEK) / f"{rol}.jsonl"
+        f = ((olcek / alt) if alt else olcek) / f"{rol}.jsonl"
         if not f.exists():
             continue
         ornek = [json.loads(x) for x in f.open()]
@@ -246,8 +268,8 @@ def md_rapor(projeler, alt, yol):
     print(f"rapor → {yol}")
 
 
-def alt_projeler(alt):
-    return set(json.loads((OLCEK / alt / "projeler.json").read_text()))
+def alt_projeler(alt, olcek=OLCEK):
+    return set(json.loads((olcek / alt / "projeler.json").read_text()))
 
 
 def main():
@@ -258,16 +280,21 @@ def main():
     ap.add_argument("--ad", nargs="*")
     ap.add_argument("--pilot", type=int)
     ap.add_argument("--opts", default=OPTS)
+    ap.add_argument("--olcek-kok", type=Path, default=OLCEK,
+                    help="ham/log/liste/durum ve birleştirilmiş çıktı kökü")
+    ap.add_argument("--ikili-sakla", type=Path,
+                    help="stripped ikililer ile id-adres eşlemelerinin ayrı kökü")
     ap.add_argument("-j", type=int, default=3, help="aynı anda kaç proje")
     ap.add_argument("--sure", type=int, default=3600, help="proje başına saniye")
-    ap.add_argument("--min-disk", type=float, default=6.0, help="GB; altına inince yeni iş başlatma")
+    ap.add_argument("--min-disk", type=float, default=10.0, help="GB; altına inince yeni iş başlatma")
     a = ap.parse_args()
+    olcek = a.olcek_kok
     projeler = listeyi_oku(a.liste, a.ad, a.pilot)
     alt = "pilot" if a.pilot else None
     if alt:
-        (OLCEK / alt).mkdir(parents=True, exist_ok=True)
-        (OLCEK / alt / "projeler.json").write_text(json.dumps([p["ad"] for p in projeler]) + "\n")
-    durum_yolu = OLCEK / "durum.json"
+        (olcek / alt).mkdir(parents=True, exist_ok=True)
+        (olcek / alt / "projeler.json").write_text(json.dumps([p["ad"] for p in projeler]) + "\n")
+    durum_yolu = olcek / "durum.json"
     durum = json.loads(durum_yolu.read_text()) if durum_yolu.exists() else {}
 
     def kaydet():
@@ -281,7 +308,7 @@ def main():
                 print(f"indir {ad}: {s}", flush=True)
         kaydet()
     if a.adim in ("cikar", "hepsi"):
-        taslak = OLCEK / "taslak"                      # boş config.h: üretilmemiş yapılandırma başlığı
+        taslak = olcek / "taslak"                      # boş config.h: üretilmemiş yapılandırma başlığı
         taslak.mkdir(parents=True, exist_ok=True)
         for b in ("config.h",):
             (taslak / b).write_text("/* asmsense: boş yer tutucu */\n")
@@ -291,7 +318,8 @@ def main():
                 while disk_bos_gb() < a.min_disk:
                     print(f"disk {disk_bos_gb():.1f} GB < {a.min_disk}; bekleniyor", flush=True)
                     time.sleep(120)
-                isler[h.submit(cikar_tek, p, a.opts, taslak, a.sure)] = p
+                isler[h.submit(cikar_tek, p, a.opts, taslak, a.sure, olcek,
+                               a.ikili_sakla)] = p
             for i, f in enumerate(as_completed(isler), 1):
                 ad, s, sn = f.result()
                 durum.setdefault(ad, {})["cikar"] = s
@@ -299,9 +327,9 @@ def main():
                 print(f"[{i}/{len(isler)}] cikar {ad}: {s} ({sn} sn, disk {disk_bos_gb():.1f} GB)", flush=True)
                 kaydet()
     if a.adim in ("birlestir", "hepsi"):
-        print(json.dumps(birlestir(alt=alt), ensure_ascii=False, indent=1))
+        print(json.dumps(birlestir(alt=alt, olcek=olcek), ensure_ascii=False, indent=1))
     if a.adim in ("rapor", "hepsi"):
-        md_rapor(projeler, alt, a.rapor)
+        md_rapor(projeler, alt, a.rapor, olcek)
 
 
 if __name__ == "__main__":

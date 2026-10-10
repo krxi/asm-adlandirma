@@ -147,7 +147,12 @@ def sembol_haritasi(program, satirlar, izinli=()):
 def ithal_haritasi(ikili):
     """Mach-O stub/GOT adreslerini Ghidra'nın FUN_/DAT_ yazımlarından import adına bağla."""
     sonuc = {}
-    for adres, ad in MachO(ikili).ithaller().items():
+    yan_dosya = Path(ikili).with_suffix(".ithal.json")
+    if yan_dosya.is_file():
+        ham = {int(adres, 0): ad for adres, ad in json.loads(yan_dosya.read_text()).items()}
+    else:
+        ham = MachO(ikili).ithaller()
+    for adres, ad in ham.items():
         for on_ek in ("FUN", "DAT", "PTR"):
             for genislik in (0, 8, 16):
                 sayi = f"{adres:x}" if not genislik else f"{adres:0{genislik}x}"

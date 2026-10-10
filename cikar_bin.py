@@ -452,13 +452,14 @@ def sizinti_kontrolu(satirlar, gercekler, exportlar, ithaller):
     return {"beklenmeyen_semboller": ihlal, "adres_bicim_ihlalleri": yapisal}
 
 
-def ikili_artefaktlarini_yaz(dizin, proje, opt, stripped, satirlar):
-    """Stripped ikiliyi ve satir -> ikili adresi eslemesini atomik olarak sakla."""
+def ikili_artefaktlarini_yaz(dizin, proje, opt, stripped, satirlar, ithaller=None):
+    """Stripped ikiliyi, satır-adres eşlemesini ve import haritasını atomik sakla."""
     hedef = Path(dizin) / proje
     hedef.mkdir(parents=True, exist_ok=True)
     govde = opt.lstrip("-")
     ikili = hedef / f"{govde}.dylib"
     esleme = hedef / f"{govde}.jsonl"
+    ithal_yolu = hedef / f"{govde}.ithal.json"
     with tempfile.NamedTemporaryFile(dir=hedef, delete=False) as f:
         ara_ikili = Path(f.name)
     try:
@@ -475,6 +476,16 @@ def ikili_artefaktlarini_yaz(dizin, proje, opt, stripped, satirlar):
             ara_esleme.replace(esleme)
         finally:
             ara_esleme.unlink(missing_ok=True)
+    with tempfile.NamedTemporaryFile(mode="w", dir=hedef, delete=False, encoding="utf-8") as f:
+        ara_ithal = Path(f.name)
+        try:
+            json.dump({str(adres): ad for adres, ad in (ithaller or {}).items()}, f,
+                      ensure_ascii=False, sort_keys=True)
+            f.write("\n")
+            f.close()
+            ara_ithal.replace(ithal_yolu)
+        finally:
+            ara_ithal.unlink(missing_ok=True)
 
 
 def cikar(kok, cikti, dosyalar=("*.c",), haric=(), bayraklar=(), proje=None, surum=None,
@@ -630,7 +641,8 @@ def cikar(kok, cikti, dosyalar=("*.c",), haric=(), bayraklar=(), proje=None, sur
                     "dosya_ofseti": m.kod[0].ofset + a - m.kod[0].adres,
                     "kimlik": r["kimlik"]})
         if ikili_sakla is not None:
-            ikili_artefaktlarini_yaz(ikili_sakla, proje, opt, stripped, ikili_esleme)
+            ikili_artefaktlarini_yaz(
+                ikili_sakla, proje, opt, stripped, ikili_esleme, ithaller)
         rapor["optimizasyonlar"][opt] = bilgi
         print(f"{proje} {opt}: {len(baslar)} sınır, {bilgi['eslesen']} ad eşleşti; "
               f"{len(veriler)} veri bölgesi/{bilgi['atlanan_veri_bayti']} bayt atlandı"

@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from cikar_bin import ikili_artefaktlarini_yaz
-from decompile_ghidra import anonimlestir_decompile, eslemeleri_oku
+from decompile_ghidra import anonimlestir_decompile, eslemeleri_oku, ithal_haritasi
 from taban import model_girdisi
 
 
@@ -44,13 +44,17 @@ def test_ikili_sakla_ve_esleme_yolu(tmp_path):
     satir = {"id": "p/a.c:-O0:tam:sub_0001:f", "proje": "p", "opt": "-O0",
              "adres": 0x1000, "boyut": 17, "dosya_ofseti": 512, "kimlik": "sub_0001"}
     hedef = tmp_path / "ikili"
-    ikili_artefaktlarini_yaz(hedef, "p", "-O0", stripped, [satir])
+    ikili_artefaktlarini_yaz(hedef, "p", "-O0", stripped, [satir], {0x2000: "puts"})
     assert (hedef / "p" / "O0.dylib").read_bytes() == b"stripped"
     kayit = json.loads((hedef / "p" / "O0.jsonl").read_text())
     assert kayit == {**satir, "ikili": "O0.dylib"}
+    assert json.loads((hedef / "p" / "O0.ithal.json").read_text()) == {"8192": "puts"}
     gruplar = eslemeleri_oku(hedef, [satir["id"]])
     assert list(gruplar) == [(hedef / "p" / "O0.dylib").resolve()]
     assert list(gruplar.values())[0][0]["adres"] == 0x1000
+    harita = ithal_haritasi(hedef / "p" / "O0.dylib")
+    assert harita["FUN_2000"] == "puts"
+    assert harita["DAT_0000000000002000"] == "puts"
 
 
 @pytest.mark.parametrize(
