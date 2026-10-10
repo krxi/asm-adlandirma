@@ -1,6 +1,6 @@
 """Ölçüm hattı: sentetik model testleri ve arşivlenmiş gerçek sonuçların rapor denetimi."""
 
-import json, re, subprocess, sys
+import json, os, re, subprocess, sys
 from pathlib import Path
 
 import pytest
@@ -390,6 +390,10 @@ def test_rapor_normalizasyonu_eski_raporu_yakalar(degisiklik):
     assert rapor_karsilastirma_metni(degismis) != rapor_karsilastirma_metni(beklenen)
 
 
+@pytest.mark.skipif(
+    os.environ.get("ASMSENSE_ARCHIVE_REPORT") != "1",
+    reason="Archived benchmark rescoring is an explicit publication check, not a unit test",
+)
 def test_rapor_guncel(tmp_path):
     """Gerçek sonuc/*.jsonl arşivini yeniden puanlar; yeni model çıkarımı çalıştırmaz."""
     import iki_f1
@@ -411,3 +415,12 @@ def test_rapor_guncel(tmp_path):
     assert rapor_karsilastirma_metni((tmp_path / "r.md").read_text(), TEMIZ_CHECKOUT_EKSIK) == (
         rapor_karsilastirma_metni((KOK / "rapor" / "F1_IKI_TANIM.md").read_text())
     ), "rapor eski: python3 iki_f1.py çalıştırın"
+
+
+@pytest.mark.parametrize("kayitli,uyumsuz", [(1 / 3, 0), (0.333, 0), (0.334, 1)])
+def test_iki_f1_kayitli_puan_hassasiyeti(kayitli, uyumsuz):
+    import iki_f1
+
+    r = {"id": "sentetik", "gercek": "a_b_c_d", "tahmin": "a_e", "opt": "-O0", "f1": kayitli}
+    sonuc = iki_f1.puanla([r], {"sentetik": r["gercek"]})
+    assert sonuc["kayitli_uyumsuz"] == uyumsuz
