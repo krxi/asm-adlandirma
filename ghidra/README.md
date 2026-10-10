@@ -31,7 +31,7 @@ sınırıdır. Sınır aşılırsa önce çağrı bağlamı kısaltılır ve gir
 `; ... bağlam kesildi` satırı eklenir. `YORUM_HEDEFI`, açıklamanın `"ikisi"`,
 `"plate"` veya `"fonksiyon"` hedeflerinden hangilerine yazılacağını seçer.
 Her iki yorum türünde analist satırları korunur ve yalnız önceki
-`[asm-adlandirma]` satırı güncellenir.
+`[asmsense]` satırı güncellenir.
 
 Başta düzenlenebilen `EN_COK` ve `BAGLAM` seçeneklerine ek olarak headless
 çalıştırmada şu argümanlar kullanılabilir:

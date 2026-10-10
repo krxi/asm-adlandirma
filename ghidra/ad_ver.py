@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-#@category asm-adlandirma
-#@menupath Tools.asm-adlandirma.Fonksiyonlara Ad Ver
+#@category asmsense
+#@menupath Tools.asmsense.Fonksiyonlara Ad Ver
 """Stripped x86-64 fonksiyonlarını yerel bir OpenAI uyumlu modelle adlandır."""
 from __future__ import print_function, unicode_literals
 
@@ -46,7 +46,7 @@ SISTEM_BAGLAM = SISTEM + " Çağrılan iç fonksiyonların özetleri asm'nin alt
 # lora/hazirla.py ile aynı tutulur: LoRA'lar bu istemlerle, bağlam cümlesi olmadan eğitildi.
 SISTEM_LORA_AD = SISTEM.rsplit("Yalnız JSON", 1)[0] + 'Yalnız JSON dön: {"ad": "fonksiyon_adi"}'
 SISTEM_LORA = SISTEM_LORA_AD[:-1] + ', "aciklama": "tek cümle Türkçe"}'
-YORUM_ON_EKI = "[asm-adlandirma] "
+YORUM_ON_EKI = "[asmsense] "
 
 
 def yineleyici(java_yineleyici):
@@ -266,7 +266,7 @@ def fonksiyon_yorumu_yaz(fonksiyon, aciklama):
 
 
 def uygula(program, fonksiyon, ad, aciklama):
-    islem = program.startTransaction("asm-adlandirma")
+    islem = program.startTransaction("asmsense")
     basarili = False
     try:
         if ad:

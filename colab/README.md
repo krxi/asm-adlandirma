@@ -26,7 +26,7 @@ Belleğe göre otomatik seçim veya 4-bit niceleme yok.
 r16, alpha32, all-linear, dropout .05; lr 1e-4 cosine, %3 warmup, etkin batch 16,
 1 epoch, tüm train, 3072 token, tohum 7, yalnız assistant JSON kaybı.
 `VERI_URL` varsayılanı
-`https://github.com/krxi/asm-adlandirma-veri/releases/download/v5/veri-v5.zip`.
+`https://github.com/krxi/asmsense-data/releases/download/v5/veri-v5.zip`.
 Ayrıntılı dosya düzeni, kayıt/yeniden deneme kuralları ve ölçümler
 [molab açıklamasında](../molab/README.md).
 

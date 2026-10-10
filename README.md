@@ -1,4 +1,4 @@
-# asm-adlandirma
+# asmsense
 
 **English** · [Türkçe](README.tr.md)
 
@@ -6,7 +6,7 @@
 
 ## Current status
 
-The v4 dataset contains 228,177 functions from 341 projects across 5 optimization levels and is published on [Hugging Face](https://huggingface.co/datasets/krxi123/asm-adlandirma) under the `v4` config. The Ghidra script is ready. The best small model so far, Qwen3-8B + LoRA trained on the v5 data (description first, then name), reaches name F1 0.124 on the fixed v4 test sample and 0.155 on `eval_115`; the best large model with call context scores 0.167 on the same test sample. See Results, section 6. The model writes an English and a Turkish one-sentence description along with the name. The adapter is on Hugging Face: [krxi123/asm-adlandirma-qwen3-8b-lora](https://huggingface.co/krxi123/asm-adlandirma-qwen3-8b-lora).
+The v4 dataset contains 228,177 functions from 341 projects across 5 optimization levels and is published on [Hugging Face](https://huggingface.co/datasets/krxi123/asmsense) under the `v4` config. The Ghidra script is ready. The best small model so far, Qwen3-8B + LoRA trained on the v5 data (description first, then name), reaches name F1 0.124 on the fixed v4 test sample and 0.155 on `eval_115`; the best large model with call context scores 0.167 on the same test sample. See Results, section 6. The model writes an English and a Turkish one-sentence description along with the name. The adapter is on Hugging Face: [krxi123/asmsense-qwen3-8b-lora](https://huggingface.co/krxi123/asmsense-qwen3-8b-lora).
 
 Open a stripped program in Ghidra or IDA and you will see hundreds of functions named `FUN_00401a30`. Much of reverse engineering consists of understanding and naming these functions one by one. This project aims to teach a model that first step:
 
@@ -61,7 +61,7 @@ jne     loc_6
 | Training | zlib, libpng, sqlite, lua, mbedtls, zstd, libsodium, expat, brotli, jansson, lz4, libyaml, xxhash, cJSON | 16,804 |
 | Test (memorization-resistant) | tomlc17, cyaml, mu_json_x, sajs, picomatch | 777 → evaluation set 115 |
 
-The dataset is available on Hugging Face: [krxi123/asm-adlandirma](https://huggingface.co/datasets/krxi123/asm-adlandirma) (16,804 training examples, 777 test examples, the `eval_115` evaluation set, and license texts).
+The dataset is available on Hugging Face: [krxi123/asmsense](https://huggingface.co/datasets/krxi123/asmsense) (16,804 training examples, 777 test examples, the `eval_115` evaluation set, and license texts).
 
 ### Scaled dataset (v4 pipeline, 5 optimization levels)
 
@@ -193,7 +193,7 @@ The first zlib evaluation (v1, 60 functions) used a simpler data pipeline that i
 **1. Foundation** ✅
 - [x] Data generation pipeline (-O0/-O2, leak-free v3)
 - [x] Baseline evaluation with large models, memorization-resistant test set, and error analysis
-- [x] 16,804 functions from 14 projects; publicly released ([Hugging Face](https://huggingface.co/datasets/krxi123/asm-adlandirma), EVREN)
+- [x] 16,804 functions from 14 projects; publicly released ([Hugging Face](https://huggingface.co/datasets/krxi123/asmsense), EVREN)
 
 **2. Enrich the input**
 - [x] Call context (callees' imports and strings): substantially improved F1 for large models
@@ -212,7 +212,7 @@ The first zlib evaluation (v1, 60 functions) used a simpler data pipeline that i
 - [ ] Ghidra script: rename `FUN_…` functions with the local model and add descriptions (script ready: [ghidra/](ghidra/README.md); successfully ran end-to-end in Ghidra 12 headless, dry-run mode)
 
 **5. Release**
-- [x] Publish the model: [krxi123/asm-adlandirma-qwen3-8b-lora](https://huggingface.co/krxi123/asm-adlandirma-qwen3-8b-lora) (LoRA adapter for Qwen3-8B)
+- [x] Publish the model: [krxi123/asmsense-qwen3-8b-lora](https://huggingface.co/krxi123/asmsense-qwen3-8b-lora) (LoRA adapter for Qwen3-8B)
 - [ ] Comparative write-up
 
 ## Run it yourself

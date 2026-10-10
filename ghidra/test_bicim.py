@@ -67,13 +67,13 @@ class BicimTesti(unittest.TestCase):
         self.assertNotIn("sub_0003", girdi)
 
     def test_model_yorumu_analist_satirlarini_korur(self):
-        eski = ("Analistin ilk notu\n[asm-adlandirma] Eski açıklama.\n"
-                "Analistin ikinci notu\n[asm-adlandirma] Yinelenmiş eski satır.")
+        eski = ("Analistin ilk notu\n[asmsense] Eski açıklama.\n"
+                "Analistin ikinci notu\n[asmsense] Yinelenmiş eski satır.")
         self.assertEqual(
             model_yorumu_birlestir(eski, "Yeni açıklama."),
-            "Analistin ilk notu\nAnalistin ikinci notu\n[asm-adlandirma] Yeni açıklama.")
+            "Analistin ilk notu\nAnalistin ikinci notu\n[asmsense] Yeni açıklama.")
         self.assertEqual(model_yorumu_birlestir("", "İlk açıklama."),
-                         "[asm-adlandirma] İlk açıklama.")
+                         "[asmsense] İlk açıklama.")
 
 
 if __name__ == "__main__":

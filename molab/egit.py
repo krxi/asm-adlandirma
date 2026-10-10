@@ -188,9 +188,9 @@ def _():
             "ortam": ortam,
             "model": os.environ.get("MODEL", "Qwen/Qwen3.5-9B" if ortam == "colab" else "Qwen/Qwen3-8B"),
             "veri_url": os.environ.get(
-                "VERI_URL", "https://github.com/krxi/asm-adlandirma-veri/releases/download/v5/veri-v5.zip",
+                "VERI_URL", "https://github.com/krxi/asmsense-data/releases/download/v5/veri-v5.zip",
             ),
-            "repo": os.environ.get("HF_REPO", "krxi123/asm-adlandirma-lora-v5"),
+            "repo": os.environ.get("HF_REPO", "krxi123/asmsense-lora-v5"),
             "kok": Path(os.environ.get("ASM_KOK", "asm-calisma-v5")).expanduser().resolve(),
             "drive": Path(os.environ["DRIVE_KOK"]) if os.environ.get("DRIVE_KOK") else None,
             "max_adim": deneme, "mikro": mikro,

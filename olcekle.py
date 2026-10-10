@@ -284,7 +284,7 @@ def main():
         taslak = OLCEK / "taslak"                      # boş config.h: üretilmemiş yapılandırma başlığı
         taslak.mkdir(parents=True, exist_ok=True)
         for b in ("config.h",):
-            (taslak / b).write_text("/* asm-adlandirma: boş yer tutucu */\n")
+            (taslak / b).write_text("/* asmsense: boş yer tutucu */\n")
         with ThreadPoolExecutor(a.j) as h:
             isler = {}
             for p in projeler:

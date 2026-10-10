@@ -32,7 +32,7 @@ TURKUAZ = "#3DD6C6"
 SARI = "#FFC857"
 PEMBE = "#FF6B9A"
 MOR = "#A78BFA"
-IMZA = "github.com/krxi/asm-adlandirma"
+IMZA = "github.com/krxi/asmsense"
 CIKTI = KOK / "grafik"
 
 plt.rcParams.update({

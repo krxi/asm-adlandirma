@@ -11,7 +11,7 @@ import json
 import sys
 from pathlib import Path
 
-REPO = "krxi123/asm-adlandirma"
+REPO = "krxi123/asmsense"
 BEKLENEN = 17581  # eğitim 16.804 + test 777
 YOL = "data/aciklama/aciklama.jsonl"
 CONFIG = """- config_name: aciklama
@@ -35,7 +35,7 @@ assembly, so it can be used as a distillation target for small models. Join on `
 
 ```python
 from datasets import load_dataset
-load_dataset("krxi123/asm-adlandirma", "aciklama")
+load_dataset("krxi123/asmsense", "aciklama")
 ```
 """
 

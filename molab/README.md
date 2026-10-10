@@ -23,7 +23,7 @@ Mikro batch 4, gradient checkpointing açık; model belleğe göre değiştirilm
 5. Sonda adaptör zip'ini, sonuç JSONL'larını ve logu notebook indirme düğmelerinden al.
 
 `VERI_URL` varsayılanı
-`https://github.com/krxi/asm-adlandirma-veri/releases/download/v5/veri-v5.zip`.
+`https://github.com/krxi/asmsense-data/releases/download/v5/veri-v5.zip`.
 Arşivde train, valid, valid_300, test, test_sabit, eval115 JSONL'ları ve ozet.json
 birlikte bulunmalı. `ASM_KOK` yerel çalışma dizinini belirler. Aynı dizinde eski
 koşu varsa devam et veya yeni dizin kullan. Train satırı sessizce atılmaz:

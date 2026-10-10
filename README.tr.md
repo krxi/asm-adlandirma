@@ -1,4 +1,4 @@
-# asm-adlandirma
+# asmsense
 
 [English](README.md) · **Türkçe**
 
@@ -6,7 +6,7 @@
 
 ## Güncel durum
 
-v4 veri seti, 5 optimizasyon seviyesinde 341 projeden 228.177 fonksiyon içeriyor ve [Hugging Face'te](https://huggingface.co/datasets/krxi123/asm-adlandirma) `v4` config'iyle yayımlanıyor. Ghidra betiği hazır. Şimdiye kadarki en iyi küçük model, v5 verisiyle (önce açıklama, sonra ad) eğitilen Qwen3-8B + LoRA: sabit v4 test örnekleminde ad F1 0.124, `eval_115`'te 0.155; çağrı bağlamı verilen en iyi büyük model aynı test örnekleminde 0.167. Bkz. Sonuçlar, bölüm 6. Model adla birlikte tek cümlelik İngilizce ve Türkçe açıklama yazıyor. Adaptör Hugging Face'te: [krxi123/asm-adlandirma-qwen3-8b-lora](https://huggingface.co/krxi123/asm-adlandirma-qwen3-8b-lora).
+v4 veri seti, 5 optimizasyon seviyesinde 341 projeden 228.177 fonksiyon içeriyor ve [Hugging Face'te](https://huggingface.co/datasets/krxi123/asmsense) `v4` config'iyle yayımlanıyor. Ghidra betiği hazır. Şimdiye kadarki en iyi küçük model, v5 verisiyle (önce açıklama, sonra ad) eğitilen Qwen3-8B + LoRA: sabit v4 test örnekleminde ad F1 0.124, `eval_115`'te 0.155; çağrı bağlamı verilen en iyi büyük model aynı test örnekleminde 0.167. Bkz. Sonuçlar, bölüm 6. Model adla birlikte tek cümlelik İngilizce ve Türkçe açıklama yazıyor. Adaptör Hugging Face'te: [krxi123/asmsense-qwen3-8b-lora](https://huggingface.co/krxi123/asmsense-qwen3-8b-lora).
 
 Ghidra ya da IDA ile stripped bir programı açtığınızda yüzlerce `FUN_00401a30` görürsünüz. Tersine mühendisliğin büyük kısmı, bunların ne iş yaptığını tek tek anlayıp adlandırmaktır. Bu proje o ilk adımı bir modele öğretmeyi amaçlıyor:
 
@@ -61,7 +61,7 @@ jne     loc_6
 | Eğitim | zlib, libpng, sqlite, lua, mbedtls, zstd, libsodium, expat, brotli, jansson, lz4, libyaml, xxhash, cJSON | 16.804 |
 | Test (ezbere dayanıklı) | tomlc17, cyaml, mu_json_x, sajs, picomatch | 777 → ölçüm seti 115 |
 
-Veri seti Hugging Face'te: [krxi123/asm-adlandirma](https://huggingface.co/datasets/krxi123/asm-adlandirma) (eğitim 16.804, test 777, `eval_115` ölçüm seti, lisans metinleri dahil).
+Veri seti Hugging Face'te: [krxi123/asmsense](https://huggingface.co/datasets/krxi123/asmsense) (eğitim 16.804, test 777, `eval_115` ölçüm seti, lisans metinleri dahil).
 
 ### Ölçeklenmiş veri (v4 hattı, 5 optimizasyon seviyesi)
 
@@ -193,7 +193,7 @@ Yalnız decompile, yaklaşık yarı girdi token'ıyla (fonksiyon başına ortanc
 **1. Temel** ✅
 - [x] Veri üretim hattı (-O0/-O2, sızıntısız v3)
 - [x] Büyük modellerle taban ölçüm, ezbere dayanıklı test seti, hata analizi
-- [x] 14 projeden 16.804 fonksiyon; açık yayın ([Hugging Face](https://huggingface.co/datasets/krxi123/asm-adlandirma), EVREN)
+- [x] 14 projeden 16.804 fonksiyon; açık yayın ([Hugging Face](https://huggingface.co/datasets/krxi123/asmsense), EVREN)
 
 **2. Girdiyi zenginleştirmek**
 - [x] Çağrı bağlamı (çağrılan fonksiyonların importları ve string'leri): büyük modellerde F1 belirgin arttı
@@ -212,7 +212,7 @@ Yalnız decompile, yaklaşık yarı girdi token'ıyla (fonksiyon başına ortanc
 - [ ] Ghidra betiği: `FUN_…` fonksiyonlarını yerel modelle adlandırıp açıklama yazar (betik hazır: [ghidra/](ghidra/README.md); Ghidra 12 headless'ta uçtan uca çalıştı, kuru kip)
 
 **5. Yayın**
-- [x] Modeli yayımla: [krxi123/asm-adlandirma-qwen3-8b-lora](https://huggingface.co/krxi123/asm-adlandirma-qwen3-8b-lora) (Qwen3-8B için LoRA adaptörü)
+- [x] Modeli yayımla: [krxi123/asmsense-qwen3-8b-lora](https://huggingface.co/krxi123/asmsense-qwen3-8b-lora) (Qwen3-8B için LoRA adaptörü)
 - [ ] Karşılaştırmalı yazı
 
 ## Kendiniz çalıştırın

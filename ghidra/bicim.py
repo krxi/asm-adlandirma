@@ -80,7 +80,7 @@ def model_girdisi(asm, baglam, karakter_tavan=9000):
     return sonuc, True
 
 
-def model_yorumu_birlestir(eski, aciklama, on_ek="[asm-adlandirma] "):
+def model_yorumu_birlestir(eski, aciklama, on_ek="[asmsense] "):
     """Analist yorumlarını koruyup önceki model satırını yenisiyle değiştir."""
     satirlar = [satir for satir in metin(eski).splitlines()
                 if not satir.startswith(on_ek)]

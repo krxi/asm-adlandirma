@@ -37,7 +37,7 @@ python3 -m pytest -q          # Linux'ta Mach-O testleri atlanır, macOS'ta heps
 | `.notlar/aday-projeler.json` (v4 proje listesi) | **hayır** | adım 5; aşağıdaki "Açık noktalar"a bakın |
 | `lora/veri*/`, `lora/adaptor*/` | hayır | adım 6 |
 
-Yayınlanan kopya: Hugging Face [krxi123/asm-adlandirma](https://huggingface.co/datasets/krxi123/asm-adlandirma)
+Yayınlanan kopya: Hugging Face [krxi123/asmsense](https://huggingface.co/datasets/krxi123/asmsense)
 (v3 eğitim/test, `eval_115`, `aciklama` config'i ve `v4` config'i).
 
 ## 2. v3 verisi: eğitim + ezbere dayanıklı test seti
