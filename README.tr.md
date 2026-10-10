@@ -172,6 +172,18 @@ Aynı 500 satırda 8B 0.108, 1.5B 0.044 alıyor. 1.5B adaptörü yeni projelere 
 
 Kırılım: [rapor/MOLAB_V5_KIRILIM.md](rapor/MOLAB_V5_KIRILIM.md); öğretmen etiket denetimi: [rapor/OGRETMEN_DENETIM.md](rapor/OGRETMEN_DENETIM.md).
 
+### 7. Decompile edilmiş kod işe yarıyor mu? (büyük model, ön deney)
+
+Eğitim verisini dönüştürmeden önce, sabit 2.000 test fonksiyonu Ghidra 12 ile decompile edildi (`decompile_ghidra.py`; proje içi adlar anonimleştirildi, metinde hedef adı kalan satır 0) ve mimo-v2.6-pro'ya verildi:
+
+| girdi | ad F1 | assembly + bağlama göre eşli fark (%95 bootstrap) | tam isabet |
+|---|---:|---|---:|
+| assembly + çağrı bağlamı | 0.167 | — | 40 |
+| yalnız decompile (bağlamsız) | 0.173 | +0.006 (-0.002 … +0.014) | 36 |
+| assembly + çağrı bağlamı + decompile | **0.192** | **+0.025 (+0.018 … +0.032)** | 52 |
+
+Yalnız decompile, yaklaşık yarı girdi token'ıyla (fonksiyon başına ortanca 202 token) assembly + bağlam kadar iyi; assembly'ye eklenince belirgin kazanç var. Sıradaki adım: decompile'ı eğitim girdisine eklemek (v6).
+
 ### Not: zlib ısınma turu ve veri hattındaki sızıntılar
 
 İlk zlib ölçümü (v1, 60 fonksiyon) daha basit bir veri hattıyla yapıldı ve o hat modele farkında olmadan ipucu sızdırıyordu: global değişken adları (`crc_table`, `configuration_table`), alfabetik `sub_` numaraları, `.o` ofsetleri. Bir tersine mühendislik modeliyle (Codex) yapılan denetimden sonra bu sızıntılar kapatıldı (v3). v1 sonuçları `sonuc/zlib-*.jsonl` altında duruyor ama yukarıdaki karşılaştırmalar v3 hatla yapıldı.
