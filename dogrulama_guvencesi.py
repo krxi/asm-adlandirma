@@ -106,6 +106,7 @@ def git_izi():
 
 def json_metni(nesne):
     """Sürümler arasında aynı UTF-8 JSON: sıralı anahtar, 9 basamak, NaN yok."""
+
     def duzelt(x):
         if isinstance(x, float):
             if not math.isfinite(x):
