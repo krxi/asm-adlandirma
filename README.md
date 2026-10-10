@@ -11,12 +11,13 @@ The v4 dataset contains 228,177 functions from 341 projects across 5 optimizatio
 Open a stripped program in Ghidra or IDA and you will see hundreds of functions named `FUN_00401a30`. Much of reverse engineering consists of understanding and naming these functions one by one. This project aims to teach a model that first step:
 
 ```
-girdi  (stripped x86-64)              hedeflenen çıktı
-─────────────────────────────         ──────────────────────────────────────────
-movzx  eax, byte ptr [rsi]            ad:       adler32_update
-lea    rdx, [rdi + rax]               açıklama: Tampondaki baytlar üzerinden
-cmp    rdx, 0xfff1      ← 65521                 Adler-32 sağlama toplamı hesaplar.
-...
+input  (stripped x86-64)             target output
+─────────────────────────────         ──────────────────────────────────────────────
+movzx  eax, byte ptr [rsi]            name:        adler32_update
+lea    rdx, [rdi + rax]               description: Computes the Adler-32 checksum
+cmp    rdx, 0xfff1      ← 65521                    over the bytes of a buffer.
+...                                   # TR: Tampondaki baytlar üzerinden Adler-32
+                                      #     sağlama toplamı hesaplar.
 ```
 
 ## Goal
@@ -47,7 +48,7 @@ Three tiers are evaluated on the same test set:
 ```
 loc_6:
 movzx   r9d, byte ptr [rsi + rdx]
-add     rdi, r9                 ← adler32_z (-O2), modelin gördüğü hâli
+add     rdi, r9                 ← adler32_z (-O2), as the model sees it
 add     rcx, rdi
 inc     rdx
 cmp     rax, rdx
@@ -221,10 +222,10 @@ Requirements: `clang`, `objdump` (LLVM), Python 3.9+. Evaluation requires an Ope
 
 ```bash
 python3 cikar.py --projeler projeler.json             # projeleri indir, derle → veri/egitim, veri/test
-python3 test_seti.py                                  # ölçüm seti → veri/test.jsonl
-python3 taban.py veri/test.jsonl -n 1000 -m <model>   # ad tahmini + puan (sonuc/ altına); --dusunme, --devam
-python3 ozet.py test                                  # sonuç tablosu
-python3 analiz.py veri/test.jsonl -o grafik/test-hata.png   # fonksiyon türüne göre hata analizi
+python3 test_seti.py                                  # evaluation set → veri/test.jsonl
+python3 taban.py veri/test.jsonl -n 1000 -m <model>   # name prediction + score (written to sonuc/); --dusunme = reasoning on, --devam = resume
+python3 ozet.py test                                  # results table
+python3 analiz.py veri/test.jsonl -o grafik/test-hata.png   # error analysis by function type
 ```
 
 Each row represents one function: `id`, `proje`, `surum`, `dosya`, `opt`, `ad` (ground truth), `komut_sayisi`, `sizinti`, `asm`, `baglam`, `baglam_derin`.
@@ -239,9 +240,9 @@ python3 -m unittest test_cikar_bin
 Distillation (a one-sentence description from a teacher model with access to source code):
 
 ```bash
-python3 kaynak_kod.py -j 6                       # fonksiyon → C gövdesi, veri/kaynak/
+python3 kaynak_kod.py -j 6                       # function → C body, veri/kaynak/
 python3 aciklama.py -m <model> -j 6 --devam      # → veri/aciklama/
-python3 aciklama_puan.py sonuc/<koşu>.jsonl -m <hakem>   # açıklamaları kaynağa göre 0-2 puanla
+python3 aciklama_puan.py sonuc/<run>.jsonl -m <judge>   # score descriptions 0-2 against the source
 ```
 
 LoRA (Apple Silicon, mlx-lm):
@@ -250,7 +251,7 @@ LoRA (Apple Silicon, mlx-lm):
 python3.12 -m venv .venv && .venv/bin/pip install mlx-lm transformers matplotlib
 .venv/bin/python lora/hazirla.py --onek-at --proje-tavan 1500   # → lora/veri
 sh lora/egit.sh                                                 # ayarlar lora/ayar.yaml
-.venv/bin/python lora/olc.py                                    # test setinde ölç → sonuc/
+.venv/bin/python lora/olc.py                                    # evaluate on the test set → sonuc/
 ```
 
 Evaluations were run on infrastructure in Türkiye provided by the [EVREN](https://evren.ssyz.org.tr) AI platform.
