@@ -1,0 +1,15 @@
+{
+  "sema_surumu": 2,
+  "kaynak_commit": "15e3b28f1be387d0e8655edd838e1c32f9d348d5",
+  "kaynak_tree": "6f8d4781522bc7be45839071dc7231e12d0164e5",
+  "kaynak_kapsami": "Değiştirilmeyen sabit v5 tahmin dayanağı",
+  "tahmin": {
+    "dosya": "sonuc/valid300-molab-qwen3-8b-v5.jsonl",
+    "sha256": "88f7bfb32ed87f5c43a43d670c5ca5e80bfd00c3592d59dc24b9ee52e14e4faf"
+  },
+  "manifest": "rapor/arastirma/dogrulama_manifest.json",
+  "yeniden_uretim": "python3 ad_olcutleri.py --veri \"$VALIDATION_JSONL\" --tahmin sonuc/valid300-molab-qwen3-8b-v5.jsonl",
+  "gercek_validation_tekrari": "not run (bu düzeltmede)",
+  "guncel_kod_ve_ci": "https://github.com/krxi/asmsense/pull/5",
+  "sinir": "Ölçüt farkı model kazancı değildir; tam pytest gerçek arşivlenmiş sonuçları rapor regresyonu için yeniden puanlar."
+}

@@ -16,11 +16,11 @@ from pathlib import Path
 from taban import kelimeler
 
 
-def onekler() -> dict[str, set[str]]:
-    """Proje → ad öneki: adların ≥%10'unun başladığı, proje adının başı olan (cyaml, mu, sqlite3)
-    ya da baş harfiyle başlayan kısaltma olan (pm → picomatch) ilk sözcük."""
+def onekler(veri=None) -> dict[str, set[str]]:
+    """Proje → ad öneki; varsayılan veri kökü çalışma dizininden bağımsızdır."""
+    veri = Path(__file__).resolve().parent / "veri" if veri is None else Path(veri)
     sonuc = {}
-    for p in [*Path("veri").glob("egitim/*.jsonl"), *Path("veri").glob("test/*.jsonl")]:
+    for p in [*veri.glob("egitim/*.jsonl"), *veri.glob("test/*.jsonl")]:
         adlar = [kelimeler(json.loads(l)["ad"]) for l in p.open()]
         say = Counter(k[0] for k in adlar if len(k) > 1)
         proje = p.stem.lower().replace("_", "").removeprefix("lib")
