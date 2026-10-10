@@ -1,0 +1,22 @@
+{
+  "schema": "asmsense-v6-validation-evidence-2",
+  "upstream": {
+    "commit": "15e3b28f1be387d0e8655edd838e1c32f9d348d5",
+    "tree": "6f8d4781522bc7be45839071dc7231e12d0164e5",
+    "preparer": "lora/hazirla_sonraki.py --surum v6",
+    "mapping_validator": "dogrula_v6.py"
+  },
+  "status": {
+    "real_input_provenance": "not run",
+    "real_expected_hashes": "not verified; pinned manifest deliberately blocks execution",
+    "gpu_training": "not run",
+    "new_model_inference": "not run",
+    "quality_gain": "not measured"
+  },
+  "checks": {
+    "command": "python3 -m pytest -q",
+    "new_cases": "synthetic main-preparer/main-validator integration; raw and actual target leaks; expected data and order hashes; held-out identities/projects; token and budget limits",
+    "full_suite_scope": "also re-scores existing archived real prediction files for report regression",
+    "published_revision_and_ci": "https://github.com/krxi/asmsense/pull/6"
+  }
+}

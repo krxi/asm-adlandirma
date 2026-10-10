@@ -1,0 +1,19 @@
+{
+  "sema": 1,
+  "durum": "Gercek hazirlanmis girdiler dogrulanmadi; beklenen hashler incelemeden sonra sabitlenmeden pilot calismaz.",
+  "ana_hat_commit": "15e3b28f1be387d0e8655edd838e1c32f9d348d5",
+  "ana_hat_tree": "6f8d4781522bc7be45839071dc7231e12d0164e5",
+  "ana_hat_bloblari": {
+    "lora/hazirla_sonraki.py": "3c1038888ecfc898607b91048c4be7ee3d8d96ce",
+    "dogrula_v6.py": "8a41298d94dabce7f52db655cb8bfe96bbcbf4f7"
+  },
+  "beklenen_sha256": {
+    "train": null,
+    "valid": null,
+    "train_v6": null,
+    "valid_v6": null,
+    "dogrulama_raporu": null,
+    "dogrulanmis_idler": null
+  },
+  "train_sira_sha256": null
+}
