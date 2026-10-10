@@ -28,20 +28,41 @@ def test_testin_gelistirme_kullanimi_gizlenmez():
 
 def test_kume_ve_coklu_karsilastirma_protokolu():
     md = BELGE.read_text(encoding="utf-8")
-    for ifade in ("Birincil yeniden örnekleme birimi proje", "optimizasyon kopyaları", "Bonferroni", "%99", "0,005", "0,995"):
+    for ifade in (
+        "Birincil yeniden örnekleme birimi proje",
+        "optimizasyon kopyaları",
+        "Bonferroni",
+        "%99",
+        "0,005",
+        "0,995",
+    ):
         assert ifade in md
     assert "0,05 / 5" in md and "20.000" in md
     assert "yalnız raporlanan\nkazananlara değil" in md
 
 
-@pytest.mark.parametrize("yasak", ["/workspace/", "/Users/", "sys.executable", "58157e7", "eccf6b4", "1b4a0a7", "3b7aefe", "63e6ddc"])
+@pytest.mark.parametrize(
+    "yasak", ["/workspace/", "/Users/", "sys.executable", "58157e7", "eccf6b4", "1b4a0a7", "3b7aefe", "63e6ddc"]
+)
 def test_kisisel_yol_ve_eski_birincil_kaynak_yok(yasak):
     assert yasak not in BELGE.read_text(encoding="utf-8")
 
 
 def test_kaynak_haritasi_temel_calisma_ve_sinirlari_korur():
     md = BELGE.read_text(encoding="utf-8")
-    for ad in ("DIRE", "DIRTY", "NERO", "SymLM", "XFL", "HexT5", "AsmDepictor", "VarBERT", "ReSym", "LLM4Decompile", "BinSum"):
+    for ad in (
+        "DIRE",
+        "DIRTY",
+        "NERO",
+        "SymLM",
+        "XFL",
+        "HexT5",
+        "AsmDepictor",
+        "VarBERT",
+        "ReSym",
+        "LLM4Decompile",
+        "BinSum",
+    ):
         assert ad in md
     assert "unverified" in md and "not run" in md
     assert "https://" in md and "veri veya ağırlık lisansı yerine geçmez" in md
