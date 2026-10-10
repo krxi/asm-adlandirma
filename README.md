@@ -172,6 +172,18 @@ On the same 500 rows the 8B model scores 0.108 versus 0.044 for 1.5B. The 1.5B a
 
 Breakdown: [rapor/MOLAB_V5_KIRILIM.md](rapor/MOLAB_V5_KIRILIM.md); teacher-label audit: [rapor/OGRETMEN_DENETIM.md](rapor/OGRETMEN_DENETIM.md).
 
+### 7. Does decompiled code help? (large model, pre-experiment)
+
+Before converting the training data, the 2,000 fixed test functions were decompiled with Ghidra 12 (`decompile_ghidra.py`; project-internal names anonymized, 0 rows with the target name left in the text) and given to mimo-v2.6-pro:
+
+| Input | Name F1 | Paired difference vs assembly + context (95% bootstrap) | Exact matches |
+|---|---:|---|---:|
+| assembly + call context | 0.167 | — | 40 |
+| decompiled code only (no context) | 0.173 | +0.006 (-0.002 to +0.014) | 36 |
+| assembly + call context + decompiled code | **0.192** | **+0.025 (+0.018 to +0.032)** | 52 |
+
+Decompiled code alone matches assembly plus context with about half the input tokens (median 202 tokens per function); adding it to the assembly gives a clear gain. Next step: add decompiled code to the training input (v6).
+
 ### Note: the zlib warm-up and pipeline leakage
 
 The first zlib evaluation (v1, 60 functions) used a simpler data pipeline that inadvertently leaked clues to the model: global variable names (`crc_table`, `configuration_table`), alphabetical `sub_` numbers, and `.o` offsets. After an audit with a reverse-engineering model (Codex), these leaks were closed in v3. The v1 results remain under `sonuc/zlib-*.jsonl`, but all comparisons above use the v3 pipeline.

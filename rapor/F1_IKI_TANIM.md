@@ -1,6 +1,6 @@
 # Ad F1: gerçek ad ve öneksiz ad
 
-`python3 iki_f1.py` çıktısı, 47 sonuç dosyası. Elle düzenlemeyin; betiği yeniden çalıştırın.
+`python3 iki_f1.py` çıktısı, 49 sonuç dosyası. Elle düzenlemeyin; betiği yeniden çalıştırın.
 
 - **gerçek ad F1**: `taban.f1(tahmin, gerçek ad)`. Ad snake/camel sözcüklere bölünür, sözcük kümelerinin F1'i.
 - **öneksiz F1**: `ozet.f1_oneksiz`. Projenin ortak öneki (aşağıdaki tablo, ilk sütun) iki taraftan atılır;
@@ -19,7 +19,9 @@
 | zlib-deepseek-v4.1-flash-dusunme | 60 | 0.191 / 0.253 / 0.218 | 0.191 / 0.253 / 0.218 | +0.000 | 11 / 11 | 0.218 | gerçek ad |
 | test-mimo-v2.6-pro-dusunme | 115 | 0.199 / 0.172 / 0.186 | 0.220 / 0.204 / 0.213 | +0.026 | 3 / 6 | 0.186 | gerçek ad |
 | test-mimo-v2.6-pro | 115 | 0.180 / 0.165 / 0.173 | 0.200 / 0.190 / 0.195 | +0.022 | 4 / 7 | 0.173 | gerçek ad |
+| test2000-mimo-v2.6-pro-baglam-ikisi | 2000 | 0.193 / 0.189 / 0.192 | 0.194 / 0.192 / 0.194 | +0.002 | 52 / 55 | 0.192 | gerçek ad |
 | zlib-v3-mimo-v2.6-pro | 115 | 0.163 / 0.190 / 0.176 | 0.163 / 0.190 / 0.176 | +0.000 | 9 / 9 | 0.176 | gerçek ad |
+| test2000-mimo-v2.6-pro-decompile | 2000 | 0.173 / 0.165 / 0.173 | 0.174 / 0.168 / 0.176 | +0.002 | 36 / 40 | 0.173 | gerçek ad |
 | eval115-molab-qwen3-8b-v5 | 115 | 0.188 / 0.120 / 0.155 | 0.205 / 0.138 / 0.173 | +0.018 | 1 / 2 | 0.155 | gerçek ad |
 | test-deepseek-v4.1-flash-baglam2 | 115 | 0.194 / 0.121 / 0.159 | 0.203 / 0.138 / 0.172 | +0.013 | 3 / 4 | 0.159 | gerçek ad |
 | test-deepseek-v4.1-flash-baglam | 115 | 0.192 / 0.123 / 0.159 | 0.198 / 0.140 / 0.170 | +0.012 | 2 / 3 | 0.159 | gerçek ad |
