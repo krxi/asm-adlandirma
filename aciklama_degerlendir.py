@@ -10,7 +10,6 @@ import random
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Optional
 
 import dogrulama_guvencesi as dg
 
@@ -107,6 +106,7 @@ def plan_hazirla(veri_yolu, tahminler, n, tohum):
     secilen = ornekle(veri, n, tohum)
     if iz != {"veri": dg.dosya_izi(veri_yolu), **{ad: dg.dosya_izi(yol) for ad, yol in tahminler}}:
         raise ValueError("Girdi çalışma sırasında değişti")
+    stringler = Counter("var" if '"' in veri[k].get("asm", "") else "yok" for k in secilen)
     manifest = {
         "sema": 2,
         "bolum": "valid300",
@@ -122,7 +122,7 @@ def plan_hazirla(veri_yolu, tahminler, n, tohum):
         "dagilim": {
             "proje": _dagilim(veri, secilen, "proje"),
             "opt": _dagilim(veri, secilen, "opt"),
-            "string": dict(sorted(Counter("var" if '"' in veri[k].get("asm", "") else "yok" for k in secilen).items())),
+            "string": dict(sorted(stringler.items())),
         },
         "bilinmeyen_puani": 0.0,
         "puan_paydasi": 4,
@@ -281,7 +281,8 @@ def puanla(anahtar_yolu, etiket_yollari, uzlasi_yolu, tohum, paket_yolu):
     paket = jsonl_oku(paket_yolu)
     rs = gizli["esleme"]
     esleme = {r["ornek"]: r for r in rs}
-    if len(esleme) != len(rs) or len({r["ornek"] for r in paket}) != len(paket) or set(esleme) != {r["ornek"] for r in paket}:
+    paket_idler = {r["ornek"] for r in paket}
+    if len(esleme) != len(rs) or len(paket_idler) != len(paket) or set(esleme) != paket_idler:
         raise ValueError("Paket/anahtar örnek kapsamı farklı veya yinelenmiş")
     sistemler = gizli["manifest"]["sistemler"]
     n = gizli["manifest"]["n"]
@@ -393,8 +394,10 @@ def main(argv=None):
             ozel_yaz(yol, metin)
         else:
             print(metin, end="")
-    except (ValueError, KeyError):
-        raise
+    except ValueError as hata:
+        ap.error(str(hata))
+    except KeyError:
+        ap.error("Paket veya etiket şemasında gerekli alan eksik")
     except OSError:
         ap.error("Girdi/çıktı dosyası kullanılamadı; kişisel yol günlüğe yazılmadı")
 
