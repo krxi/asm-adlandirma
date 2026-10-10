@@ -194,6 +194,13 @@ def ikiliyi_decompile_et(ikili, satirlar, zaman_asimi, ithaller=None):
             ithal_adlari = set(ithaller.values())
             harita = sembol_haritasi(
                 program, satirlar, ithal_adlari | {"_" + ad for ad in ithal_adlari})
+            # Ghidra GOT/stub etiketlerini PTR_<import>_<adres> diye adlandırır; bunlar import adına dönmeli.
+            harita = {ad: ithaller.get(yeni, yeni) for ad, yeni in harita.items()}
+            # Eşlenmiş satırların otomatik FUN_<adres> adları bağlamdaki sub_XXXX kimliğiyle aynı olsun.
+            for r in satirlar:
+                kimlik = r.get("kimlik") or r["id"].rsplit(":", 2)[-2]
+                for genislik in (0, 8, 16):
+                    harita.setdefault(f"FUN_{int(r['adres']):0{genislik}x}", kimlik)
             harita.update(ithaller)
             harita.update({"_" + ad: ad for ad in ithal_adlari})
             arayuz = DecompInterface()
