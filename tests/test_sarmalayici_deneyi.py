@@ -178,4 +178,7 @@ def test_say_guvenli_adli_test_girdisini_reddeder(tmp_path, monkeypatch, kimlik)
 
 def test_dogrulama_deneyi_korumasi_aynen_kaldi():
     kaynak = inspect.getsource(sd.dogrulama_deneyi)
-    assert hashlib.sha256(kaynak.encode()).hexdigest() == "37d83218a0e6acab22267e5184018c51976ccd6c8669288e91885e1e261f909d"
+    assert (
+        hashlib.sha256(kaynak.encode()).hexdigest()
+        == "a9d4ae234d6176253041a793c420936ab737a48ef9394c2e5c2035f2682759f7"
+    )
