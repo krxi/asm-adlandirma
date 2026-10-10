@@ -415,3 +415,12 @@ def test_rapor_guncel(tmp_path):
     assert rapor_karsilastirma_metni((tmp_path / "r.md").read_text(), TEMIZ_CHECKOUT_EKSIK) == (
         rapor_karsilastirma_metni((KOK / "rapor" / "F1_IKI_TANIM.md").read_text())
     ), "rapor eski: python3 iki_f1.py çalıştırın"
+
+
+@pytest.mark.parametrize("kayitli,uyumsuz", [(1 / 3, 0), (0.333, 0), (0.334, 1)])
+def test_iki_f1_kayitli_puan_hassasiyeti(kayitli, uyumsuz):
+    import iki_f1
+
+    r = {"id": "sentetik", "gercek": "a_b_c_d", "tahmin": "a_e", "opt": "-O0", "f1": kayitli}
+    sonuc = iki_f1.puanla([r], {"sentetik": r["gercek"]})
+    assert sonuc["kayitli_uyumsuz"] == uyumsuz
