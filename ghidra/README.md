@@ -81,3 +81,21 @@ sunucuya hangi modelin sorulacağını seçer.
 67 `FUN_` parçası; `pool_destroy`, `pool_alloc`, `tab_find` tam isabet. Parçaların çoğu `-O2`'nin ayırdığı
 `.cold` dallarıdır (assert kolları); model bunlara ana fonksiyonun ya da `assert_rtn` adını veriyor.
 22 parçada ad yerine girdideki `sub_XXXX` yer tutucusunu kopyaladı (erken kayıt).
+
+## Toplu decompile ölçümü
+
+`cikar_bin.py --ikili-sakla DIZIN`, her proje/opt için stripped dylib ile satır
+kimliğini başlangıç adresi ve boyuta bağlayan JSONL dosyasını yazar. Bu artefaktlar
+PyGhidra ile toplu olarak decompile edilebilir:
+
+```bash
+~/araclar/ghidra-venv/bin/python decompile_ghidra.py veri/bin/decompile-ikili \
+  --idler lora/test_sabit_idler.txt -o veri/decompile/test2000.jsonl --devam
+python3 taban.py veri/bin/olcek/test.jsonl --idler lora/test_sabit_idler.txt \
+  --decompile veri/decompile/test2000.jsonl --girdi decompile -m mimo-v2.6-pro --kuru
+```
+
+Ghidra dağıtımında çalışılan platformun native `decompile` dosyası yoksa yerelde
+derlenmiş yürütülebilir `--decompiler YOL` ile verilebilir. Betik proje-içi işlev
+ve veri sembollerini anonimleştirir, Mach-O importlarını ve string sabitlerini
+korur; ham sözde kodda hedef adı görülen satırı `sizinti: true` işaretler.

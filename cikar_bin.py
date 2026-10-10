@@ -8,7 +8,7 @@ Yalnız yerel kaynaklar kullanılır; indirme ve projeler.json/hazirlik çalış
 İki kip de strip -x çıktısını okur. 'tam', bu çıktıda kalan export adlarını da
 model girdisinde gizler; dylib'in dyld export tablosunu yeniden yazmaz.
 """
-import argparse, bisect, json, random, re, struct, subprocess, tempfile
+import argparse, bisect, json, random, re, shutil, struct, subprocess, tempfile
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -452,9 +452,34 @@ def sizinti_kontrolu(satirlar, gercekler, exportlar, ithaller):
     return {"beklenmeyen_semboller": ihlal, "adres_bicim_ihlalleri": yapisal}
 
 
+def ikili_artefaktlarini_yaz(dizin, proje, opt, stripped, satirlar):
+    """Stripped ikiliyi ve satir -> ikili adresi eslemesini atomik olarak sakla."""
+    hedef = Path(dizin) / proje
+    hedef.mkdir(parents=True, exist_ok=True)
+    govde = opt.lstrip("-")
+    ikili = hedef / f"{govde}.dylib"
+    esleme = hedef / f"{govde}.jsonl"
+    with tempfile.NamedTemporaryFile(dir=hedef, delete=False) as f:
+        ara_ikili = Path(f.name)
+    try:
+        shutil.copyfile(stripped, ara_ikili)
+        ara_ikili.replace(ikili)
+    finally:
+        ara_ikili.unlink(missing_ok=True)
+    with tempfile.NamedTemporaryFile(mode="w", dir=hedef, delete=False, encoding="utf-8") as f:
+        ara_esleme = Path(f.name)
+        try:
+            for r in satirlar:
+                f.write(json.dumps({**r, "ikili": ikili.name}, ensure_ascii=False) + "\n")
+            f.close()
+            ara_esleme.replace(esleme)
+        finally:
+            ara_esleme.unlink(missing_ok=True)
+
+
 def cikar(kok, cikti, dosyalar=("*.c",), haric=(), bayraklar=(), proje=None, surum=None,
           en_az=6, en_cok=300, tohum=7, kipler=("yerel", "tam"), v3=False, opts=OPTS,
-          lisans=None, hosgoru=False):
+          lisans=None, hosgoru=False, ikili_sakla=None):
     """hosgoru: toplu çıkarım kipi. Derlenemeyen dosya, çift sembol, çözülemeyen aralık ve
     denetime takılan satır projeyi düşürmez; atlanır ve rapora yazılır. Projeye ait olup
     linklenemeyen (derlenemeyen dosyadaki) adlar import gibi görünmesin diye ext_NNNN olur."""
@@ -549,6 +574,8 @@ def cikar(kok, cikti, dosyalar=("*.c",), haric=(), bayraklar=(), proje=None, sur
             for k in ("adsiz_baslangiclar", "sinirsiz_semboller", "cok_adli_adresler"):
                 bilgi[k] = bilgi[k][:20] + ([f"... +{len(bilgi[k]) - 20}"] if len(bilgi[k]) > 20 else [])
         gercekler = [ad for _, ad, _, _ in dogru.tanimli()] + list(gizli)
+        ikili_esleme = []
+        sinir_sonlari = dict(zip(baslar, baslar[1:] + [m.kod[0].adres + m.kod[0].boy]))
         for kip in kipler:
             gor = Gorunum(m, baslar, ithaller, proje, opt, kip, tohum)
             gor.veri_adlari(refler, proje, opt, tohum)
@@ -595,6 +622,15 @@ def cikar(kok, cikti, dosyalar=("*.c",), haric=(), bayraklar=(), proje=None, sur
             bilgi["kipler"][kip] = {"satir": len(satirlar), "sizinti": sum(r["sizinti"] for r in satirlar),
                 "export": sum(r["export"] for r in satirlar), "elenen": dict(elenen), **kontrol}
             hepsi.extend(satirlar)
+            adresler = {gor.kimlik[a]: a for a in baslar}
+            for r in satirlar:
+                a = adresler[r["kimlik"]]
+                ikili_esleme.append({"id": r["id"], "proje": proje, "opt": opt,
+                    "adres": a, "boyut": sinir_sonlari[a] - a,
+                    "dosya_ofseti": m.kod[0].ofset + a - m.kod[0].adres,
+                    "kimlik": r["kimlik"]})
+        if ikili_sakla is not None:
+            ikili_artefaktlarini_yaz(ikili_sakla, proje, opt, stripped, ikili_esleme)
         rapor["optimizasyonlar"][opt] = bilgi
         print(f"{proje} {opt}: {len(baslar)} sınır, {bilgi['eslesen']} ad eşleşti; "
               f"{len(veriler)} veri bölgesi/{bilgi['atlanan_veri_bayti']} bayt atlandı"
@@ -670,6 +706,8 @@ def main():
     ap.add_argument("--opts", default=",".join(OPTS), help="virgüllü: -O0,-O1,-O2,-O3,-Os")
     ap.add_argument("--hosgoru", action="store_true", help="toplu kip: derlenemeyen dosya/aralık/satır atlanır")
     ap.add_argument("--v3-karsilastir", action="store_true", help="aynı kaynak/bayraklarla v3'ü yerelde yeniden üret")
+    ap.add_argument("--ikili-sakla", type=Path,
+                    help="her proje/opt için stripped dylib ve satır-adres JSONL eşlemesini sakla")
     a = ap.parse_args()
     if a.min < 1 or a.max < a.min:
         ap.error("1 <= min <= max olmalı")
@@ -692,7 +730,7 @@ def main():
         cikar(kok, a.cikti or a.veri / f"{p['ad']}.jsonl", p.get("dosyalar", ["*.c"]),
               p.get("haric", []), p.get("bayraklar", []) + a.bayrak, p["ad"], p.get("surum"),
               a.min, a.max, a.tohum, ("yerel", "tam") if a.kip == "ikisi" else (a.kip,), a.v3_karsilastir,
-              tuple(a.opts.split(",")), p.get("lisans"), a.hosgoru)
+              tuple(a.opts.split(",")), p.get("lisans"), a.hosgoru, a.ikili_sakla)
 
 
 if __name__ == "__main__":

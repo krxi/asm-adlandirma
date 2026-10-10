@@ -117,8 +117,10 @@ __attribute__((noinline)) static int yardimci(int n) { return n * 7; }
 int ikinci(int n) { return yardimci(n) + acik_fonk(n); }
 ''')
         cls.cikti = cls.kok / "veri" / "test.jsonl"
+        cls.ikili = cls.kok / "ikili"
         with contextlib.redirect_stdout(io.StringIO()):
-            cikar(cls.kok, cls.cikti, proje="test", en_az=1, en_cok=1000)
+            cikar(cls.kok, cls.cikti, proje="test", en_az=1, en_cok=1000,
+                  ikili_sakla=cls.ikili)
         cls.satirlar = [json.loads(s) for s in cls.cikti.read_text().splitlines()]
         cls.rapor = json.loads(cls.cikti.with_suffix(".rapor.json").read_text())
 
@@ -169,6 +171,16 @@ int ikinci(int n) { return yardimci(n) + acik_fonk(n); }
         del m.komutlar[0x26]
         self.assertFalse(m.baslangiclar())
         self.assertTrue(m.unwind())
+
+    def test_ikili_sakla_eslemesi_satirlarla_birebir(self):
+        eslemeler = [json.loads(s) for yol in sorted(self.ikili.rglob("*.jsonl"))
+                     for s in yol.read_text().splitlines()]
+        self.assertEqual({r["id"] for r in eslemeler}, {r["id"] for r in self.satirlar})
+        for r in eslemeler:
+            self.assertGreater(r["adres"], 0)
+            self.assertGreater(r["boyut"], 0)
+            self.assertGreaterEqual(r["dosya_ofseti"], 0)
+            self.assertTrue((self.ikili / "test" / r["ikili"]).is_file())
 
     def test_derleme_hatasinda_eksik_veri_yazilmaz(self):
         kotu = self.kok / "kotu"

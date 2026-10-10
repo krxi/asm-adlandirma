@@ -16,6 +16,16 @@ SISTEM = ("Sen deneyimli bir tersine mühendissin. Sana sembolleri silinmiş bir
           "kütüphane çağrıları görünür. Fonksiyonun asıl kaynak koddaki adını tahmin et. "
           'Yalnız JSON dön: {"ad": "snake_case_tahmin", "aciklama": "tek cümle Türkçe"}')
 SISTEM_BAGLAM = SISTEM + " Çağrılan iç fonksiyonların özetleri asm'nin altında verildi."
+SISTEM_DECOMPILE = ("Sen deneyimli bir tersine mühendissin. Sana sembolleri silinmiş bir x86-64 "
+                    "fonksiyonunun Ghidra ile üretilmiş C benzeri sözde kodu verilecek. Projenin iç "
+                    "fonksiyonları FUN_XXXX veya sub_XXXX diye gizlendi; dış kütüphane çağrıları "
+                    "görünür. Fonksiyonun asıl kaynak koddaki adını tahmin et. "
+                    'Yalnız JSON dön: {"ad": "snake_case_tahmin", "aciklama": "tek cümle Türkçe"}')
+SISTEM_IKISI = ("Sen deneyimli bir tersine mühendissin. Sana sembolleri silinmiş bir x86-64 "
+                "fonksiyonunun Intel assembly'si ve Ghidra ile üretilmiş C benzeri sözde kodu "
+                "verilecek. Projenin iç fonksiyonları FUN_XXXX veya sub_XXXX diye gizlendi; dış "
+                "kütüphane çağrıları görünür. Fonksiyonun asıl kaynak koddaki adını tahmin et. "
+                'Yalnız JSON dön: {"ad": "snake_case_tahmin", "aciklama": "tek cümle Türkçe"}')
 
 
 def anahtar() -> str:
@@ -55,11 +65,21 @@ def evren_istek(model: str, mesajlar: list[dict], max_tokens: int = 2048, **ek) 
     raise son
 
 
-def sor(model: str, asm: str, dusunme: bool = False, tavan: int = 4096, baglam: bool = False) -> dict:
+def sistem_istemi(girdi: str = "asm", baglam: bool = False) -> str:
+    if girdi == "decompile":
+        return SISTEM_DECOMPILE
+    if girdi == "ikisi":
+        return SISTEM_IKISI + (" Çağrılan iç fonksiyonların özetleri assembly'nin altında verildi."
+                               if baglam else "")
+    return SISTEM_BAGLAM if baglam else SISTEM
+
+
+def sor(model: str, asm: str, dusunme: bool = False, tavan: int = 4096, baglam: bool = False,
+        girdi: str = "asm") -> dict:
     # Düşünme açıkken bazı modeller 16K token'lık döngüye girip dakikalarca bekletiyor:
     # varsayılan kapalı, açıkken max_tokens tavanı var. Tavana çarpan cevap "kesik" sayılır.
     govde = {"model": model, "temperature": 0,
-             "messages": [{"role": "system", "content": SISTEM_BAGLAM if baglam else SISTEM},
+             "messages": [{"role": "system", "content": sistem_istemi(girdi, baglam)},
                           {"role": "user", "content": asm}]}
     if dusunme:
         govde["max_tokens"] = tavan
@@ -89,11 +109,34 @@ def token_tahmini(metin: str) -> int:
     return (len(metin) + 3) // 4
 
 
-def model_girdisi(r: dict, baglam: bool = False, baglam_derin: bool = False) -> str:
+def model_girdisi(r: dict, baglam: bool = False, baglam_derin: bool = False,
+                  girdi: str = "asm", decompile=None) -> str:
     alan = "baglam_derin" if baglam_derin else "baglam"
-    if not (baglam or baglam_derin) or not r.get(alan):
-        return r["asm"]
-    return r["asm"] + "\n\n; --- çağrılan fonksiyonlar ---\n" + r[alan]
+    asm = r["asm"]
+    if (baglam or baglam_derin) and r.get(alan):
+        asm += "\n\n; --- çağrılan fonksiyonlar ---\n" + r[alan]
+    if girdi == "asm":
+        return asm
+    if decompile is None:
+        raise ValueError(f"{r['id']}: decompile yok")
+    if girdi == "decompile":
+        return decompile
+    if girdi == "ikisi":
+        return asm + "\n\n/* --- Ghidra decompile --- */\n" + decompile
+    raise ValueError(f"bilinmeyen girdi: {girdi}")
+
+
+def decompile_oku(yol: Path) -> dict[str, str]:
+    sonuc = {}
+    for no, satir in enumerate(yol.open(), 1):
+        r = json.loads(satir)
+        if "id" not in r or "decompile" not in r:
+            raise SystemExit(f"--decompile satır {no}: id/decompile alanı eksik")
+        if r["id"] in sonuc:
+            raise SystemExit(f"--decompile içinde yinelenen id: {r['id']}")
+        if r["decompile"]:
+            sonuc[r["id"]] = r["decompile"]
+    return sonuc
 
 
 def idlerle_sec(satirlar: list[dict], idler_yolu: Path) -> list[dict]:
@@ -184,6 +227,9 @@ def main():
     ap.add_argument("--devam", action="store_true",
                     help="var olan sonuç dosyasındaki sağlam satırları koru, yalnız eksik/HATA olanları sor")
     ap.add_argument("--idler", type=Path, help="id listesini dosyadaki sırayla seç; -n yok sayılır")
+    ap.add_argument("--decompile", type=Path, help="id/decompile alanlarını taşıyan Ghidra JSONL çıktısı")
+    ap.add_argument("--girdi", choices=("asm", "decompile", "ikisi"), default="asm",
+                    help="modele assembly, decompile veya ikisini ver (varsayılan: asm)")
     ap.add_argument("--kuru", action="store_true", help="istek ve dosya yazımı yapma; girdi token tahminini yaz")
     ap.add_argument("--kesik-de", action="store_true", help="--devam ile: tavana çarpıp boş kalanları da yeniden sor")
     ap.add_argument("--kismi", action="store_true",
@@ -193,6 +239,10 @@ def main():
     ap.add_argument("--oneksiz", action="store_true",
                     help="gerçek ad F1'inin yanına öneksiz F1'i de (ozet.py tanımı) yaz ve raporla")
     a = ap.parse_args()
+    if a.girdi != "asm" and a.decompile is None:
+        ap.error(f"--girdi {a.girdi} için --decompile gerekli")
+    if a.girdi == "decompile" and (a.baglam or a.baglam_derin):
+        ap.error("--baglam/--baglam-derin yalnız asm içeren girdilerde kullanılabilir")
     if a.oneksiz:
         from ozet import f1_oneksiz  # ozet taban'ı içe aktarır; döngü olmasın diye burada
 
@@ -203,12 +253,24 @@ def main():
         random.Random(a.tohum).shuffle(satirlar)
         ornek = satirlar[: a.n]
 
+    istenen_sayi = len(ornek)
+    decompile = decompile_oku(a.decompile) if a.decompile else {}
+    if a.girdi != "asm":
+        eksik = [r["id"] for r in ornek if r["id"] not in decompile]
+        if eksik:
+            print(f"decompile yok: {len(eksik)}/{len(ornek)} satır atlandı", file=sys.stderr)
+        ornek = [r for r in ornek if r["id"] in decompile]
+        if not ornek:
+            raise SystemExit("seçilen satırların hiçbirinde decompile yok")
+
     baglam_eki = "-baglam2" if a.baglam_derin else "-baglam" if a.baglam else ""
-    veri_adi = f"{a.veri.stem}{len(ornek)}" if a.idler else a.veri.stem
-    sonuc = Path("sonuc") / f"{veri_adi}-{a.model}{'-dusunme' if a.dusunme else ''}{baglam_eki}.jsonl"
+    girdi_eki = f"-{a.girdi}" if a.girdi != "asm" else ""
+    veri_adi = f"{a.veri.stem}{istenen_sayi}" if a.idler else a.veri.stem
+    sonuc = Path("sonuc") / f"{veri_adi}-{a.model}{'-dusunme' if a.dusunme else ''}{baglam_eki}{girdi_eki}.jsonl"
     if a.kuru:
-        sistem = SISTEM_BAGLAM if (a.baglam or a.baglam_derin) else SISTEM
-        toplam = sum(token_tahmini(sistem) + token_tahmini(model_girdisi(r, a.baglam, a.baglam_derin))
+        sistem = sistem_istemi(a.girdi, a.baglam or a.baglam_derin)
+        toplam = sum(token_tahmini(sistem) + token_tahmini(model_girdisi(
+                         r, a.baglam, a.baglam_derin, a.girdi, decompile.get(r["id"])))
                      for r in ornek)
         print(f"kuru: {len(ornek)} satır; tahmini toplam girdi tokenı (model başına): {toplam:,}")
         print(f"çıktı yolu → {sonuc}")
@@ -249,8 +311,11 @@ def main():
         sorulacak = [r for r in sorulacak if r["id"] not in yeni]
     with ThreadPoolExecutor(a.j) as havuz, ara.open("a") as f:
         baglamli = a.baglam or a.baglam_derin
-        isler = {havuz.submit(sor, a.model, model_girdisi(r, a.baglam, a.baglam_derin),
-                              a.dusunme, a.tavan, baglamli): r for r in sorulacak}
+        isler = {}
+        for r in sorulacak:
+            girdi = model_girdisi(r, a.baglam, a.baglam_derin, a.girdi, decompile.get(r["id"]))
+            ek = () if a.girdi == "asm" else (a.girdi,)
+            isler[havuz.submit(sor, a.model, girdi, a.dusunme, a.tavan, baglamli, *ek)] = r
         kosu_token = 0
         tamamlanan = 0
         for gelen in as_completed(isler):

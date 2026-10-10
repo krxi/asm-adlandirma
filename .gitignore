@@ -11,6 +11,7 @@ lora/adaptor/
 veri/egitim/
 veri/kaynak/
 veri/aciklama/
+/veri/decompile/
 sonuc/*.ara
 sonuc/*BITTI
 lora/veri-*/
