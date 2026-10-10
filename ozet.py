@@ -54,7 +54,7 @@ def main():
                          sum(r["f1"] == 1 for r in L), len(L), hata, kesik, sum(r.get("token", 0) for r in L)))
 
     if md:
-        print("| koşu | -O0 F1 | -O2 F1 | öneksiz F1 | tam isabet | kesik | token |\n|---|---|---|---|---|---|---|---|")
+        print("| koşu | -O0 F1 | -O2 F1 | öneksiz F1 | tam isabet | kesik | token |\n|---|---|---|---|---|---|---|")
         for ad, o0, o2, oneksiz, isabet, n, hata, kesik, token in sorted(satirlar, key=lambda s: -float(s[3])):
             print(f"| {ad} | {o0} | {o2} | {oneksiz} | {isabet} / {n} | {kesik} | {token:,} |")
     else:
