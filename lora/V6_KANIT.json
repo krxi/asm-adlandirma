@@ -1,5 +1,10 @@
 {
   "schema": "asmsense-v6-validation-evidence-2",
+  "implementation": {
+    "commit": "6e30b9ecfc3ab32daab4976403a825b1985d0ad0",
+    "tree": "3546d2be447f45ae87b2d8f77e2bb8511445d5fb",
+    "url": "https://github.com/krxi/asmsense/commit/6e30b9ecfc3ab32daab4976403a825b1985d0ad0"
+  },
   "upstream": {
     "commit": "15e3b28f1be387d0e8655edd838e1c32f9d348d5",
     "tree": "6f8d4781522bc7be45839071dc7231e12d0164e5",

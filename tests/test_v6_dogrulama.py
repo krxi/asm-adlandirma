@@ -68,9 +68,7 @@ def muhurlu_manifest(a):
     m = {
         "beklenen_sha256": iz,
         "train_sira_sha256": v6.ozet([tr[i]["id"] for i in v6.veri_sirasi(tr)]),
-        "ana_hat_bloblari": {
-            p: v6.git_blob(v6.KOK / p) for p in ("lora/hazirla_sonraki.py", "dogrula_v6.py")
-        },
+        "ana_hat_bloblari": {p: v6.git_blob(v6.KOK / p) for p in ("lora/hazirla_sonraki.py", "dogrula_v6.py")},
     }
     v6.GIRDI_MANIFESTI.write_text(json.dumps(m), encoding="utf-8")
     return m
