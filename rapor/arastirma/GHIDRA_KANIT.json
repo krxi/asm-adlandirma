@@ -19,5 +19,5 @@
   "manuel_duman": "not run (bu düzeltmede); CI dışında elle koşulur",
   "gui_model_sunucusu": "not run",
   "model_egitimi_yeni_cikarim": "not run",
-  "not": "Tam pytest arşivlenmiş sonuc/*.jsonl tahminlerini rapor regresyonu için yeniden puanlar; yalnız sentetik değildir. Güncel CI bağlantısı PR açıklamasındadır."
+  "not": "Varsayılan pytest sentetik birim testlerini çalıştırır; arşivlenmiş gerçek sonuçların rapor regresyonu ASMSENSE_ARCHIVE_REPORT=1 ile açıkça etkinleştirilir. Güncel CI bağlantısı PR açıklamasındadır."
 }
