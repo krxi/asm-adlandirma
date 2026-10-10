@@ -1,6 +1,6 @@
 """Ölçüm hattı: sentetik model testleri ve arşivlenmiş gerçek sonuçların rapor denetimi."""
 
-import json, re, subprocess, sys
+import json, os, re, subprocess, sys
 from pathlib import Path
 
 import pytest
@@ -390,6 +390,10 @@ def test_rapor_normalizasyonu_eski_raporu_yakalar(degisiklik):
     assert rapor_karsilastirma_metni(degismis) != rapor_karsilastirma_metni(beklenen)
 
 
+@pytest.mark.skipif(
+    os.environ.get("ASMSENSE_ARCHIVE_REPORT") != "1",
+    reason="Archived benchmark rescoring is an explicit publication check, not a unit test",
+)
 def test_rapor_guncel(tmp_path):
     """Gerçek sonuc/*.jsonl arşivini yeniden puanlar; yeni model çıkarımı çalıştırmaz."""
     import iki_f1

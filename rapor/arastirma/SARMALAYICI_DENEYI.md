@@ -36,6 +36,7 @@ JSON `iz` alanında `python3` ile taşınabilir komut, public checkout commit/tr
 repo-göreli dosya veya yalnız dosya adı + SHA-256 bulunur; mutlak çalışma yolu yoktur.
 Birim testleri sayımın test kimliklerini reddettiğini, çıktı yollarını ve mevcut
 deney korumasının kaynak metninin değişmediğini sınar. Güncel CI PR #4'tedir.
-Tam pytest gerçek arşiv tahminlerini rapor regresyonu için yeniden puanlar;
-bu, yeni model çıkarımı değildir. Yeni eğitim, inference ve test deneyi çalıştırılmadı.
+Varsayılan pytest gerçek arşiv tahminlerini yeniden puanlamaz; arşiv rapor
+regresyonu yalnız ASMSENSE_ARCHIVE_REPORT=1 ile etkinleşir. Yeni eğitim,
+inference ve test deneyi çalıştırılmadı.
 Mevcut v6 hattının validation karşılaştırması ayrı iş olarak kalır.
