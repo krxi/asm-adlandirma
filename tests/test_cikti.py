@@ -13,15 +13,17 @@ def test_anahtar_sirasindan_bagimsiz():
         assert ad_ayikla(metin) == ("read_record", "Reads a record.", "Kayıt okur.", True)
 
 
-@pytest.mark.parametrize("metin", ['{"ad": "oku"', '{"ad": "oku", "aciklama": "kesik',
-                                  '{"aciklama_en": "Reads.", "ad": "oku",'])
+@pytest.mark.parametrize(
+    "metin", ['{"ad": "oku"', '{"ad": "oku", "aciklama": "kesik', '{"aciklama_en": "Reads.", "ad": "oku",']
+)
 def test_kesik_json(metin):
     ad, _, _, gecerli = ad_ayikla(metin)
     assert ad == "oku" and not gecerli
 
 
-@pytest.mark.parametrize("metin, ad", [("read_record", "read_record"), ("`read_record()`", "read_record"),
-                                       ("", ""), ("123 !!!", "")])
+@pytest.mark.parametrize(
+    "metin, ad", [("read_record", "read_record"), ("`read_record()`", "read_record"), ("", ""), ("123 !!!", "")]
+)
 def test_duz_metin(metin, ad):
     assert ad_ayikla(metin) == (ad, "", "", False)
 
