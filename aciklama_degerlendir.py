@@ -192,13 +192,15 @@ def paketle(manifest, secilen, girdiler, kaynak_yolu, paket_yolu, anahtar_yolu=N
     if len({paket_yolu, anahtar_yolu, sablon_yolu}) != 3:
         raise ValueError("Paket, anahtar ve etiket şablonu ayrı dosya olmalı")
     # Etiketler özgün paketi değiştirmez; her satır o paketin gerçek bayt hash'ini taşır.
-    sablon = [
-        {"ornek": r["ornek"], "paket_sha256": paket_sha, **dict.fromkeys(ALANLAR, ""), "not": ""} for r in paket
-    ]
+    sablon = [{"ornek": r["ornek"], "paket_sha256": paket_sha, **dict.fromkeys(ALANLAR, ""), "not": ""} for r in paket]
     ozel_yaz(paket_yolu, metin)
     ozel_yaz(anahtar_yolu, dg.json_metni({"manifest": manifest, "paket_sha256": paket_sha, "esleme": gizli}))
     ozel_yaz(sablon_yolu, "".join(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n" for r in sablon))
-    return {"paket": dg.dosya_izi(paket_yolu), "anahtar": dg.dosya_izi(anahtar_yolu), "etiket_sablonu": sablon_yolu.name}
+    return {
+        "paket": dg.dosya_izi(paket_yolu),
+        "anahtar": dg.dosya_izi(anahtar_yolu),
+        "etiket_sablonu": sablon_yolu.name,
+    }
 
 
 def etiketleri_yukle(yol, paket_sha):
