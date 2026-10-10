@@ -76,3 +76,17 @@ def test_cli_ozel_yollar(tmp_path, monkeypatch):
     cikti = tmp_path / "x.html"
     iv.main(["--veri", str(veri), "--cikti", str(cikti), "--tohum", "7"])
     assert cikti.exists() and "TOHUM 7" in cikti.read_text()
+
+
+def test_v6_decompile_bolumu_bayraklari_ve_tokenlari():
+    r = kayit(1)
+    r["messages"][1]["content"] += (iv.DECOMPILE_BASLIK +
+                                      "int sub_0001(void) {\n/* ... kırpıldı */")
+    r.update({"decompile_var": True, "decompile_kirpildi": True,
+              "decompile_sizinti": False, "decompile_yok_neden": None,
+              "token": {"girdi": 123, "hedef": 17, "toplam": 180}})
+    asm, baglam, decompile = iv.girdi_bol(r)
+    assert asm.startswith("mov") and baglam == "" and "sub_0001" in decompile
+    assert "decompile_kirpildi" in iv.bayraklari_bul(r, {"komut_sayisi": 10, "asm": asm})
+    kart = iv.kart_html(r, "bayraklı", {"komut_sayisi": 10, "asm": asm})
+    assert "Ghidra decompile" in kart and "girdi 123" in kart and "kırpıldı" in kart

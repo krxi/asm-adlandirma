@@ -14,8 +14,11 @@ veri/aciklama/
 /veri/decompile/
 /veri/decompile-v6/
 /veri/decompile-v6-test2000/
+/veri/decompile-v6-eval115/
 /veri/ikili-v6/
+/veri/ikili-v6-eval115/
 /veri/olcek-v6/
+/veri/olcek-v6-eval115/
 sonuc/*.ara
 sonuc/*BITTI
 lora/veri-*/
@@ -23,3 +26,4 @@ lora/adaptor-*/
 veri/bin/
 /veri-v5.zip
 rapor/veri-v5-inceleme.html
+rapor/veri-v6-inceleme.html

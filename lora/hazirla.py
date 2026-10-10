@@ -27,7 +27,12 @@ SISTEM_V5 = (
     '{"aciklama_en": "Reads a record from the stream.", "ad": "read_record", '
     '"aciklama": "Akıştan bir kayıt okur."}'
 )
+SISTEM_V6 = SISTEM_V5 + (
+    " Ayrıca varsa assembly ve çağrı bağlamının ardından Ghidra ile üretilmiş "
+    "C benzeri sözde kod da verilecek."
+)
 BAGLAM_BASLIK = "\n\n; --- çağrılan fonksiyonlar ---\n"
+DECOMPILE_BASLIK = "\n\n/* --- Ghidra decompile --- */\n"
 
 
 def oku(veri: Path) -> dict[str, list[dict]]:

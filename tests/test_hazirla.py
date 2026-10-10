@@ -1,6 +1,6 @@
 """lora/hazirla.py (v3 düzeni) ve lora/hazirla_olcek.py (v4 düzeni): sohbet biçimi ve proje bazlı bölme."""
 
-import json, os, subprocess, sys
+import hashlib, json, os, subprocess, sys
 from collections import Counter
 from pathlib import Path
 
@@ -454,6 +454,100 @@ def test_v5_tek_satir_token_tavani(monkeypatch):
     a = SimpleNamespace(satir_tavan=200, token_tavan=20)
     s = hs.satir_v5(satir(asm="x" * 100), None, None, a)
     assert len(s["messages"][1]["content"]) == 20
+
+
+def test_v6_v5_yolunu_degistirmez_ve_eksikte_taban_girdiyi_korur(monkeypatch):
+    monkeypatch.setattr(h, "TOK", SohbetTok())
+    monkeypatch.setattr(h, "ONEK", {"p": {"p"}})
+    a = SimpleNamespace(satir_tavan=200, token_tavan=2500, max_uzunluk=3072,
+                        decompile_alt_token=20)
+    r = satir(dosya="a.c", baglam="sub_0001: bir şey yapar")
+    v5_once = hs.satir_v5(r, "Okur.", "Reads.", a)
+    v5_sonra = hs.satir_v5(r, "Okur.", "Reads.", a)
+    assert v5_once == v5_sonra
+    v5_bayt = (json.dumps(v5_once, ensure_ascii=False) + "\n").encode()
+    assert hashlib.sha256(v5_bayt).hexdigest() == \
+        "5d180910c3d4d75d4cdd5849e33aa549b6184ccb0bd9a568361f0232639e668c"
+    v6 = hs.satir_v6(r, "Okur.", "Reads.", a, None)
+    assert v6["messages"][1]["content"] == v5_once["messages"][1]["content"]
+    assert not v6["decompile_var"] and v6["decompile_yok_neden"] == "eksik"
+    assert v6["messages"][0]["content"] == h.SISTEM_V6
+
+
+def test_v6_decompile_satir_bazinda_sondan_kirpilir(monkeypatch):
+    monkeypatch.setattr(h, "TOK", SohbetTok())
+    a = SimpleNamespace(satir_tavan=200, token_tavan=2500, max_uzunluk=0,
+                        decompile_alt_token=20)
+    r = satir(dosya="a.c", ad="hedef")
+    taban = hs.satir_v5(r, None, None, a)
+    taban["messages"][0]["content"] = h.SISTEM_V6
+    a.max_uzunluk = hs._toplam_token(taban) + len(h.DECOMPILE_BASLIK) + 95
+    decompile = "\n".join(f"int local_{i} = param_{i};" for i in range(20))
+    s = hs.satir_v6(r, None, None, a, {"decompile": decompile, "sizinti": False})
+    assert s["decompile_var"] and s["decompile_kirpildi"]
+    assert s["messages"][1]["content"].endswith(hs.DECOMPILE_KIRPMA)
+    assert "local_0" in s["messages"][1]["content"]
+    assert "local_19" not in s["messages"][1]["content"]
+    assert hs._toplam_token(s) <= a.max_uzunluk
+
+
+@pytest.mark.parametrize("metin", [
+    "int p_oku(int x) { return x; }",
+    "int _p_oku(int x) { return x; }",
+    "int oku(int x) { return x; }",
+    "int _oku(int x) { return x; }",
+])
+def test_v6_anonim_decompile_hedef_ad_sizintisi_atilir(monkeypatch, metin):
+    monkeypatch.setattr(h, "TOK", SohbetTok())
+    monkeypatch.setattr(h, "ONEK", {"p": {"p"}})
+    a = SimpleNamespace(satir_tavan=200, token_tavan=2500, max_uzunluk=3072,
+                        decompile_alt_token=20)
+    s = hs.satir_v6(satir(dosya="a.c"), None, None, a,
+                    {"decompile": metin, "sizinti": True})
+    assert not s["decompile_var"] and s["decompile_sizinti"]
+    assert s["decompile_ham_sizinti"]
+    assert s["decompile_yok_neden"] == "hedef_ad_sizintisi"
+    assert h.DECOMPILE_BASLIK not in s["messages"][1]["content"]
+
+
+def test_v6_sizinti_tam_tanimlayici_eslesmesidir(monkeypatch):
+    monkeypatch.setattr(h, "TOK", SohbetTok())
+    monkeypatch.setattr(h, "ONEK", {"p": {"p"}})
+    a = SimpleNamespace(satir_tavan=200, token_tavan=2500, max_uzunluk=3072,
+                        decompile_alt_token=20)
+    s = hs.satir_v6(satir(dosya="a.c"), None, None, a,
+                    {"decompile": "int p_okuyucu(void) { return 1; }", "sizinti": True})
+    assert s["decompile_var"] and not s["decompile_sizinti"]
+    assert s["decompile_ham_sizinti"]
+
+
+def test_v6_butce_alt_sinirinda_decompile_konmaz(monkeypatch):
+    monkeypatch.setattr(h, "TOK", SohbetTok())
+    a = SimpleNamespace(satir_tavan=200, token_tavan=2500, max_uzunluk=0,
+                        decompile_alt_token=200)
+    r = satir(dosya="a.c", ad="hedef")
+    taban = hs.satir_v5(r, None, None, a)
+    taban["messages"][0]["content"] = h.SISTEM_V6
+    a.max_uzunluk = hs._toplam_token(taban) + len(h.DECOMPILE_BASLIK) + 100
+    s = hs.satir_v6(r, None, None, a,
+                    {"decompile": "\n".join("int x = 1;" for _ in range(100)), "sizinti": False})
+    assert not s["decompile_var"] and s["decompile_yok_neden"] == "butce_alt_sinir"
+
+
+def test_v6_decompile_dizini_yalniz_tamamlanmis_jsonl_okur(tmp_path):
+    d = tmp_path / "d"
+    d.mkdir()
+    (d / "p.jsonl").write_text(json.dumps({"id": "p/1", "decompile": "int x;", "sizinti": False}) + "\n")
+    (d / "yarim.ara").write_text(json.dumps({"id": "q/1", "decompile": "int y;", "sizinti": False}) + "\n")
+    kayitlar, projeler, yinelenen = hs.decompile_dizinlerini_oku([d])
+    assert set(kayitlar) == {"p/1"}
+    assert projeler == {"p"} and yinelenen == 0
+
+
+def test_v6_tam_zorunlu_eksik_projeyi_reddeder():
+    assert hs.tamligi_denetle({"a", "b"}, {"a"}) == ["b"]
+    with pytest.raises(ValueError, match=r"--tam-zorunlu: 1 proje"):
+        hs.tamligi_denetle({"a", "b"}, {"a"}, True)
 
 
 def test_v5_onek_esitligi_hash_tohumundan_bagimsiz():

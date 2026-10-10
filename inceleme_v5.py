@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""v5 eğitim verisini çevrimdışı incelenebilen tek bir HTML dosyasına dönüştürür."""
+"""v5/v6 eğitim verisini çevrimdışı incelenebilen tek HTML'e dönüştürür."""
 
 import argparse
 import html
@@ -10,6 +10,7 @@ from pathlib import Path
 
 
 BAGLAM_BASLIK = "\n\n; --- çağrılan fonksiyonlar ---\n"
+DECOMPILE_BASLIK = "\n\n/* --- Ghidra decompile --- */\n"
 BAYRAK_ADLARI = {
     "ad_string": "ad string sabitinde",
     "aciklama_yok": "açıklama yok",
@@ -17,6 +18,9 @@ BAYRAK_ADLARI = {
     "cok_uzun": "çok uzun / girdi kesilmiş",
     "en_ad_iceriyor": "İngilizce açıklama adı içeriyor",
     "kisa_aciklama": "açıklama çok kısa (<5 sözcük)",
+    "decompile_kirpildi": "decompile kırpıldı",
+    "decompile_sizinti": "hedef adı sızıntısı; decompile atıldı",
+    "decompile_yok": "decompile yok",
 }
 
 
@@ -46,8 +50,20 @@ def girdi_ayristir(satir):
         girdi = satir["messages"][1]["content"]
     except (KeyError, IndexError, TypeError) as hata:
         raise ValueError(f"{satir.get('id', '?')}: user girdisi geçersiz") from hata
-    asm, ayirici, baglam = girdi.partition(BAGLAM_BASLIK)
+    asm_baglam, _, _ = girdi.partition(DECOMPILE_BASLIK)
+    asm, ayirici, baglam = asm_baglam.partition(BAGLAM_BASLIK)
     return asm, baglam if ayirici else ""
+
+
+def girdi_bol(satir):
+    """Kullanıcı girdisini asm, bağlam ve decompile olarak ayır."""
+    try:
+        girdi = satir["messages"][1]["content"]
+    except (KeyError, IndexError, TypeError) as hata:
+        raise ValueError(f"{satir.get('id', '?')}: user girdisi geçersiz") from hata
+    asm_baglam, ayirici, decompile = girdi.partition(DECOMPILE_BASLIK)
+    asm, baglam_ayirici, baglam = asm_baglam.partition(BAGLAM_BASLIK)
+    return asm, baglam if baglam_ayirici else "", decompile if ayirici else ""
 
 
 def kelime_sayisi(metin):
@@ -91,6 +107,12 @@ def bayraklari_bul(satir, ham=None):
         bayraklar.append("en_ad_iceriyor")
     if (en and kelime_sayisi(en) < 5) or (tr and kelime_sayisi(tr) < 5):
         bayraklar.append("kisa_aciklama")
+    if satir.get("decompile_kirpildi"):
+        bayraklar.append("decompile_kirpildi")
+    if satir.get("decompile_sizinti"):
+        bayraklar.append("decompile_sizinti")
+    if "decompile_var" in satir and not satir.get("decompile_var"):
+        bayraklar.append("decompile_yok")
     return bayraklar
 
 
@@ -164,6 +186,18 @@ def ozet_html(ozet):
     parcaciklar.append(_tablo("Token yüzdelikleri", token_satirlari,
                               ("bölüm", "tür", "p50", "p90", "p99", "maks")))
 
+    decompile_satirlari = []
+    for bolum in bolum_adlari:
+        b = ozet[bolum]
+        if "decompile_var" in b:
+            decompile_satirlari.append((bolum, b.get("decompile_var", 0),
+                                        f"{100 * b.get('decompile_var_oran', 0):.1f}%",
+                                        b.get("decompile_kirpildi", 0),
+                                        b.get("decompile_sizinti", 0), b.get("decompile_yok", 0)))
+    if decompile_satirlari:
+        parcaciklar.append(_tablo("Decompile durumu", decompile_satirlari,
+                                  ("bölüm", "var", "oran", "kırpılmış", "sızıntı", "yok")))
+
     filtreler = ozet.get("filtreler", {})
     filtre_adlari = sorted({k for f in filtreler.values() for k in f})
     filtre_satirlari = [(bolum,) + tuple(filtreler[bolum].get(k, 0) for k in filtre_adlari)
@@ -176,7 +210,7 @@ def ozet_html(ozet):
 
 def kart_html(satir, kaynak, ham):
     hedef = hedef_ayristir(satir)
-    asm, baglam = girdi_ayristir(satir)
+    asm, baglam, decompile = girdi_bol(satir)
     bayraklar = bayraklari_bul(satir, ham)
     kimlik = str(satir["id"])
     rozetler = "".join(f'<span class="flag flag-{b}">{html.escape(BAYRAK_ADLARI[b])}</span>' for b in bayraklar)
@@ -184,16 +218,22 @@ def kart_html(satir, kaynak, ham):
         rozetler = '<span class="flag clean">bayrak yok</span>'
     dugmeler = "".join(f'<button type="button" data-decision="{k}">{a}</button>'
                         for k, a in (("iyi", "İyi"), ("supheli", "Şüpheli"), ("kotu", "Kötü")))
+    token = satir.get("token") or {}
+    token_ozeti = (f"girdi {token.get('girdi', '?')} · hedef {token.get('hedef', '?')} · "
+                   f"toplam {token.get('toplam', '?')}")
+    decompile_neden = satir.get("decompile_yok_neden") or "decompile yok"
     return f'''<article class="card" data-id="{html.escape(kimlik, quote=True)}"
       data-flags="{html.escape(' '.join(bayraklar), quote=True)}" data-decision="bos">
       <header><div><span class="source">{kaynak}</span><code>{html.escape(kimlik)}</code></div>
       <span>{html.escape(str(satir.get("proje", "?")))} · {html.escape(str(satir.get("opt", "?")))}</span></header>
       <h3>{html.escape(str(hedef.get("ad", "")))}</h3>
       <div class="flags">{rozetler}</div>
+      <p class="muted">Token: {html.escape(token_ozeti)}</p>
       <dl><dt>EN</dt><dd>{html.escape(str(hedef.get("aciklama_en", "—") or "—"))}</dd>
       <dt>TR</dt><dd>{html.escape(str(hedef.get("aciklama", "—") or "—"))}</dd></dl>
       <details><summary>ASM'nin ilk 25 satırı</summary><pre>{html.escape(chr(10).join(asm.splitlines()[:25]))}</pre></details>
       <details><summary>Bağlam</summary><pre>{html.escape(baglam or "Bağlam yok")}</pre></details>
+      <details><summary>Ghidra decompile</summary><pre>{html.escape(decompile or decompile_neden)}</pre></details>
       <div class="review" role="group" aria-label="Karar">{dugmeler}</div>
       <label class="note">Not<textarea rows="2" placeholder="İsteğe bağlı not"></textarea></label>
     </article>'''
@@ -230,15 +270,17 @@ def html_uret(veri, cikti, tohum=42, ham_yolu=None):
     hamlar = ham_kayitlari_oku(ham_yolu, (r["id"] for r in train))
     secilenler = ornekleri_sec(train, hamlar, tohum)
     ozet = json.loads(ozet_yolu.read_text(encoding="utf-8"))
+    surum = str(ozet.get("surum") or "v5")
     kartlar = "".join(kart_html(r, kaynak, hamlar.get(r["id"], {})) for r, kaynak in secilenler)
     secenekler = "".join(f'<option value="{k}">{html.escape(v)}</option>' for k, v in BAYRAK_ADLARI.items())
-    belge = f'''<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>v5 veri inceleme</title><style>{CSS}</style></head><body><main>
-    <button class="theme" id="theme" type="button" aria-label="Açık veya koyu temaya geç">◐ Tema</button><p class="eyebrow">EĞİTİM ÖNCESİ DENETİM · TOHUM {tohum}</p><h1>v5 veri inceleme</h1>
+    js = JS.replace("veri-v5", f"veri-{surum}")
+    belge = f'''<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(surum)} veri inceleme</title><style>{CSS}</style></head><body><main>
+    <button class="theme" id="theme" type="button" aria-label="Açık veya koyu temaya geç">◐ Tema</button><p class="eyebrow">EĞİTİM ÖNCESİ DENETİM · TOHUM {tohum}</p><h1>{html.escape(surum)} veri inceleme</h1>
     <p class="muted">{len(secilenler)} örnek · kararlar yalnız bu tarayıcıda saklanır</p>
     <div class="summary-grid">{ozet_html(ozet)}</div>
     <div class="controls"><label>Bayrak<select id="flag-filter"><option value="hepsi">Hepsi</option><option value="bayrakli">Herhangi bir bayrak</option><option value="">Bayraksız</option>{secenekler}</select></label><label>Karar<select id="decision-filter"><option value="hepsi">Hepsi</option><option value="bos">İşaretsiz</option><option value="iyi">İyi</option><option value="supheli">Şüpheli</option><option value="kotu">Kötü</option></select></label><span id="visible" class="muted"></span><button class="primary" id="download" type="button">İşaretleri JSON indir</button></div>
     <div class="cards">{kartlar}<p class="empty hidden">Bu filtrede kart yok.</p></div>
-    </main><script>{JS}</script></body></html>'''
+    </main><script>{js}</script></body></html>'''
     cikti.parent.mkdir(parents=True, exist_ok=True)
     cikti.write_text(belge, encoding="utf-8")
     return {"rastgele": sum(k == "rastgele" for _, k in secilenler),

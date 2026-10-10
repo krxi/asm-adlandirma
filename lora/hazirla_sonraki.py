@@ -17,6 +17,10 @@ proje öneki, ham test adları, jenerik ad filtresi, fonksiyon kapsamı ve opt d
 1.500'den fazla fonksiyonlu projelerde varsayılan kapsam önceliklidir; kesin
 tavan için --kapsam-onceligi tavan. Her iki durumda istisnalar özete yazılır.
 Qwen3 tokenizer tercih edilir, indirilemezse önbellekteki Qwen2.5 kullanılır.
+
+v6: --surum v6 --decompile veri/decompile-v6 --cikti lora/veri-v6. v5'in
+satırlarına, sığdığı ölçüde anonim Ghidra decompile metni eklenir. Birden
+fazla --decompile verilebilir; sonraki dizin aynı id için öncekini geçersiz kılar.
 """
 import argparse, json, math, random, re, sys
 from collections import Counter, defaultdict
@@ -51,6 +55,17 @@ OZET_ONEK: dict[str, set[str]] = {}
 JENERIK = re.compile(r"^(main|init|foo|bar|baz|helper|test|f[0-9]+|test_.*|sub_.*)$", re.I)
 OPT_AGIRLIK = {"-O0": .15, "-O1": .20, "-O2": .25, "-O3": .20, "-Os": .20}
 YEDEK_TOKENIZER = "mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit"
+DECOMPILE_KIRPMA = "/* ... kırpıldı */"
+TANIMLAYICI = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+ITHAL_YORUM = re.compile(r";\s*->\s*([A-Za-z_][A-Za-z0-9_]*)")
+# Projede aynı adla bir sarmalayıcı olsa bile bunlar decompiler/import gürültüsü
+# sayılır. Diğer adlar zaten ancak projenin gerçek ad listesinde ise ölçülür.
+LIBC_ADLARI = {
+    "abort", "abs", "calloc", "close", "exit", "fclose", "fflush", "fopen", "fprintf",
+    "free", "fread", "fwrite", "malloc", "memcmp", "memcpy", "memmove", "memset", "open",
+    "printf", "puts", "qsort", "read", "realloc", "snprintf", "sprintf", "strcat", "strchr",
+    "strcmp", "strcpy", "strdup", "strlen", "strncmp", "strncpy", "strrchr", "strstr", "write",
+}
 
 
 def anahtar(r):
@@ -62,6 +77,18 @@ def jsonl_oku(yol):
         for l in f:
             if l.strip():
                 yield json.loads(l)
+
+
+def aciklama_yollarini_tamamla(a):
+    """Worktree'de yalnız veri/bin bağlıysa açıklamaları onun veri kökünde bul."""
+    kok = a.veri.resolve().parents[1]
+    varsayilanlar = (("aciklama", Path("veri/aciklama-v4/codex.jsonl"),
+                      kok / "aciklama-v4/codex.jsonl"),
+                     ("aciklama_detay", Path("veri/aciklama-v4/codex-detay.jsonl"),
+                      kok / "aciklama-v4/codex-detay.jsonl"))
+    for alan, varsayilan, aday in varsayilanlar:
+        if getattr(a, alan) == varsayilan and not varsayilan.exists() and aday.exists():
+            setattr(a, alan, aday)
 
 
 def satir_v5(r, tr, en, a, ham=False):
@@ -86,6 +113,134 @@ def satir_v5(r, tr, en, a, ham=False):
             "baglam_var": bool(r.get("baglam")), "gercek_ad": r["ad"],
             "oneksiz_onek": sorted(OZET_ONEK.get(r["proje"], ())),
             "hedef_tur": "tam" if tam else "ad"}
+
+
+def _toplam_token(satir):
+    return len(h.TOK.apply_chat_template(satir["messages"], tokenize=True,
+                                         add_generation_prompt=False, enable_thinking=False,
+                                         return_dict=False))
+
+
+def ad_sizintisi(metin, adlar):
+    """Adları tam C tanımlayıcısı olarak, baştaki `_` biçimiyle birlikte ara."""
+    for ad in {x for x in adlar if x}:
+        if re.search(rf"(?<![A-Za-z0-9_])_?{re.escape(ad)}(?![A-Za-z0-9_])",
+                     metin, re.IGNORECASE):
+            return ad
+    return None
+
+
+def decompile_kirp(satir, decompile, max_uzunluk, alt_sinir):
+    """Decompile'ı satır bazında sığdır; (metin, kırpıldı) veya (None, False)."""
+    taban = satir["messages"][1]["content"]
+
+    def dene(metin):
+        satir["messages"][1]["content"] = taban + h.DECOMPILE_BASLIK + metin
+        return _toplam_token(satir) <= max_uzunluk
+
+    try:
+        if dene(decompile):
+            return decompile, False
+        satirlar = decompile.splitlines()
+        # En uzun sığan satır önekini bul. Son denetim tokenizer'ın nadir
+        # monoton olmayan parçalanmalarına karşı aşağı doğru tarar.
+        alt, ust, iyi = 0, len(satirlar), 0
+        while alt <= ust:
+            orta = (alt + ust) // 2
+            aday = "\n".join(satirlar[:orta] + [DECOMPILE_KIRPMA])
+            if dene(aday):
+                iyi, alt = orta, orta + 1
+            else:
+                ust = orta - 1
+        while iyi and not dene("\n".join(satirlar[:iyi] + [DECOMPILE_KIRPMA])):
+            iyi -= 1
+        govde = "\n".join(satirlar[:iyi])
+        if iyi == 0 or len(h.TOK.encode(govde)) < alt_sinir:
+            return None, False
+        return govde + "\n" + DECOMPILE_KIRPMA, True
+    finally:
+        satir["messages"][1]["content"] = taban
+
+
+def satir_v6(r, tr, en, a, decompile_kaydi=None, ham=False, esleme="id", taban_satir=None):
+    """v5 satırını ve asm/bağlamını koruyup güvenli decompile ekle."""
+    s = (satir_v5(r, tr, en, a, ham) if taban_satir is None else
+         {**taban_satir, "messages": [dict(m) for m in taban_satir["messages"]]})
+    s["messages"][0]["content"] = h.SISTEM_V6
+    s.update({"decompile_var": False, "decompile_kirpildi": False,
+              "decompile_sizinti": False, "decompile_ham_sizinti": False,
+              "decompile_esleme": esleme if decompile_kaydi else "yok",
+              "decompile_yok_neden": "eksik" if not decompile_kaydi else None})
+    if not decompile_kaydi or not decompile_kaydi.get("decompile"):
+        return s
+    metin = decompile_kaydi["decompile"]
+    s["decompile_ham_sizinti"] = bool(decompile_kaydi.get("sizinti"))
+    sizan = ad_sizintisi(metin, (r["ad"], h.oneksiz(r)))
+    if sizan:
+        s["decompile_sizinti"] = True
+        s["decompile_yok_neden"] = "hedef_ad_sizintisi"
+        return s
+    metin, kirpildi = decompile_kirp(s, metin, a.max_uzunluk, a.decompile_alt_token)
+    if metin is None:
+        s["decompile_yok_neden"] = "butce_alt_sinir"
+        return s
+    s["messages"][1]["content"] += h.DECOMPILE_BASLIK + metin
+    s["decompile_var"] = True
+    s["decompile_kirpildi"] = kirpildi
+    s["decompile_yok_neden"] = None
+    return s
+
+
+def decompile_dizinlerini_oku(dizinler):
+    """Yalnız tamamlanmış *.jsonl projelerini oku; *.ara dosyalarına dokunma."""
+    sonuc, projeler, yinelenen = {}, set(), 0
+    for dizin in dizinler:
+        if not dizin.is_dir():
+            raise FileNotFoundError(f"decompile dizini bulunamadı: {dizin}")
+        for yol in sorted(dizin.glob("*.jsonl")):
+            projeler.add(yol.stem)
+            for no, r in enumerate(jsonl_oku(yol), 1):
+                if not {"id", "decompile", "sizinti"} <= r.keys():
+                    raise ValueError(f"{yol}:{no}: id/decompile/sizinti alanı eksik")
+                yinelenen += r["id"] in sonuc
+                sonuc[r["id"]] = {**r, "_kaynak_dizin": str(dizin)}
+    return sonuc, projeler, yinelenen
+
+
+def eval_esleme_indeksi(yollar, eval_satirlari):
+    """Eski eval115 id'lerini v6 ölçek id'lerine bağlamak için küçük indeks."""
+    indeks = defaultdict(list)
+    istenen = {(r["proje"], r["dosya"], r["ad"], r["opt"]) for r in eval_satirlari}
+    for yol in yollar:
+        for r in jsonl_oku(yol):
+            key = (r["proje"], r["dosya"], r["ad"], r["opt"])
+            if key in istenen:
+                indeks[key].append((r["id"], r["asm"]))
+    return indeks
+
+
+def decompile_kaydi_bul(r, decompile, eval_indeksi=None):
+    if r["id"] in decompile:
+        return decompile[r["id"]], "id"
+    if eval_indeksi is None:
+        return None, "yok"
+    adaylar = eval_indeksi.get((r["proje"], r["dosya"], r["ad"], r["opt"]), ())
+    # Derleyici/hattı aynıysa asm eşitliği en güçlü kanıt; eski v3 asm'si
+    # değişmişse benzersiz proje+dosya+ad+opt eşlemesi kullanılabilir.
+    asm = [kimlik for kimlik, metin in adaylar if metin == r["asm"] and kimlik in decompile]
+    if len(asm) == 1:
+        return decompile[asm[0]], "asm"
+    uygun = [kimlik for kimlik, _ in adaylar if kimlik in decompile]
+    if len(uygun) == 1:
+        return decompile[uygun[0]], "proje+dosya+ad+opt"
+    return None, "yok"
+
+
+def tamligi_denetle(gerekli_projeler, tamam_projeler, tam_zorunlu=False):
+    eksik = sorted(set(gerekli_projeler) - set(tamam_projeler))
+    if tam_zorunlu and eksik:
+        raise ValueError(f"--tam-zorunlu: {len(eksik)} proje henüz tamamlanmamış: {eksik[:10]}")
+    return eksik
 
 
 def egitim_sec_v5(rs, hedef=95000, proje_tavan=1500, tohum=7, kapsam_onceligi=True):
@@ -187,7 +342,65 @@ def tokenizer_v5(a):
                      "yedek_nedeni": f"{type(e).__name__}: Qwen3 indirilemedi/önbellekte yok"}
 
 
+def baska_ad_olc(decompile, proje_adlari, proje_ithalleri=None, ornek_tavan=200):
+    """Proje başına belirlenimci bir örneklemde kalan başka gerçek adları ölç."""
+    gruplar = defaultdict(list)
+    for kimlik, kayit in decompile.items():
+        gruplar[kimlik.split("/", 1)[0]].append((kimlik, kayit["decompile"]))
+    denetlenen = sizintili = 0
+    ornekler = []
+    for proje in sorted(gruplar):
+        adlar = (set(proje_adlari.get(proje, ())) - LIBC_ADLARI -
+                 set((proje_ithalleri or {}).get(proje, ())))
+        for kimlik, metin in sorted(gruplar[proje])[:ornek_tavan]:
+            denetlenen += 1
+            hedef = kimlik.rsplit(":", 1)[-1]
+            bulunan = sorted((set(TANIMLAYICI.findall(metin)) & adlar) - {hedef, "_" + hedef})
+            if bulunan:
+                sizintili += 1
+                if len(ornekler) < 20:
+                    ornekler.append({"id": kimlik, "adlar": bulunan[:8]})
+    return {"orneklem": denetlenen, "sizintili": sizintili,
+            "oran": sizintili / denetlenen if denetlenen else 0, "ornekler": ornekler,
+            "proje_basi_tavan": ornek_tavan,
+            "not": "Yalnız proje gerçek-ad listesiyle tam tanımlayıcı kesişimi; asm'de görünen importlar ve yaygın libc adları hariç."}
+
+
+def decompile_ham_olcumunu_ekle(olcumler, r, taban_satir, kayit, max_uzunluk, satir_tavan=200):
+    """Kural uygulanmadan önce asm/bağlam/decompile dağılımını biriktir."""
+    asm = h.kes(r["asm"], satir_tavan)
+    baglam = h.baglam_metni(r, "ozet")
+    d = kayit["decompile"]
+    user = taban_satir["messages"][1]["content"] + h.DECOMPILE_BASLIK + d
+    aday = {**taban_satir, "messages": [dict(m) for m in taban_satir["messages"]]}
+    aday["messages"][0]["content"] = h.SISTEM_V6
+    aday["messages"][1]["content"] = user
+    kaynak = kayit.get("_kaynak_dizin", "?")
+    o = olcumler[kaynak]
+    o["asm"].append(len(h.TOK.encode(asm)))
+    o["baglam"].append(len(h.TOK.encode(baglam)))
+    o["decompile"].append(len(h.TOK.encode(d)))
+    o["v5_girdi_tavanina_sigan"].append(len(h.TOK.encode(user)) <= 2500)
+    o["tam_3072_sigan"].append(_toplam_token(aday) <= max_uzunluk)
+
+
+def ham_olcum_ozeti(olcumler):
+    sonuc = {}
+    for kaynak, o in sorted(olcumler.items()):
+        n = len(o["decompile"])
+        sonuc[kaynak] = {
+            "satir": n,
+            "token": {k: yuzdelikler(o[k]) for k in ("asm", "baglam", "decompile")},
+            "v5_girdi_tavanina_sigan": sum(o["v5_girdi_tavanina_sigan"]),
+            "v5_girdi_tavanina_sigan_oran": (sum(o["v5_girdi_tavanina_sigan"]) / n if n else 0),
+            "tam_3072_sigan": sum(o["tam_3072_sigan"]),
+            "tam_3072_sigan_oran": (sum(o["tam_3072_sigan"]) / n if n else 0),
+        }
+    return sonuc
+
+
 def hazirla_v5(a):
+    aciklama_yollarini_tamamla(a)
     if not 0 < a.token_tavan <= 2500:
         raise ValueError("v5 token tavanı 1..2500 olmalı")
     tr = acikla_oku(a.aciklama)
@@ -275,6 +488,169 @@ def hazirla_v5(a):
     print(json.dumps(ozet, ensure_ascii=False))
 
 
+def hazirla_v6(a):
+    """v5'in filtre/seçim kararlarını aynen kullanıp sonradan decompile ekle."""
+    aciklama_yollarini_tamamla(a)
+    if not 0 < a.token_tavan <= 2500:
+        raise ValueError("v6 taban token tavanı 1..2500 olmalı")
+    if a.decompile_alt_token < 1:
+        raise ValueError("--decompile-alt-token en az 1 olmalı")
+    tr = acikla_oku(a.aciklama)
+    en = {r["anahtar"]: r["aciklama_en"] for r in jsonl_oku(a.aciklama_detay) if r.get("aciklama_en")}
+    yollar = {ad: a.veri / f"{dosya}.jsonl" for ad, dosya in
+              (("train", "egitim"), ("valid", "dogrulama"), ("test", "test"))}
+    yollar["eval115"] = a.eval115
+    h.ONEK = onekler((r for ad in ("train", "valid", "test") for r in jsonl_oku(yollar[ad])),
+                    "proje", belirlenimci=True)
+    OZET_ONEK.clear()
+    OZET_ONEK.update(puan_onekleri(a.veri.resolve().parents[1]))
+    idler = [s.strip() for s in a.test_idler.read_text().splitlines() if s.strip()]
+    test_idler = Counter(r["id"] for r in jsonl_oku(yollar["test"]))
+    eksik = [i for i in idler if not test_idler[i]]
+    if eksik:
+        raise ValueError(f"test_sabit eksik id ({len(eksik)}): {eksik[:5]}")
+    if len(set(idler)) != len(idler) or any(test_idler[i] != 1 for i in idler):
+        raise ValueError("test_sabit id'leri benzersiz olmalı")
+    h.TOK, tok_ozet = tokenizer_v5(a)
+    h.TOK.encode = lru_cache(maxsize=4096)(h.TOK.encode)
+    sistem_token_farki = len(h.TOK.encode(h.SISTEM_V6)) - len(h.TOK.encode(h.SISTEM_V5))
+
+    decompile, tamam_projeler, yinelenen = decompile_dizinlerini_oku(a.decompile)
+    asm_uyusmaz = ({r["id"] for r in jsonl_oku(a.asm_uyusmaz)} if a.asm_uyusmaz.exists() else set())
+    eval_satirlari = list(jsonl_oku(a.eval115))
+    eval_indeksi = eval_esleme_indeksi((yollar[x] for x in ("train", "valid", "test")), eval_satirlari)
+    ozet = {"surum": "v6", "taban_surum": "v5", "tohum": a.tohum, "valid_300_tohum": 7,
+            "onek_kurali": "proje", "onek_atilan_proje": len(h.ONEK), "test_hedefi": "gercek",
+            "tokenizer": tok_ozet, "token_tavan": a.token_tavan, "max_uzunluk": a.max_uzunluk,
+            "decompile_alt_token": a.decompile_alt_token,
+            "sistem_token": len(h.TOK.encode(h.SISTEM_V6)),
+            "toplam_token_olcumu": "chat_template, enable_thinking=False, add_generation_prompt=False",
+            "proje_tavan": a.proje_tavan, "kapsam_onceligi": a.kapsam_onceligi == "kapsam",
+            "opt_agirlik": OPT_AGIRLIK, "filtreler": {},
+            "decompile": {"dizinler": [str(x) for x in a.decompile], "kayit": len(decompile),
+                          "tamam_proje": len(tamam_projeler), "yinelenen_id": yinelenen}}
+    bolumler, proje_adlari, proje_ithalleri, gerekli_projeler = {}, defaultdict(set), defaultdict(set), set()
+    ham_olcum = defaultdict(lambda: defaultdict(list))
+    olculen_decompile = set()
+    for ad, yol in yollar.items():
+        rs, kaynaklar, uygun_kaynaklar = [], set(), set()
+        filtre = dict.fromkeys(("girdi", "jenerik", "aciklamasiz", "kismi_aciklama", "uzunluk_asan",
+                               "uzunluktan_atilan"), 0)
+        kaynak_satirlar = eval_satirlari if ad == "eval115" else jsonl_oku(yol)
+        for r in kaynak_satirlar:
+            filtre["girdi"] += 1
+            proje_adlari[r["proje"]].add(r["ad"])
+            proje_ithalleri[r["proje"]].update(ITHAL_YORUM.findall(r["asm"]))
+            if ad != "eval115":
+                gerekli_projeler.add(r["proje"])
+            key = anahtar(r)
+            if ad == "train" and JENERIK.fullmatch(r["ad"]):
+                filtre["jenerik"] += 1
+                continue
+            kaynaklar.add(key)
+            if not (tr.get(key) and en.get(key)):
+                filtre["aciklamasiz"] += 1
+                filtre["kismi_aciklama"] += bool(tr.get(key) or en.get(key))
+            ham = ad in ("test", "eval115")
+            taban = satir_v5(r, tr.get(key), en.get(key), a, ham=ham)
+            tm = taban["messages"]
+            taban_token = {"girdi": len(h.TOK.encode(tm[1]["content"])),
+                           "hedef": len(h.TOK.encode(tm[2]["content"])),
+                           "toplam": _toplam_token(taban)}
+            # Bu karar tam olarak v5'in kararıdır; v6 decompile yüzünden satır atmaz.
+            if taban_token["toplam"] > a.max_uzunluk:
+                filtre["uzunluk_asan"] += 1
+                if ad == "train":
+                    filtre["uzunluktan_atilan"] += 1
+                    continue
+            uygun_kaynaklar.add(key)
+            kayit, esleme = decompile_kaydi_bul(r, decompile, eval_indeksi if ad == "eval115" else None)
+            if kayit and kayit["id"] not in olculen_decompile:
+                decompile_ham_olcumunu_ekle(ham_olcum, r, taban, kayit, a.max_uzunluk,
+                                            a.satir_tavan)
+                olculen_decompile.add(kayit["id"])
+            s = satir_v6(r, tr.get(key), en.get(key), a, kayit, ham=ham, esleme=esleme,
+                         taban_satir=taban)
+            if not kayit:
+                if ad == "eval115":
+                    s["decompile_yok_neden"] = "eval_eslesmedi"
+                elif r["id"] in asm_uyusmaz:
+                    s["decompile_yok_neden"] = "asm_uyusmaz"
+                elif r["proje"] not in tamam_projeler:
+                    s["decompile_yok_neden"] = "eksik_proje"
+                else:
+                    s["decompile_yok_neden"] = "uretilemedi"
+            m = s["messages"]
+            token = {"girdi": len(h.TOK.encode(m[1]["content"])),
+                     "hedef": len(h.TOK.encode(m[2]["content"])),
+                     # Decompile yoksa user/assistant ve sohbet sınırları aynıdır;
+                     # yalnız sistem içeriğinin sabit token farkı eklenir.
+                     "toplam": (_toplam_token(s) if s["decompile_var"] else
+                                taban_token["toplam"] + sistem_token_farki)}
+            if token["toplam"] > a.max_uzunluk and ad == "train":
+                raise ValueError(f"{r['id']}: decompile'sız v6 satırı {token['toplam']} > {a.max_uzunluk}; "
+                                 "asm/bağlamı değiştirmeden v5 satırı korunamıyor")
+            s["token"] = token
+            rs.append({"kaynak": key, "satir": s, "token": token, "taban_token": taban_token})
+            if filtre["girdi"] % 10000 == 0:
+                print(f"{ad}: {filtre['girdi']} satır işlendi", file=sys.stderr, flush=True)
+        filtre["uzunluktan_kaybolan_fonksiyon"] = len(kaynaklar - uygun_kaynaklar)
+        if ad == "train":
+            once = len(rs)
+            rs, ozet["secim"] = egitim_sec_v5(rs, a.hedef_satir, a.proje_tavan, a.tohum,
+                                             a.kapsam_onceligi == "kapsam")
+            filtre["varyant_seciminde_atilan"] = once - len(rs)
+        ozet["filtreler"][ad] = filtre
+        bolumler[ad] = rs
+    bolumler["valid_300"] = dengeli_sec_v5(bolumler["valid"], tohum=7)
+    test = {r["satir"]["id"]: r for r in bolumler["test"]}
+    bolumler["test_sabit"] = [test[i] for i in idler]
+
+    eksik_projeler = tamligi_denetle(gerekli_projeler, tamam_projeler, a.tam_zorunlu)
+    ozet["decompile"].update({"gerekli_proje": len(gerekli_projeler),
+                              "eksik_proje": len(eksik_projeler),
+                              "eksik_proje_ornek": eksik_projeler[:20],
+                              "ham_token_olcumu": ham_olcum_ozeti(ham_olcum),
+                              "baska_ad_sizintisi": baska_ad_olc(decompile, proje_adlari,
+                                                                 proje_ithalleri)})
+    print(f"decompile tamam proje: {len(tamam_projeler)}; eksik proje: {len(eksik_projeler)}",
+          file=sys.stderr)
+    a.cikti.mkdir(parents=True, exist_ok=True)
+    for ad, rs in bolumler.items():
+        with (a.cikti / f"{ad}.jsonl").open("w", encoding="utf-8") as f:
+            for r in rs:
+                f.write(json.dumps(r["satir"], ensure_ascii=False) + "\n")
+        ss = [r["satir"] for r in rs]
+        neden = Counter(s.get("decompile_yok_neden") or "var" for s in ss)
+        ozet[ad] = {"satir": len(rs), "proje": len({r["proje"] for r in ss}),
+                    "fonksiyon": len({r["kaynak"] for r in rs}),
+                    "baglam_var": sum(r["baglam_var"] for r in ss),
+                    "opt": dict(sorted(Counter(r["opt"] for r in ss).items())),
+                    "hedef_tur": dict(sorted(Counter(r["hedef_tur"] for r in ss).items())),
+                    "token": {k: yuzdelikler([r["token"][k] for r in rs])
+                              for k in ("girdi", "hedef", "toplam")},
+                    "token_ortalama": {k: (sum(r["token"][k] for r in rs) / len(rs) if rs else 0)
+                                       for k in ("girdi", "hedef", "toplam")},
+                    "taban_token": {k: yuzdelikler([r["taban_token"][k] for r in rs])
+                                    for k in ("girdi", "hedef", "toplam")},
+                    "taban_token_ortalama": {
+                        k: (sum(r["taban_token"][k] for r in rs) / len(rs) if rs else 0)
+                        for k in ("girdi", "hedef", "toplam")},
+                    "uzunluk_asan": sum(r["token"]["toplam"] > a.max_uzunluk for r in rs),
+                    "v5_satir_kaybi": 0,
+                    "decompile_var": sum(s["decompile_var"] for s in ss),
+                    "decompile_var_oran": sum(s["decompile_var"] for s in ss) / len(ss) if ss else 0,
+                    "decompile_kirpildi": sum(s["decompile_kirpildi"] for s in ss),
+                    "decompile_kirpildi_oran": sum(s["decompile_kirpildi"] for s in ss) / len(ss) if ss else 0,
+                    "decompile_sizinti": sum(s["decompile_sizinti"] for s in ss),
+                    "decompile_sizinti_oran": sum(s["decompile_sizinti"] for s in ss) / len(ss) if ss else 0,
+                    "decompile_esleme": dict(sorted(Counter(s["decompile_esleme"] for s in ss).items())),
+                    "decompile_yok": len(ss) - sum(s["decompile_var"] for s in ss),
+                    "decompile_yok_neden": dict(sorted(neden.items()))}
+    (a.cikti / "ozet.json").write_text(json.dumps(ozet, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(ozet, ensure_ascii=False))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--veri", type=Path, default=Path("veri/bin/olcek"))
@@ -291,7 +667,15 @@ def main():
                     help="hazirla_olcek.py ile aynı; proje: yalnız proje adıyla ilişkili önek (v2)")
     ap.add_argument("--test-ham-ad", action="store_true", help="test hedefinde gerçek adı koru (v2)")
     ap.add_argument("--tohum", type=int, default=7)
-    ap.add_argument("--surum", choices=("v5",), default=None)
+    ap.add_argument("--surum", choices=("v5", "v6"), default=None)
+    ap.add_argument("--decompile", type=Path, action="append",
+                    help="v6 decompile proje JSONL dizini; birden fazla kez verilebilir")
+    ap.add_argument("--decompile-alt-token", type=int, default=200,
+                    help="kırpılmış decompile gövdesi için alt token sınırı")
+    ap.add_argument("--tam-zorunlu", action="store_true",
+                    help="v6'da herhangi bir kaynak projenin tamamlanmış JSONL'i yoksa hata ver")
+    ap.add_argument("--asm-uyusmaz", type=Path, default=Path("veri/olcek-v6/asm-uyusmaz.jsonl"),
+                    help="v6 ikilisiyle asm'si uyuşmayan ve decompile beklenmeyen id'ler")
     ap.add_argument("--aciklama-detay", type=Path, default=Path("veri/aciklama-v4/codex-detay.jsonl"))
     ap.add_argument("--eval115", type=Path, default=Path("veri/test.jsonl"))
     ap.add_argument("--test-idler", type=Path, default=Path(__file__).with_name("test_sabit_idler.txt"))
@@ -302,6 +686,11 @@ def main():
     a = ap.parse_args()
     if a.surum == "v5":
         hazirla_v5(a)
+        return
+    if a.surum == "v6":
+        if not a.decompile:
+            ap.error("--surum v6 için --decompile DIZIN gerekli")
+        hazirla_v6(a)
         return
     a.tokenizer = a.tokenizer or YEDEK_TOKENIZER
     if a.token_tavan:
