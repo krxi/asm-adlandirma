@@ -39,14 +39,31 @@ def test_hakem_json_ayristirma_kod_blogu_ve_dogrulama():
 
 
 def test_bozuk_json_sahte_istekle_yeniden_sorulur(monkeypatch):
-    cevaplar = iter([
-        {"choices": [{"message": {"content": "JSON değil"}, "finish_reason": "stop"}],
-         "usage": {"total_tokens": 5}},
-        {"choices": [{"message": {"content": json.dumps({
-            "puanlar": {alan: 2 for alan in od.ALANLAR},
-            "aciklama_uyumu": "evet", "gerekce": "uygun",
-        })}, "finish_reason": "stop"}], "usage": {"total_tokens": 7}},
-    ])
+    cevaplar = iter(
+        [
+            {
+                "choices": [{"message": {"content": "JSON değil"}, "finish_reason": "stop"}],
+                "usage": {"total_tokens": 5},
+            },
+            {
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {
+                                    "puanlar": {alan: 2 for alan in od.ALANLAR},
+                                    "aciklama_uyumu": "evet",
+                                    "gerekce": "uygun",
+                                }
+                            )
+                        },
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {"total_tokens": 7},
+            },
+        ]
+    )
     cagrilar = []
 
     def sahte(*args, **kwargs):
@@ -63,17 +80,25 @@ def test_bozuk_json_sahte_istekle_yeniden_sorulur(monkeypatch):
 
 def test_rapor_puan_bootstrap_kirim_ve_sifir_ornegi():
     satirlar = []
-    for no, (puan, model, kategori, token) in enumerate([
-        (0, "codex/gpt-5.6-luna", "dize", 500),
-        (2, "codex/gpt-5.6-sol", "ag", 7000),
-    ]):
-        satirlar.append({
-            "anahtar": f"p{no}/x.c:f", "proje": f"p{no}", "kategori": kategori,
-            "ogretmen_model": model, "puanlar": {alan: puan for alan in od.ALANLAR},
-            "aciklama_uyumu": "evet" if puan else "hayır", "gerekce": "somut gerekçe",
-            "etiketler": {alan: f"etiket {alan}" for alan in od.ALANLAR},
-            "kaynak_token_tahmini": token,
-        })
+    for no, (puan, model, kategori, token) in enumerate(
+        [
+            (0, "codex/gpt-5.6-luna", "dize", 500),
+            (2, "codex/gpt-5.6-sol", "ag", 7000),
+        ]
+    ):
+        satirlar.append(
+            {
+                "anahtar": f"p{no}/x.c:f",
+                "proje": f"p{no}",
+                "kategori": kategori,
+                "ogretmen_model": model,
+                "puanlar": {alan: puan for alan in od.ALANLAR},
+                "aciklama_uyumu": "evet" if puan else "hayır",
+                "gerekce": "somut gerekçe",
+                "etiketler": {alan: f"etiket {alan}" for alan in od.ALANLAR},
+                "kaynak_token_tahmini": token,
+            }
+        )
     rapor = od.rapor_metni(satirlar)
     assert "%95 bootstrap GA" in rapor
     assert "codex/gpt-5.6-luna" in rapor and "codex/gpt-5.6-sol" in rapor

@@ -384,8 +384,12 @@ def test_v5_anlamli_ad(ad):
 
 
 def test_v5_kapsam_tavan_ve_belirlenimcilik():
-    rs = [{"kaynak": f"{p}/a.c:oku{i}", "satir": {"id": f"{p}/{i}/{o}", "proje": p, "opt": o}}
-          for p in ("a", "b") for i in range(10) for o in hs.OPT_AGIRLIK]
+    rs = [
+        {"kaynak": f"{p}/a.c:oku{i}", "satir": {"id": f"{p}/{i}/{o}", "proje": p, "opt": o}}
+        for p in ("a", "b")
+        for i in range(10)
+        for o in hs.OPT_AGIRLIK
+    ]
     sec, ozet = hs.egitim_sec_v5(rs, hedef=30, proje_tavan=15)
     assert len(sec) == 30
     assert {r["kaynak"] for r in sec} == {r["kaynak"] for r in rs}
@@ -401,8 +405,11 @@ def test_v5_kapsam_tavan_ve_belirlenimcilik():
 
 
 def test_v5_opt_agirligi():
-    rs = [{"kaynak": f"p/{i}", "satir": {"id": f"{i}/{o}", "proje": "p", "opt": o}}
-          for i in range(3000) for o in hs.OPT_AGIRLIK]
+    rs = [
+        {"kaynak": f"p/{i}", "satir": {"id": f"{i}/{o}", "proje": "p", "opt": o}}
+        for i in range(3000)
+        for o in hs.OPT_AGIRLIK
+    ]
     sec, _ = hs.egitim_sec_v5(rs, hedef=3000, proje_tavan=0)
     say = Counter(r["satir"]["opt"] for r in sec)
     assert say["-O2"] > say["-O0"] and say["-O3"] > say["-O0"]
@@ -413,8 +420,11 @@ def test_v5_tam_akis(tmp_path, monkeypatch):
     monkeypatch.setattr(hs, "OZET_ONEK", {})
     d = tmp_path / "veri" / "bin" / "olcek"
     d.mkdir(parents=True)
-    train = [satir(id=f"p/{ad}/{opt}", dosya="a.c", ad=ad, opt=opt)
-             for ad in ["main", "Test_x", "oku", "yaz"] for opt in ("-O0", "-O2")]
+    train = [
+        satir(id=f"p/{ad}/{opt}", dosya="a.c", ad=ad, opt=opt)
+        for ad in ["main", "Test_x", "oku", "yaz"]
+        for opt in ("-O0", "-O2")
+    ]
     # Aynı asm'ye sahip farklı kaynak fonksiyonlar da kapsamda kalmalı.
     valid = [satir(id=f"v/{i}", proje=f"v{i % 3}", dosya="a.c") for i in range(310)]
     test = [satir(id=f"t/{i}", proje="p", dosya="a.c", ad=f"p_oku{i}") for i in range(6)]
@@ -426,9 +436,21 @@ def test_v5_tam_akis(tmp_path, monkeypatch):
     ev, ids = tmp_path / "eval.jsonl", tmp_path / "ids.txt"
     ev.write_text(json.dumps(test[0]) + "\n")
     ids.write_text("t/4\nt/1\n")
-    a = SimpleNamespace(veri=d, aciklama=tr, aciklama_detay=en, eval115=ev, test_idler=ids,
-                        token_tavan=2500, max_uzunluk=3072, satir_tavan=200, tohum=7,
-                        proje_tavan=1500, hedef_satir=95000, kapsam_onceligi="kapsam", cikti=tmp_path / "c")
+    a = SimpleNamespace(
+        veri=d,
+        aciklama=tr,
+        aciklama_detay=en,
+        eval115=ev,
+        test_idler=ids,
+        token_tavan=2500,
+        max_uzunluk=3072,
+        satir_tavan=200,
+        tohum=7,
+        proje_tavan=1500,
+        hedef_satir=95000,
+        kapsam_onceligi="kapsam",
+        cikti=tmp_path / "c",
+    )
     hs.hazirla_v5(a)
     ilk = {p.name: p.read_bytes() for p in a.cikti.iterdir()}
     hs.hazirla_v5(a)
@@ -459,15 +481,13 @@ def test_v5_tek_satir_token_tavani(monkeypatch):
 def test_v6_v5_yolunu_degistirmez_ve_eksikte_taban_girdiyi_korur(monkeypatch):
     monkeypatch.setattr(h, "TOK", SohbetTok())
     monkeypatch.setattr(h, "ONEK", {"p": {"p"}})
-    a = SimpleNamespace(satir_tavan=200, token_tavan=2500, max_uzunluk=3072,
-                        decompile_alt_token=20)
+    a = SimpleNamespace(satir_tavan=200, token_tavan=2500, max_uzunluk=3072, decompile_alt_token=20)
     r = satir(dosya="a.c", baglam="sub_0001: bir şey yapar")
     v5_once = hs.satir_v5(r, "Okur.", "Reads.", a)
     v5_sonra = hs.satir_v5(r, "Okur.", "Reads.", a)
     assert v5_once == v5_sonra
     v5_bayt = (json.dumps(v5_once, ensure_ascii=False) + "\n").encode()
-    assert hashlib.sha256(v5_bayt).hexdigest() == \
-        "5d180910c3d4d75d4cdd5849e33aa549b6184ccb0bd9a568361f0232639e668c"
+    assert hashlib.sha256(v5_bayt).hexdigest() == "5d180910c3d4d75d4cdd5849e33aa549b6184ccb0bd9a568361f0232639e668c"
     v6 = hs.satir_v6(r, "Okur.", "Reads.", a, None)
     assert v6["messages"][1]["content"] == v5_once["messages"][1]["content"]
     assert not v6["decompile_var"] and v6["decompile_yok_neden"] == "eksik"
@@ -476,8 +496,7 @@ def test_v6_v5_yolunu_degistirmez_ve_eksikte_taban_girdiyi_korur(monkeypatch):
 
 def test_v6_decompile_satir_bazinda_sondan_kirpilir(monkeypatch):
     monkeypatch.setattr(h, "TOK", SohbetTok())
-    a = SimpleNamespace(satir_tavan=200, token_tavan=2500, max_uzunluk=0,
-                        decompile_alt_token=20)
+    a = SimpleNamespace(satir_tavan=200, token_tavan=2500, max_uzunluk=0, decompile_alt_token=20)
     r = satir(dosya="a.c", ad="hedef")
     taban = hs.satir_v5(r, None, None, a)
     taban["messages"][0]["content"] = h.SISTEM_V6
@@ -491,19 +510,20 @@ def test_v6_decompile_satir_bazinda_sondan_kirpilir(monkeypatch):
     assert hs._toplam_token(s) <= a.max_uzunluk
 
 
-@pytest.mark.parametrize("metin", [
-    "int p_oku(int x) { return x; }",
-    "int _p_oku(int x) { return x; }",
-    "int oku(int x) { return x; }",
-    "int _oku(int x) { return x; }",
-])
+@pytest.mark.parametrize(
+    "metin",
+    [
+        "int p_oku(int x) { return x; }",
+        "int _p_oku(int x) { return x; }",
+        "int oku(int x) { return x; }",
+        "int _oku(int x) { return x; }",
+    ],
+)
 def test_v6_anonim_decompile_hedef_ad_sizintisi_atilir(monkeypatch, metin):
     monkeypatch.setattr(h, "TOK", SohbetTok())
     monkeypatch.setattr(h, "ONEK", {"p": {"p"}})
-    a = SimpleNamespace(satir_tavan=200, token_tavan=2500, max_uzunluk=3072,
-                        decompile_alt_token=20)
-    s = hs.satir_v6(satir(dosya="a.c"), None, None, a,
-                    {"decompile": metin, "sizinti": True})
+    a = SimpleNamespace(satir_tavan=200, token_tavan=2500, max_uzunluk=3072, decompile_alt_token=20)
+    s = hs.satir_v6(satir(dosya="a.c"), None, None, a, {"decompile": metin, "sizinti": True})
     assert not s["decompile_var"] and s["decompile_sizinti"]
     assert s["decompile_ham_sizinti"]
     assert s["decompile_yok_neden"] == "hedef_ad_sizintisi"
@@ -513,10 +533,10 @@ def test_v6_anonim_decompile_hedef_ad_sizintisi_atilir(monkeypatch, metin):
 def test_v6_sizinti_tam_tanimlayici_eslesmesidir(monkeypatch):
     monkeypatch.setattr(h, "TOK", SohbetTok())
     monkeypatch.setattr(h, "ONEK", {"p": {"p"}})
-    a = SimpleNamespace(satir_tavan=200, token_tavan=2500, max_uzunluk=3072,
-                        decompile_alt_token=20)
-    s = hs.satir_v6(satir(dosya="a.c"), None, None, a,
-                    {"decompile": "int p_okuyucu(void) { return 1; }", "sizinti": True})
+    a = SimpleNamespace(satir_tavan=200, token_tavan=2500, max_uzunluk=3072, decompile_alt_token=20)
+    s = hs.satir_v6(
+        satir(dosya="a.c"), None, None, a, {"decompile": "int p_okuyucu(void) { return 1; }", "sizinti": True}
+    )
     assert s["decompile_var"] and not s["decompile_sizinti"]
     assert s["decompile_ham_sizinti"]
 
@@ -539,21 +559,22 @@ param_1 = xVar2;
     assert "obj->copy()" in sonuc and "model = block" in sonuc
     assert '"fsm_dispatch() &fsm_super"' in sonuc
     assert "param_1 = xVar2" in sonuc
-    assert sayac == {"islev_adres_eslesmesi": 3, "diger_konum_eslesmesi": 3,
-                     "degisim": 3, "degisen_satir": 2}
+    assert sayac == {"islev_adres_eslesmesi": 3, "diger_konum_eslesmesi": 3, "degisim": 3, "degisen_satir": 2}
 
 
 def test_v6_proje_adi_import_libc_ve_alt_cizgi_istisnalari():
     metin = "_ozel();\nmemcpy();\n_ithal();\nyerli();"
     sonuc, sayac = hs.proje_adlarini_anonimlestir(
-        metin, {"ozel", "memcpy", "ithal", "yerli"}, {"_ithal"},
+        metin,
+        {"ozel", "memcpy", "ithal", "yerli"},
+        {"_ithal"},
     )
     assert sonuc.splitlines() == ["FUN_x1();", "memcpy();", "_ithal();", "FUN_x2();"]
     assert sayac["degisim"] == 2 and sayac["degisen_satir"] == 2
 
 
 def test_v6_hedef_adi_string_sabitinde_sizinti_sayilmaz():
-    assert hs.ad_sizintisi('puts("p_oku"); char c = \'p\';', ("p_oku", "oku")) is None
+    assert hs.ad_sizintisi("puts(\"p_oku\"); char c = 'p';", ("p_oku", "oku")) is None
     assert hs.ad_sizintisi("return _p_oku();", ("p_oku",)) == "_p_oku"
     assert hs.ad_sizintisi("/* can't mask following code */ p_oku();", ("p_oku",)) == "p_oku"
 
@@ -565,9 +586,17 @@ def test_v6_proje_ad_kumesi_filtresiz_hami_da_okur(tmp_path):
         yaz = [{"id": f"p/{bolum}", "proje": "p", "ad": f"ad_{bolum}", "asm": "; -> ithal"}]
         (veri / f"{bolum}.jsonl").write_text("".join(json.dumps(r) + "\n" for r in yaz))
     (ham / "egitim").mkdir(parents=True)
-    (ham / "egitim/p.jsonl").write_text(json.dumps({
-        "id": "p/ham", "proje": "p", "ad": "filtrelenmis_ad", "asm": "ret",
-    }) + "\n")
+    (ham / "egitim/p.jsonl").write_text(
+        json.dumps(
+            {
+                "id": "p/ham",
+                "proje": "p",
+                "ad": "filtrelenmis_ad",
+                "asm": "ret",
+            }
+        )
+        + "\n"
+    )
     adlar, ithaller, ozet = hs.proje_adlarini_oku(veri, ham)
     assert adlar["p"] == {"ad_egitim", "ad_dogrulama", "ad_test", "filtrelenmis_ad"}
     assert ithaller["p/egitim"] == {"ithal"}
@@ -576,14 +605,12 @@ def test_v6_proje_ad_kumesi_filtresiz_hami_da_okur(tmp_path):
 
 def test_v6_butce_alt_sinirinda_decompile_konmaz(monkeypatch):
     monkeypatch.setattr(h, "TOK", SohbetTok())
-    a = SimpleNamespace(satir_tavan=200, token_tavan=2500, max_uzunluk=0,
-                        decompile_alt_token=200)
+    a = SimpleNamespace(satir_tavan=200, token_tavan=2500, max_uzunluk=0, decompile_alt_token=200)
     r = satir(dosya="a.c", ad="hedef")
     taban = hs.satir_v5(r, None, None, a)
     taban["messages"][0]["content"] = h.SISTEM_V6
     a.max_uzunluk = hs._toplam_token(taban) + len(h.DECOMPILE_BASLIK) + 100
-    s = hs.satir_v6(r, None, None, a,
-                    {"decompile": "\n".join("int x = 1;" for _ in range(100)), "sizinti": False})
+    s = hs.satir_v6(r, None, None, a, {"decompile": "\n".join("int x = 1;" for _ in range(100)), "sizinti": False})
     assert not s["decompile_var"] and s["decompile_yok_neden"] == "butce_alt_sinir"
 
 
@@ -611,4 +638,6 @@ def test_v5_onek_esitligi_hash_tohumundan_bagimsiz():
     )
     for tohum in ("1", "2", "7", "42"):
         env = {**os.environ, "PYTHONHASHSEED": tohum, "PYTHONPATH": str(KOK / "lora")}
-        assert subprocess.check_output([sys.executable, "-c", kod], env=env, text=True).strip() == "{'tinymaix': {'tm'}}"
+        assert (
+            subprocess.check_output([sys.executable, "-c", kod], env=env, text=True).strip() == "{'tinymaix': {'tm'}}"
+        )

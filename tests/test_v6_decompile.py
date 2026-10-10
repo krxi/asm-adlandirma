@@ -11,20 +11,23 @@ def yaz_jsonl(yol, satirlar):
 
 def test_besli_pilot_uc_sabit_iki_aday():
     projeler = [
-        {"ad": "zlib"}, {"ad": "baska"}, {"ad": "lua"}, {"ad": "tomlc17"},
+        {"ad": "zlib"},
+        {"ad": "baska"},
+        {"ad": "lua"},
+        {"ad": "tomlc17"},
         {"ad": "aday1", "kok": "kaynak/aday/aday1"},
         {"ad": "aday2", "kok": "kaynak/aday/aday2"},
         {"ad": "aday3", "kok": "kaynak/aday/aday3"},
     ]
-    assert [p["ad"] for p in pilot_sec(projeler, 5)] == [
-        "zlib", "lua", "tomlc17", "aday1", "aday2"]
+    assert [p["ad"] for p in pilot_sec(projeler, 5)] == ["zlib", "lua", "tomlc17", "aday1", "aday2"]
 
 
 def test_cikar_checkpoint_ikili_artefaktlarini_da_ister(tmp_path):
     cikti = tmp_path / "olcek" / "ham" / "egitim" / "p.jsonl"
     yaz_jsonl(cikti, [])
-    cikti.with_suffix(".rapor.json").write_text(json.dumps({
-        "optimizasyonlar": {"-O0": {}}, "atlanan_opt": {"-O1": "hata"}}))
+    cikti.with_suffix(".rapor.json").write_text(
+        json.dumps({"optimizasyonlar": {"-O0": {}}, "atlanan_opt": {"-O1": "hata"}})
+    )
     ikili = tmp_path / "ikili"
     (ikili / "p").mkdir(parents=True)
     (ikili / "p" / "O0.dylib").write_bytes(b"x")
@@ -38,20 +41,32 @@ def test_cikar_checkpoint_ikili_artefaktlarini_da_ister(tmp_path):
 def test_v6_dogrulama_ve_guvenli_decompile_idleri(tmp_path):
     hedef = tmp_path / "hedef"
     for rol in ("egitim", "dogrulama", "test"):
-        yaz_jsonl(hedef / f"{rol}.jsonl", [] if rol != "egitim" else [
-            {"id": "p:1", "proje": "p", "asm": "ret"},
-            {"id": "p:2", "proje": "p", "asm": "mov eax, 1"},
-            {"id": "p:3", "proje": "p", "asm": "nop"},
-        ])
+        yaz_jsonl(
+            hedef / f"{rol}.jsonl",
+            []
+            if rol != "egitim"
+            else [
+                {"id": "p:1", "proje": "p", "asm": "ret"},
+                {"id": "p:2", "proje": "p", "asm": "mov eax, 1"},
+                {"id": "p:3", "proje": "p", "asm": "nop"},
+            ],
+        )
     ham = tmp_path / "yeni"
-    yaz_jsonl(ham / "ham" / "egitim" / "p.jsonl", [
-        {"id": "p:1", "proje": "p", "asm": "ret"},
-        {"id": "p:2", "proje": "p", "asm": "mov eax, 2"},
-    ])
+    yaz_jsonl(
+        ham / "ham" / "egitim" / "p.jsonl",
+        [
+            {"id": "p:1", "proje": "p", "asm": "ret"},
+            {"id": "p:2", "proje": "p", "asm": "mov eax, 2"},
+        ],
+    )
     ikili = tmp_path / "ikili"
-    yaz_jsonl(ikili / "p" / "O0.jsonl", [
-        {"id": "p:1"}, {"id": "p:2"},
-    ])
+    yaz_jsonl(
+        ikili / "p" / "O0.jsonl",
+        [
+            {"id": "p:1"},
+            {"id": "p:2"},
+        ],
+    )
 
     veriler = dogrula(hedef, ham, ikili)
     sonuc = veriler[0]
