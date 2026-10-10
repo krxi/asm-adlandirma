@@ -1,0 +1,12 @@
+{"f1": 0.22403439153439153, "gecerli_json_orani": 1.0, "n": 300, "adim": 500, "eval_loss": 1.1733124256134033, "model": "Qwen/Qwen3-8B"}
+{"f1": 0.22507960557960557, "gecerli_json_orani": 1.0, "n": 300, "adim": 1000, "eval_loss": 1.122399926185608, "model": "Qwen/Qwen3-8B"}
+{"f1": 0.20442592592592593, "gecerli_json_orani": 1.0, "n": 300, "adim": 1500, "eval_loss": 1.0967283248901367, "model": "Qwen/Qwen3-8B"}
+{"f1": 0.20955026455026457, "gecerli_json_orani": 1.0, "n": 300, "adim": 2000, "eval_loss": 1.0788092613220215, "model": "Qwen/Qwen3-8B"}
+{"f1": 0.22993121693121693, "gecerli_json_orani": 1.0, "n": 300, "adim": 2500, "eval_loss": 1.0762743949890137, "model": "Qwen/Qwen3-8B"}
+{"f1": 0.24435473785473785, "gecerli_json_orani": 1.0, "n": 300, "adim": 3000, "eval_loss": 1.0602893829345703, "model": "Qwen/Qwen3-8B"}
+{"f1": 0.22923088023088023, "gecerli_json_orani": 0.9966666666666667, "n": 300, "adim": 3500, "eval_loss": 1.050506353378296, "model": "Qwen/Qwen3-8B"}
+{"f1": 0.24783958633958633, "gecerli_json_orani": 1.0, "n": 300, "adim": 4000, "eval_loss": 1.0437511205673218, "model": "Qwen/Qwen3-8B"}
+{"f1": 0.262500962000962, "gecerli_json_orani": 1.0, "n": 300, "adim": 4500, "eval_loss": 1.0388716459274292, "model": "Qwen/Qwen3-8B"}
+{"f1": 0.2544136604136604, "gecerli_json_orani": 1.0, "n": 300, "adim": 5000, "eval_loss": 1.036665678024292, "model": "Qwen/Qwen3-8B"}
+{"f1": 0.25035545935545933, "gecerli_json_orani": 1.0, "n": 300, "adim": 5500, "eval_loss": 1.0352574586868286, "model": "Qwen/Qwen3-8B"}
+{"f1": 0.251958633958634, "gecerli_json_orani": 1.0, "n": 300, "adim": 5938, "eval_loss": 1.0351275205612183, "model": "Qwen/Qwen3-8B"}

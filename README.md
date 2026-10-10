@@ -6,7 +6,7 @@
 
 ## Current status
 
-The v4 dataset contains 228,177 functions from 341 projects across 5 optimization levels and is published on [Hugging Face](https://huggingface.co/datasets/krxi123/asm-adlandirma) under the `v4` config. The Ghidra script is ready. The best small model so far, Qwen3-8B + LoRA, reaches name F1 0.106 on the v4 test set and 0.094 on `eval_115` (large models: about 0.17-0.20 on `eval_115`); see Results, section 6. The model currently generates its descriptions in Turkish.
+The v4 dataset contains 228,177 functions from 341 projects across 5 optimization levels and is published on [Hugging Face](https://huggingface.co/datasets/krxi123/asm-adlandirma) under the `v4` config. The Ghidra script is ready. The best small model so far, Qwen3-8B + LoRA trained on the v5 data (description first, then name), reaches name F1 0.124 on the fixed v4 test sample and 0.155 on `eval_115`; the best large model with call context scores 0.167 on the same test sample. See Results, section 6. The model writes an English and a Turkish one-sentence description along with the name.
 
 Open a stripped program in Ghidra or IDA and you will see hundreds of functions named `FUN_00401a30`. Much of reverse engineering consists of understanding and naming these functions one by one. This project aims to teach a model that first step:
 
@@ -149,18 +149,24 @@ Qwen2.5-Coder-0.5B (4-bit), 1,500 steps (~1 hour 40 minutes, 4,8 GB memory). Nei
 
 The 0.5B model and half an epoch appear insufficient for this task. Next experiments: a larger base model (1.5B-3B), longer training, and call context in the input.
 
-### 6. Larger small models: 1.5B and 8B LoRA (v4 data)
+### 6. Larger small models: 1.5B and 8B LoRA
 
 Same fixed v4 test sample (`lora/test_sabit_idler.txt`, little-known test projects) and the `eval_115` set. Name F1 compares with the real name; prefix-stripped F1 removes the project prefix from both sides. Details: [rapor/MOLAB_IKI_F1.md](rapor/MOLAB_IKI_F1.md), [sonuc/SABIT500_LORA15_V3.md](sonuc/SABIT500_LORA15_V3.md).
 
 | Model | Test set | n | Name F1 (-O0 / -O2 / all) | Prefix-stripped F1 (all) | Exact matches (real / prefix-stripped) |
 |---|---|---:|---|---:|---|
-| **Qwen3-8B + LoRA** (cloud GPU) | v4 test, fixed sample | 2,000 | 0.108 / 0.093 / **0.106** | 0.108 | 25 / 33 |
-| **Qwen3-8B + LoRA** (cloud GPU) | `eval_115` | 115 | 0.102 / 0.085 / **0.094** | 0.111 | 1 / 4 |
+| mimo-v2.6-pro, with call context (large, reference) | v4 test, fixed sample | 2,000 | 0.178 / 0.154 / 0.167 | 0.170 | 40 / 45 |
+| deepseek-v4.1-flash, with call context (large, reference) | v4 test, fixed sample | 2,000 | 0.161 / 0.130 / 0.154 | 0.156 | 40 / 45 |
+| **Qwen3-8B + LoRA v5** (description → name, 95k rows, 1 epoch) | v4 test, fixed sample | 2,000 | 0.127 / 0.098 / **0.124** | 0.126 | 26 / 31 |
+| **Qwen3-8B + LoRA v5** | `eval_115` | 115 | 0.188 / 0.120 / **0.155** | 0.173 | 1 / 2 |
+| Qwen3-8B + LoRA v1 (name only, 41k rows × 2 epochs) | v4 test, fixed sample | 2,000 | 0.108 / 0.093 / 0.106 | 0.108 | 25 / 33 |
+| Qwen3-8B + LoRA v1 | `eval_115` | 115 | 0.102 / 0.085 / 0.094 | 0.111 | 1 / 4 |
 | Qwen2.5-Coder-1.5B + LoRA v3, with call context (MLX, laptop) | first 500 of the fixed sample | 500 | 0.044 | 0.045 | 0 |
 | Qwen2.5-Coder-1.5B + LoRA v3, assembly only | first 500 of the fixed sample | 500 | 0.037 | 0.038 | 0 |
 
-On the same 500 rows the 8B model scores 0.108 versus 0.044 for 1.5B. The 1.5B adapter does not generalize to new projects and shows strong mode collapse (the most frequent prediction covers 13.6% of rows). The 8B model is the first small model that is clearly above zero, but it is still well below the best large model on `eval_115` (mimo-v2.6-pro: 0.17 name F1, 0.20 prefix-stripped).
+On the same 500 rows the 8B model scores 0.108 versus 0.044 for 1.5B. The 1.5B adapter does not generalize to new projects and shows strong mode collapse (the most frequent prediction covers 13.6% of rows). The 8B model is the first small model that is clearly above zero.
+
+**v5 versus v1 (same base model, same 2,000 test rows).** v5 changes the data and the target: every source function appears at least once (95,000 rows, 72,061 functions), the project-prefix rule is fixed, and the model first writes a one-sentence English description, then the name, then a Turkish description. Name F1 rises from 0.106 to 0.124 (paired difference +0.018, 95% bootstrap interval +0.009 to +0.026) and from 0.094 to 0.155 on `eval_115`. Predictions that are verbatim copies of a training name drop from 42% to 30%. Functions without string constants remain the hard case (0.093, up from 0.079; with strings 0.299). The model is still 0.044 below mimo-v2.6-pro with call context on the same rows (interval -0.053 to -0.034). The checkpoint was chosen on 300 validation rows (step 4,500 of 5,938; validation name F1 0.263) and the test sets were scored once. Breakdown: [rapor/MOLAB_V5_KIRILIM.md](rapor/MOLAB_V5_KIRILIM.md); teacher-label audit: [rapor/OGRETMEN_DENETIM.md](rapor/OGRETMEN_DENETIM.md).
 
 ### Note: the zlib warm-up and pipeline leakage
 
@@ -182,8 +188,9 @@ The first zlib evaluation (v1, 60 functions) used a simpler data pipeline that i
 - [x] First LoRA attempts (0.5B): unsuccessful due to prefix memorization and mode collapse
 - [x] 1.5B model with call context: name F1 0.044, does not generalize
 - [x] Qwen3-8B + LoRA: name F1 0.106 (v4 test), 0.094 (`eval_115`)
+- [x] Qwen3-8B + LoRA v5 (description + name): name F1 0.124 (v4 test), 0.155 (`eval_115`)
 - [x] Distillation data: a teacher model with access to source code (mimo-v2.6-pro) wrote a one-sentence Turkish description for all 17,581 functions (12,5 words on average)
-- [ ] Have the small model generate both a name and a description
+- [x] Have the small model generate both a name and a description (v5: English + Turkish)
 
 **4. Tooling**
 - [ ] Ghidra script: rename `FUN_…` functions with the local model and add descriptions (script ready: [ghidra/](ghidra/README.md); successfully ran end-to-end in Ghidra 12 headless, dry-run mode)
