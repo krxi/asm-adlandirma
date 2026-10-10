@@ -1,0 +1,17 @@
+{
+  "sema_surumu": 2,
+  "bolum": "valid300",
+  "girdi_kaynagi_commit": "15e3b28f1be387d0e8655edd838e1c32f9d348d5",
+  "girdi_kaynagi_tree": "6f8d4781522bc7be45839071dc7231e12d0164e5",
+  "sabit_dogrulama": {
+    "dosya": "sonuc/valid300-molab-qwen3-8b-v5.jsonl",
+    "sha256": "88f7bfb32ed87f5c43a43d670c5ca5e80bfd00c3592d59dc24b9ee52e14e4faf"
+  },
+  "komutlar": [
+    "python3 sarmalayici_deneyi.py say --veri \"$VALIDATION_JSONL\" --tahmin sonuc/valid300-molab-qwen3-8b-v5.jsonl",
+    "python3 sarmalayici_deneyi.py deney --veri \"$VALIDATION_JSONL\" --tahmin sonuc/valid300-molab-qwen3-8b-v5.jsonl"
+  ],
+  "bu_duzeltmede_gercek_validation_analizi": "not run",
+  "guncel_kod_ve_ci": "https://github.com/krxi/asmsense/pull/4",
+  "not": "Test ve eval115 alt grup analizleri kaldırıldı. Sayım ve onarım sınırı yalnız doğrulama kümesine uygulanır; kazanç iddiası değildir. Tam pytest gerçek arşivlenmiş tahminleri rapor regresyonu için yeniden puanlar."
+}
