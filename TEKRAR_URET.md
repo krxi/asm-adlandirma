@@ -138,6 +138,35 @@ python3 <repo>/lora/hazirla_olcek.py --veri veri/bin/olcek --cikti lora/veri-olc
 
 CI bu komutları her push'ta çalıştırır (`.github/workflows/test.yml`).
 
+### Sabit imza ipuçları (çevrimdışı v7 araştırması)
+
+`lora/imzalar.py`, mevcut sohbet JSONL'indeki yalnız **user** girdisini (assembly + Ghidra)
+tarar; eğitim veya model çıkarımı yapmaz, asıl veri dosyalarını değiştirmez:
+
+```bash
+python3 lora/imzalar.py \
+  --dataset train=lora/veri-v6/train.jsonl \
+  --dataset test_sabit=lora/veri-v6/test_sabit.jsonl \
+  --dataset eval115=lora/veri-v6/eval115.jsonl \
+  --predictions test_sabit=sonuc/test2000-molab-qwen3-8b-v5.jsonl \
+  --predictions eval115=sonuc/eval115-molab-qwen3-8b-v5.jsonl \
+  --output /tmp/imza-isabetler.jsonl --summary /tmp/imza-ozet.json
+```
+
+Çıktı, eşleşen satırlar için kimlikli yan dosya ve hedeften bağımsız `input_block` önerisidir.
+Özet, bölüm başına satır/fonksiyon sayısı, adında hash/kripto işareti olanların betimsel sayımı
+ve varsa kayıtlı v5 tahminlerinin gerçek adla yeniden hesaplanan `taban.f1` puanını içerir.
+`--predictions` isteğe bağlıdır; eğitim kümesinde tahmin yoksa puan üretilmez.
+
+CRC polinomları ve Adler modülü tek-sabit/zayıf ipucudur. CRC tablo-değer eşleşmesi bir tablonun
+varlığını kanıtlamaz. IV'ler MD4/MD5/SHA-1/RIPEMD-160 veya SHA-2/BLAKE2 arasında ortak olabilir;
+betik bunları belirsiz olarak işaretler. 64-bit gerçek sabitler, rastgele 32-bit yarılara ayrılmaz;
+yalnız iki yarısı aynı bilinen imzada bulunan paketli sözcükler açılır. AES için sıralı sekiz
+bayt gerekir. `dat_`/`DAT_` tablosunun içeriği mevcut girdide yoksa okunamaz; imza bulunmaması,
+algoritmanın bulunmadığı anlamına gelmez. Bu araç v6 eğitim girdisine otomatik eklenmez.
+
+Regresyon testleri: `python3 -m pytest tests/test_imzalar.py -q`.
+
 ## 7. Eğitim ve ölçüm
 
 Yerel (Apple Silicon): `sh lora/egit.sh` (`lora/ayar.yaml`), sonra `.venv/bin/python lora/olc.py`.
@@ -145,6 +174,79 @@ Yerel (Apple Silicon): `sh lora/egit.sh` (`lora/ayar.yaml`), sonra `.venv/bin/py
 Colab: `sh colab/zip_hazirla.sh` (`lora/veri-15b-aciklama/` → `veri.zip`), `colab/egit.ipynb`'yi GPU çalışma
 zamanında baştan sona çalıştırın ([colab/README.md](colab/README.md)). Son hücre `lora/olc.py` biçiminde
 sonuç JSONL'i yazar. `python3 ozet.py` ile diğer koşularla aynı tabloda görünür.
+
+### v6 final ölçüm kiti (GPU/ağırlık indirmeden)
+
+`molab/egit.py` ve v6 Colab motoru tam eğitimin sonunda **valid F1 ile seçilmiş**
+adaptörü `test_sabit` (2.000) ve `eval115` (115) üzerinde ölçer. Üretim greedy,
+`enable_thinking=False`, `max_new_tokens=160`; `son/` ise devam için son-adım
+adaptörüdür, en iyi adaptör veya tamamlanmış test anlamına gelmez. Bu yüzden kit
+yerel model üretimini tekrarlamaz: final JSONL ve tamamlanma damgalarını okur.
+Eğitim sürerken test dosyalarını ölçüm/seçim amacıyla açmayın.
+
+```bash
+python3 -m pip install huggingface_hub  # yalnız HF indirme için
+# HF_TOKEN yalnız ortamdan; macOS'ta Anahtar Zinciri sarmalayıcısı:
+gizli calistir python3 olcum_v6.py indir --cikti sonuc/v6
+# Linux/molab/Colab/sirius: HF_TOKEN güvenli ortamda tanımlandıktan sonra:
+# python3 olcum_v6.py indir --cikti sonuc/v6
+python3 olcum_v6.py rapor --veri /path/to/veri-v6 --sonuc sonuc/v6 -o /tmp/olcum-v6.json
+```
+
+Yerel molab/Colab çalışma dizininde `test_sabit-sonuc.jsonl` ve
+`eval115-sonuc.jsonl` varsa `--sonuc /path/to/run` ile indirmeden çalışır.
+HF indirme tek commit'e sabitlenir; iki damga `kosu.json`/`en_iyi.json` ile
+eşleşmeli ve sonuçlar tam olmalı. Özel indirme dizini ve `kosu.json` yerel
+yol/koşu bilgisi içerebilir; ham dosyaları herkese açık commit'e eklemeyin.
+
+Rapor gerçek ad F1'i `taban.f1` ile yeniden hesaplar (dosyadaki skor körlemesine
+kullanılmaz); öneksiz F1 için v6 satırındaki `oneksiz_onek` kullanılır.
+v5 tahminleri varsayılan olarak repodaki `sonuc/*-v5.jsonl` dosyalarıdır.
+Eksik/yinelenen kimlik, değişmiş hedef/opt/proje veya eksik decompile metadata
+ölçümü durdurur; kesişim alt kümesi sessizce seçilmez.
+Ana eşli %95 bootstrap aralığı 2.000 tekrar/42 tohumla **proje kümelerini**
+yeniden örnekler (opt kopyaları birlikte); tarihsel satır aralığı yalnız tanısaldır.
+`opt` ve `opt_decompile` -O0…-O3 yanında verideki -Os'u da içerir.
+`decompile.var` kapsanan satırlardır; `tam`/`kirpildi`/`yok` ayrık alt kümelerdir.
+Boş gruplar `n=0, f1=null` olarak görünür. Alt grup farkları tanısaldır.
+`tam_isabet` birebir ad eşitliği, `f1_tam_isabet` ise sözcük kümesi F1=1 sayısıdır.
+`oneksiz_f1_tam_isabet` öneksiz sözcük kümesi F1=1 sayısıdır (birebir ad değil).
+F1 hedefleri test2000 ≥0.14 ve eval115 ≥0.17; v5 yayımlanmış kıyas 0.124/0.155.
+
+Açıklama için aynı v5 **300 kimliği**, aynı C kaynak/ref ve hakem istemi kullanılır
+(rastgele yeni örneklem veya kaynağı olmayan satırların elenmesi yok):
+
+```bash
+python3 aciklama_puan_v6.py puan sonuc/v6/test_sabit-sonuc.jsonl \
+  --kaynak /path/to/veri/kaynak-v4 --referans /path/to/veri/aciklama-v4/codex.jsonl \
+  --model mimo-v2.6-pro -j 8 -o /tmp/v6-puan.jsonl
+python3 aciklama_puan_v6.py ozet /tmp/v6-puan.jsonl -o /tmp/v6-aciklama.json
+```
+
+Kaynak/ref git dışıdır (adım 4); `--kuru` hakem çağırmadan gerçek 600 istemi
+çıktıya yazar. Canlı hakem için mevcut `EVREN_LLM_API_KEY`/`EVREN_ENV` kullanılır.
+İngilizce hedef puan=2 oranı ≥%25 ve sıfır hakem hatasıdır.
+Hata satırları silinmez: `dogru_orani` tüm 300 satırın, `tam_karar_dogru_orani`
+yalnız karar verilmiş satırların oranıdır. v5 EN %20.0 = 59/295 karar;
+tam örneklemde 59/300 = %19.67 (5 hata). TR 62/296 = %20.95 (4 hata).
+İki dil ayrı raporlanır; doğru/yanlış açıklamalar için ad F1 ve eşli proje GA da vardır.
+
+v6 sonuçları hazır olmadan kitin v5 kuru denemesi:
+
+```bash
+python3 olcum_v6.py rapor --veri /path/to/veri-v6 --kuru-v5 -o /tmp/v5-kuru.json
+python3 aciklama_puan_v6.py ozet sonuc/test2000-molab-qwen3-8b-v5-puan.jsonl -o /tmp/v5-aciklama.json
+python3 aciklama_puan_v6.py puan sonuc/test2000-molab-qwen3-8b-v5.jsonl \
+  --kaynak /path/to/veri/kaynak-v4 --referans /path/to/veri/aciklama-v4/codex.jsonl \
+  --kuru -o /tmp/v5-istemler.jsonl
+python3 -m pytest -q tests/test_olcum_v6.py
+```
+
+Gerçek v5 çıktılarıyla kuru deneme: F1 0.1236480880/0.1554451346,
+öneksiz F1 0.1256643579/0.1729606625; v5'e karşı fark ve GA `[0,0]`.
+Bu **v6 sonucu değildir**. v6 metadata ile test decompile 1.999/2.000
+(347 kırpılmış), eval115 115/115 (15 kırpılmış). Gerçek kaynak/ref ile
+300 kimlik/600 hakem istemi ağsız hazırlanır; mevcut puanlar EN %20.0'ı yeniden üretir.
 
 ## 8. Açık noktalar (repodan tam üretilemeyen)
 

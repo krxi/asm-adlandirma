@@ -28,14 +28,24 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install ruff==0.16.8
       - name: Denetlenecek dosyalar
+        env:
+          ONCEKI: ${{ github.event.before }}
         run: |
           set -eu
           git fetch -q origin main || true
           taban=$(git merge-base HEAD origin/main 2>/dev/null || echo "")
+          # Doğrudan main'e push'ta merge-base HEAD'in kendisidir ve yeni dosya listesi boş kalır; bu yüzden
+          # push'un eklediği dosyalar ayrıca push öncesi commit'e göre alınır (yeni dal ve force-push hariç).
+          onceki=""
+          if [ -n "${ONCEKI:-}" ] && [ "$ONCEKI" != 0000000000000000000000000000000000000000 ] \
+            && git cat-file -e "$ONCEKI^{commit}" 2>/dev/null; then
+            onceki=$ONCEKI
+          fi
           {
             printf '%s\n' conftest.py iki_f1.py onek_denetim.py
             git ls-files 'tests/*.py'
             if [ -n "$taban" ]; then git diff --name-only --diff-filter=A "$taban" HEAD -- '*.py'; fi
+            if [ -n "$onceki" ]; then git diff --name-only --diff-filter=A "$onceki" HEAD -- '*.py'; fi
           } | sort -u | while read -r f; do [ -f "$f" ] && echo "$f"; done > "$RUNNER_TEMP/ruff-dosyalar"
           cat "$RUNNER_TEMP/ruff-dosyalar"
       - run: xargs ruff check < "$RUNNER_TEMP/ruff-dosyalar"
