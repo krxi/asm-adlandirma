@@ -4,6 +4,8 @@ import pytest
 
 KOK = Path(__file__).resolve().parents[1]
 BELGE = KOK / "rapor/arastirma/ONCEKI_CALISMALAR.md"
+MSR_ANA = KOK / "makale/msr2027/main.tex"
+MSR_KAYNAKLAR = KOK / "makale/msr2027/refs.bib"
 
 
 def test_literatur_guncel_main_ve_v6_onceligi():
@@ -56,6 +58,8 @@ def test_kaynak_haritasi_temel_calisma_ve_sinirlari_korur():
         "NERO",
         "SymLM",
         "XFL",
+        "BLens",
+        "SymGen",
         "HexT5",
         "AsmDepictor",
         "VarBERT",
@@ -66,3 +70,23 @@ def test_kaynak_haritasi_temel_calisma_ve_sinirlari_korur():
         assert ad in md
     assert "unverified" in md and "not run" in md
     assert "https://" in md and "veri veya ağırlık lisansı yerine geçmez" in md
+
+
+def test_msr_blens_ve_symgen_kaynaklari_dogrulandi():
+    refs = MSR_KAYNAKLAR.read_text(encoding="utf-8")
+    ana = MSR_ANA.read_text(encoding="utf-8")
+
+    assert "TODO" not in refs
+    for ifade in (
+        "Benoit, Tristan and Wang, Yunru and Dannehl, Moritz and Kinder, Johannes",
+        "34th USENIX Security Symposium (USENIX Security 25)",
+        "pages     = {6877--6896}",
+        "Jiang, Linxi and Jin, Xin and Lin, Zhiqiang",
+        "Beyond Classification: Inferring Function Names in Stripped Binaries",
+        "doi       = {10.14722/ndss.2025.240797}",
+    ):
+        assert ifade in refs
+
+    assert "excludes 20 common names" not in ana
+    assert "twenty static-analysis-identifiable functions" in ana
+    assert "binary-level split" in ana and "2.94\\times" in ana

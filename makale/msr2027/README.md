@@ -14,7 +14,7 @@ Bugünkü taslak 3 sayfa (kaynaklar dahil); bir şekil veya v6 satırı için ye
 
 - [ ] Yazar soyadı (`main.tex` başı; kurum "Independent researcher, Türkiye" yazıldı, e-posta gönderim sisteminde)
 - [ ] Zenodo DOI: gönderimde gerekmez, kamera-hazırda (24 Ocak) gerekir. `asmsense-data` için entegrasyonu aç, yeni release yayımla
-- [x] `refs.bib`: 7 kaynak arXiv/ACL/USENIX/NDSS sayfalarından doğrulandı (XFL/NERO sayfa ve DOI'si çelişkili kaynaklar yüzünden yok)
+- [x] `refs.bib`: 7 kaynak doğrulandı; BLens ve SymGen sayfa/DOI ile resmî konferans sayfalarından (#15), diğerleri arXiv/ACL/Zenodo'dan (XFL/NERO sayfa ve DOI'si çelişkili kaynaklar yüzünden yok)
 - [ ] v6 sonucu geldiyse Tablo III'e satır ekle (`olcum_v6.py rapor`)
 - [ ] Metni kendi sesinle revize et; sayıları değiştirme, kaynakları aşağıda
 - [ ] İsteğe bağlı şekil: `grafik/x-ezber.png` (ezber karşılaştırması) veya `grafik/test-hata.png`
