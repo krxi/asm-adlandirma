@@ -16,8 +16,15 @@ def write_jsonl(path, rows):
 
 def sample():
     kimlik = "demo/src/a.c:-O2:tam:sub_0000:demo_read"
-    d = {"id": kimlik, "gercek_ad": "demo_read", "opt": "-O2", "proje": "demo",
-         "oneksiz_onek": ["demo"], "decompile_var": True, "decompile_kirpildi": True}
+    d = {
+        "id": kimlik,
+        "gercek_ad": "demo_read",
+        "opt": "-O2",
+        "proje": "demo",
+        "oneksiz_onek": ["demo"],
+        "decompile_var": True,
+        "decompile_kirpildi": True,
+    }
     r = {"id": kimlik, "gercek": "demo_read", "tahmin": "read", "opt": "-O2", "proje": "demo", "f1": 0.667}
     return kimlik, d, r
 
@@ -66,8 +73,10 @@ def test_duplicate_ids_rejected(tmp_path):
 
 
 def test_explanation_errors_remain_in_denominator(tmp_path):
-    rows = [{"id": f"p/file:-O0:tam:sub_000{i}:read", "f1": 0, "puan_en": p, "puan_tr": p}
-            for i, p in enumerate([2, None, 0])]
+    rows = [
+        {"id": f"p/file:-O0:tam:sub_000{i}:read", "f1": 0, "puan_en": p, "puan_tr": p}
+        for i, p in enumerate([2, None, 0])
+    ]
     path = write_jsonl(tmp_path / "scores.jsonl", rows)
     s = ap.ozet(path, path, tekrar=100)
     assert s["diller"]["en"]["dogru_orani"] == pytest.approx(1 / 3)
@@ -109,6 +118,7 @@ def test_download_pins_revision_and_checks_completion(tmp_path, monkeypatch):
     k, d, r = sample()
     best, run = {"adim": 12, "f1": 0.1}, {"surum": "v6"}
     calls = []
+
     def download(repo, name, revision, token, local_dir):
         assert revision == "commit-sha"
         calls.append(name)
@@ -119,9 +129,15 @@ def test_download_pins_revision_and_checks_completion(tmp_path, monkeypatch):
             content = best if name == "en_iyi.json" else run if name == "kosu.json" else {"en_iyi": best, "kosu": run}
             path.write_text(json.dumps(content))
         return str(path)
-    monkeypatch.setitem(sys.modules, "huggingface_hub", SimpleNamespace(
-        HfApi=lambda token: SimpleNamespace(repo_info=lambda repo, revision: SimpleNamespace(sha="commit-sha")),
-        hf_hub_download=download))
+
+    monkeypatch.setitem(
+        sys.modules,
+        "huggingface_hub",
+        SimpleNamespace(
+            HfApi=lambda token: SimpleNamespace(repo_info=lambda repo, revision: SimpleNamespace(sha="commit-sha")),
+            hf_hub_download=download,
+        ),
+    )
     manifest = ov.indir("owner/repo", "main", tmp_path)
     assert manifest["revision"] == "commit-sha"
     assert len(calls) == 6
@@ -131,8 +147,10 @@ def test_download_pins_revision_and_checks_completion(tmp_path, monkeypatch):
 
 def test_hf_errors_do_not_expose_token(tmp_path, monkeypatch):
     monkeypatch.setenv("HF_TOKEN", "never-print-this")
+
     def fail(*args, **kwargs):
         raise ValueError("never-print-this")
+
     monkeypatch.setitem(sys.modules, "huggingface_hub", SimpleNamespace(HfApi=fail, hf_hub_download=fail))
     with pytest.raises(RuntimeError) as error:
         ov.indir("owner/repo", "main", tmp_path)
