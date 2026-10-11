@@ -47,7 +47,10 @@ soruyu satır satır hizalı veride yanıtlar; pilot ancak iki ikili kanıt hash
 | v6 − v5 eşli fark proje-kümeli %95 GA'da sıfırı dışlar | 0,62–0,76 | Ölçülen: v5 − v1 eşli farkının proje-kümeli SE'si 0,0054 (test2000, 4.000 çekim), anlamlılık eşiği ≈ +0,011. Önsel kazanç: büyük modelde decompile göreli +%15; küçük modele %11 (alt sınır) ile %15 (üst sınır) aktarıldı, belirsizlik ±0,010 |
 | v6 test2000 ≥ 0,14 | 0,42–0,60 | Aynı önsel |
 | 6 ay içinde küçük model ≥ 0,167 (mimo + bağlam) | 0,09–0,15 | Öznel kalem kazanımları (decompile, tüm veri/2 epoch, 9B taban, alttan-yukarı adlar; RL eklenirse üst sınır), azalan getiri katsayısı 0,7 |
-| Mart 2027'ye kadar ≥1 hakemli kabul (MSR, sonra koşullu BAR) | ≈0,46 | Öznel: MSR kabul 0,40 (oran yayımlanmıyor; yılda 22–32 kabul), BAR çağrısı 0,70, BAR kabul 0,38 (yılda 8–10 kabul) |
+| MSR 2027 Data & Tool Showcase kabulü (gönderilirse) | ≈0,50 | Ölçülen taban oran: HotCRP "N of M accepted" 2023 22/42, 2026 28/58 (son iki yıl %50); 2021–26 toplam 100/172 = %58 |
+| BAR 2027 düzenlenir | ≈0,85 | 2018–2026 her yıl düzenlendi (Laplace 0,91); 11 Ekim'de çağrı yok |
+| BAR kabulü (gönderilirse) | ≈0,62 | Ölçülen taban oran: HotCRP 2019–2024 + 2026 toplam 57/89 = %64 |
+| Mart 2027'ye kadar ≥1 hakemli kabul (MSR, sonra koşullu BAR) | ≈0,64 | Yukarıdaki oranlar + öznel gönderim olasılıkları (MSR 0,70, BAR 0,75) ve emek; Monte Carlo 20.000 çekim. Yalnız MSR: ≈0,36 |
 
 Sonuç: "küçük model büyük modeli yakalar" iddiası önümüzdeki 6 ayda düşük olasılıklı. Yayınlar
 ezbere dayanıklı benchmark, denetlenmiş veri ve dürüst küçük-model taban çizgisi üzerine kurulur.

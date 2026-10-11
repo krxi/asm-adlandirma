@@ -1,6 +1,6 @@
 % asmsense -- MSR 2027 Data and Tool Showcase taslağı (4 sayfa + 1 sayfa kaynak, IEEE).
 % TASLAK: Sayılar repodaki arşiv sonuçlarından ve rapor/arastirma/V6_VERI_DENETIMI.md'den alındı.
-% Metni kendi sesinle revize et; "TODO" işaretlerini gönderimden önce kapat.
+% Metni kendi sesinle revize et. Yazar soyadı ve v6 sonucu (geldiyse Tablo III) eklenecek.
 % Derleme: tectonic main.tex  (veya pdflatex + bibtex)
 \documentclass[conference]{IEEEtran}
 \usepackage[T1]{fontenc}
@@ -13,8 +13,8 @@
 
 \title{\tool: A Memorization-Aware Dataset for Naming\\Functions in Stripped x86-64 Binaries}
 
-\author{\IEEEauthorblockN{Emin TODO-soyad}
-\IEEEauthorblockA{TODO-kurum / bağımsız araştırmacı\\TODO-e-posta}}
+\author{\IEEEauthorblockN{Emin}
+\IEEEauthorblockA{Independent researcher, T\"urkiye}}
 
 \maketitle
 
@@ -109,7 +109,7 @@ The v5 target improves the small model by +0.018 F1 over v1 (95\% project-cluste
 \textbf{Descriptions.} A judge model compared v5's English descriptions with the C source on 300 test rows: 20.0\% correct, 15.3\% partly correct and 64.7\% wrong. Name F1 is 0.306 when the description is correct and 0.054 when it is wrong, so understanding the function, not choosing a name, is the bottleneck.
 
 \section{Availability and Use}
-The v4 function table is on Hugging Face (\url{https://huggingface.co/datasets/krxi123/asmsense}) and Kaggle; the chat-format releases v4--v6 are GitHub release archives with published SHA-256 checksums (\url{https://github.com/krxi/asmsense-data}), archived on Zenodo (DOI: TODO). Every row carries the license of its source project. Code, prompts, archived predictions and the audit tool are MIT-licensed at \url{https://github.com/krxi/asmsense}; the Qwen3-8B LoRA adapter is on Hugging Face. The dataset supports training naming and summarization models, studying memorization with a matched famous-vs.-unfamiliar design, and testing inputs such as call context or decompilation.
+The v4 function table is on Hugging Face (\url{https://huggingface.co/datasets/krxi123/asmsense}) and Kaggle; the chat-format releases v4--v6 are GitHub release archives with published SHA-256 checksums (\url{https://github.com/krxi/asmsense-data}); a Zenodo DOI for the release archive will be cited in the camera-ready version. Every row carries the license of its source project. Code, prompts, archived predictions and the audit tool are MIT-licensed at \url{https://github.com/krxi/asmsense}; the Qwen3-8B LoRA adapter is on Hugging Face. The dataset supports training naming and summarization models, studying memorization with a matched famous-vs.-unfamiliar design, and testing inputs such as call context or decompilation.
 
 \section{Limitations}
 All binaries are Mach-O built with clang; ELF, PE and other compilers are not covered. The fixed test sample guided development decisions and is not an untouched hold-out; a sealed test of projects created after the evaluated models' release is future work. Project-level splits and little-known projects reduce, but cannot exclude, pre-training contamination. Name F1 is lexical and gives no credit for synonyms. Reference descriptions come from a teacher model, not from human annotators.
