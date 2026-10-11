@@ -2,24 +2,44 @@ import json
 
 import pytest
 
-from alttan_yukari import (components_leaf_first, context_symbols, graph_for, identity,
-                          indexed, orchestrate, parse_name, rewrite)
+from alttan_yukari import (
+    components_leaf_first,
+    context_symbols,
+    graph_for,
+    identity,
+    indexed,
+    orchestrate,
+    parse_name,
+    rewrite,
+)
 from alttan_yukari_sim import lexical_metrics, name_candidates, simulate
 from lora.hazirla import BAGLAM_BASLIK, DECOMPILE_BASLIK
 
 
 def raw(symbol, name, calls=(), project="p", opt="-O0", source="a.c"):
-    return {"id": f"{project}/{source}:{opt}:tam:{symbol}:{name}", "proje": project,
-            "ad": name, "asm": "\n".join(f"call\t{s}" for s in calls) or "ret"}
+    return {
+        "id": f"{project}/{source}:{opt}:tam:{symbol}:{name}",
+        "proje": project,
+        "ad": name,
+        "asm": "\n".join(f"call\t{s}" for s in calls) or "ret",
+    }
 
 
 def prepared(row, context=""):
-    return {"id": row["id"], "proje": row["proje"], "gercek_ad": row["ad"],
-            "oneksiz_onek": ["p"], "messages": [
-                {"role": "system", "content": "system"},
-                {"role": "user", "content": row["asm"] + (BAGLAM_BASLIK + context if context else "")
-                 + DECOMPILE_BASLIK + "sub_0002();"},
-                {"role": "assistant", "content": json.dumps({"ad": row["ad"]})}]}
+    return {
+        "id": row["id"],
+        "proje": row["proje"],
+        "gercek_ad": row["ad"],
+        "oneksiz_onek": ["p"],
+        "messages": [
+            {"role": "system", "content": "system"},
+            {
+                "role": "user",
+                "content": row["asm"] + (BAGLAM_BASLIK + context if context else "") + DECOMPILE_BASLIK + "sub_0002();",
+            },
+            {"role": "assistant", "content": json.dumps({"ad": row["ad"]})},
+        ],
+    }
 
 
 def test_rewriting_keeps_asm_decompile_literals_and_substrings():
@@ -44,8 +64,7 @@ def test_identity_scopes_project_opt_mode_but_not_source():
 
 
 def test_leaf_first_chain_cycle_self_and_disconnected():
-    graph = {"a": {"b"}, "b": {"c"}, "c": set(), "d": {"e", "c"},
-             "e": {"d"}, "f": {"f"}, "g": set()}
+    graph = {"a": {"b"}, "b": {"c"}, "c": set(), "d": {"e", "c"}, "e": {"d"}, "f": {"f"}, "g": set()}
     groups = list(components_leaf_first(graph))
     position = {node: i for i, group in enumerate(groups) for node in group}
     assert position["c"] < position["b"] < position["a"]
@@ -65,12 +84,14 @@ def test_orchestration_propagates_without_gold_or_cross_scope():
     inputs = indexed([prepared(leaf), prepared(caller, "sub_0001 (1 komut)"), prepared(other)])
     source = indexed([leaf, caller, other])
     results = []
+
     def predict(row, messages):
         assert all(m["role"] != "assistant" for m in messages)
         assert not any("GOLD" in m["content"] for m in messages)
         if row["id"] == caller["id"]:
             assert "predicted_leaf (1 komut)" in messages[1]["content"]
         return {"ad": "predicted_leaf" if row["id"] == leaf["id"] else "another_prediction"}
+
     orchestrate(inputs, source, predict, results.append)
     record = next(r for r in results if r["id"] == caller["id"])
     assert record["missing_direct_callees"] == 1
@@ -82,12 +103,15 @@ def test_cycle_predictions_commit_simultaneously_and_self_stays_anonymous():
     b = raw("sub_0002", "gold_b", ["sub_0001"])
     own = raw("sub_0003", "gold_self", ["sub_0003"])
     source = indexed([a, b, own])
-    inputs = indexed([prepared(a, "sub_0002 (1 komut)"), prepared(b, "sub_0001 (1 komut)"),
-                      prepared(own, "sub_0003 (1 komut)")])
+    inputs = indexed(
+        [prepared(a, "sub_0002 (1 komut)"), prepared(b, "sub_0001 (1 komut)"), prepared(own, "sub_0003 (1 komut)")]
+    )
     records = []
+
     def predict(row, messages):
         assert "predicted" not in messages[1]["content"]
         return {"ad": "predicted"}
+
     orchestrate(inputs, source, predict, records.append)
     assert all(r["recursive"] for r in records)
     assert all(not r["context_changed"] for r in records)
