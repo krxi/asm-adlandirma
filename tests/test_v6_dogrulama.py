@@ -348,3 +348,75 @@ def test_kanonik_skor_ve_paired_proje_bootstrap():
     birlesik[0]["f1"] -= 0.001
     with pytest.raises(ValueError, match="kanonik"):
         v6.karsilastir(kontrol, birlesik, capa)
+
+
+def _hedefli(i, gercek, hedef_ad, user):
+    r = satir(i, "wrap")
+    hedef = json.loads(r["messages"][2]["content"])
+    hedef["ad"] = hedef_ad
+    r["gercek_ad"] = gercek
+    r["id"] = f"wrap/synthetic:{i}:{gercek}"
+    r["messages"][1]["content"] = user
+    r["messages"][2]["content"] = json.dumps(hedef)
+    return r
+
+
+BAGLAM = v6.hs.h.BAGLAM_BASLIK
+
+
+@pytest.mark.parametrize(
+    "gercek,hedef_ad,user",
+    [
+        # Gerçek release'teki sabit valid satırı: öneksiz hedef sarmalanan import'un kendisi.
+        ("sigar_statvfs", "statvfs", "push\trbp\ncall\tstatvfs    ; -> statvfs\npop\trbp\nret"),
+        ("janet_asin", "asin", "jmp\tasin    ; -> asin"),
+        # Hedef bir komut adıyla çakışıyor; komut program tanımlayıcısı değildir.
+        ("stack_push", "push", "push\trbp\nmov\trbp, rsp\nret"),
+        # Bağlamın sabit `string` etiketi hedef değildir.
+        ("janet_string", "string", "call\tsub_0001\nret" + BAGLAM + 'sub_0001 (3 komut): çağırır abort; string "x"'),
+        # Ham addan farklı dış semboller: tanımlı fonksiyonun kendisi olamaz.
+        ("Abort", "Abort", "call\tabort    ; -> abort"),
+        ("mi_is_redirected", "is_redirected", "call\t_mi_is_redirected    ; -> _mi_is_redirected"),
+    ],
+)
+def test_stripped_binaryde_gorunen_adlar_sizinti_sayilmaz(gercek, hedef_ad, user):
+    v6.sema_dogrula(_hedefli(1, gercek, hedef_ad, user))
+
+
+@pytest.mark.parametrize(
+    "user",
+    [
+        "call\tsigar_statvfs",  # import yorumu olmayan ham ad
+        "call\tstatvfs    ; -> statvfs" + BAGLAM + "sub_0002 (4 komut): çağırır sigar_statvfs_impl\nsigar_statvfs",
+        "lea\trdi, [rip + sigar_statvfs]",
+    ],
+)
+def test_ham_ad_import_disinda_hala_reddedilir(user):
+    with pytest.raises(ValueError, match="öneksiz hedef"):
+        v6.sema_dogrula(_hedefli(2, "sigar_statvfs", "statvfs", user))
+
+
+def test_decompile_basliginda_ham_ad_import_olsa_da_reddedilir(monkeypatch):
+    monkeypatch.setattr(v6.hs.h, "TOK", HazirlamaTokenizer())
+    r = _hedefli(3, "sigar_statvfs", "statvfs", "call\tstatvfs    ; -> statvfs\nret")
+    s = hazir_v6([r])[0]
+    s["messages"][1]["content"] += "\nint _sigar_statvfs(void) { return 0; }"
+    with pytest.raises(ValueError, match="öneksiz hedef"):
+        v6.sema_dogrula(s, "v6")
+
+
+def test_ana_hattin_cikardigi_sizintili_decompile_kabul_kirli_olan_red(monkeypatch):
+    monkeypatch.setattr(v6.hs.h, "TOK", HazirlamaTokenizer())
+    r = _hedefli(4, "wrap_open", "open_thing", "mov\teax, 1\nret")
+    a = SimpleNamespace(max_uzunluk=4096, decompile_alt_token=1)
+    ham = {"id": r["id"], "ad": r["gercek_ad"], "proje": r["proje"], "asm": r["messages"][1]["content"]}
+    dc = {"id": r["id"], "decompile": "int sub_0004(void) { return wrap_open(); }", "sizinti": True}
+    s = v6.hs.satir_v6(ham, None, None, a, dc, taban_satir=r)
+    s["token"] = {"girdi": 50, "hedef": 20, "toplam": 100}
+    # Ana hat sızıntıyı bulup decompile'ı girdiden çıkardı: satır temiz.
+    assert s["decompile_sizinti"] and not s["decompile_var"] and v6.EK not in s["messages"][1]["content"]
+    v6.sema_dogrula(s, "v6")
+    kirli = copy.deepcopy(hazir_v6([r])[0])
+    kirli["decompile_sizinti"] = True
+    with pytest.raises(ValueError, match="bayrakları"):
+        v6.sema_dogrula(kirli, "v6")

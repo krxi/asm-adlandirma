@@ -108,6 +108,51 @@ def ad_geciyor(metin, adlar):
     return hs.ad_sizintisi(metin, adlar) is not None
 
 
+def _kok(ad):
+    return ad.casefold().lstrip("_")
+
+
+def ithaller(user):
+    """Stripped binary'de de görünen import adları: asm `; -> ad` yorumları ve bağlamdaki `çağırır` listeleri."""
+    asm, _, baglam = user.partition(EK)[0].partition(hs.h.BAGLAM_BASLIK)
+    adlar = set(hs.ITHAL_YORUM.findall(asm))
+    for satir in baglam.splitlines():
+        _, ayrac, cagri = satir.partition("çağırır ")
+        if ayrac:
+            adlar.update(re.findall(r"[A-Za-z_][A-Za-z0-9_]*", cagri.split(";", 1)[0]))
+    return {ad for ad in adlar if not ad.startswith(("sub_", "dat_"))}
+
+
+def sizinti_adlari(r, hedef_ad, ith):
+    """Ham ad her zaman aranır. Öneksiz hedef yalnız satırın kendi import'u olarak görünüyorsa
+    (janet_asin -> `call asin ; -> asin`) muaftır; bu gerçek stripped binary'de de görünen sinyaldir."""
+    adlar = [r["gercek_ad"]]
+    if hedef_ad != r["gercek_ad"] and _kok(hedef_ad) not in {_kok(a) for a in ith}:
+        adlar.append(hedef_ad)
+    return tuple(adlar)
+
+
+def sizinti_bolumleri(user, ham_ad, ith):
+    """asm, bağlam ve decompile ayrı aranır: C sabit maskesi karışık asm+C metninde tırnak eşini kaybetmesin.
+    Komut adları (`push`, `add`) ve bağlam biçim etiketleri (`komut`, `string`) program tanımlayıcısı değildir.
+    asm/bağlamdaki import (`; -> ad`, `çağırır ad`) tanımsız dış semboldür; bu dylib'de tanımlı fonksiyonun
+    kendisi olamaz (`Abort` ~ `abort`, `mi_is_redirected` ~ `_mi_is_redirected`). Decompile'da fonksiyon
+    başlığı sızıntısı aynı biçimde görüneceği için orada istisna yoktur."""
+    govde, _, decompile = user.partition(EK)
+    asm, _, baglam = govde.partition(hs.h.BAGLAM_BASLIK)
+    satirlar = []
+    for s in asm.splitlines():
+        parca = s.split(None, 1)
+        satirlar.append(s if s.rstrip().endswith(":") else parca[1] if len(parca) == 2 else "")
+    asm = "\n".join(satirlar)
+    baglam = re.sub(r"\(\d+ komut\)|(?<=[:;] )string(?= )", " ", baglam)
+    for ad in ith:
+        if _kok(ad) == _kok(ham_ad):
+            desen = r"(?<![A-Za-z0-9_])" + re.escape(ad) + r"(?![A-Za-z0-9_])"
+            asm, baglam = re.sub(desen, "ext_", asm), re.sub(desen, "ext_", baglam)
+    return [b for b in (asm, baglam, decompile) if b.strip()]
+
+
 def sema_dogrula(r, surum="v5"):
     gerekli = ALANLAR if surum == "v5" else ALANLAR | V6_ALANLAR
     if set(r) != gerekli or any(not isinstance(r[k], str) or not r[k] for k in ("id", "proje", "opt", "gercek_ad")):
@@ -146,11 +191,15 @@ def sema_dogrula(r, surum="v5"):
     if surum == "v5" and EK in m[1]["content"]:
         raise ValueError("v5 kontrol girdisine önceden decompile eklenmiş.")
     # Assistant adı, ana hazırlayıcıdaki h.oneksiz(r) sonucunun gerçek eğitim hedefidir.
-    if r["id"] in m[1]["content"] or ad_geciyor(m[1]["content"], (r["gercek_ad"], hedef["ad"])):
+    user = m[1]["content"]
+    ith = ithaller(user)
+    adlar = sizinti_adlari(r, hedef["ad"], ith)
+    if r["id"] in user or any(ad_geciyor(b, adlar) for b in sizinti_bolumleri(user, r["gercek_ad"], ith)):
         raise ValueError("Girdide ham veya öneksiz hedef adı/kimlik sızıntısı var.")
     if surum == "v6":
         bayraklar = ("decompile_var", "decompile_kirpildi", "decompile_sizinti", "decompile_ham_sizinti")
-        if any(type(r[k]) is not bool for k in bayraklar) or r["decompile_sizinti"]:
+        # Ana hat sızıntı bulduğunda decompile'ı girdiden çıkarır; bayrak ancak decompile hâlâ varsa kirli.
+        if any(type(r[k]) is not bool for k in bayraklar) or (r["decompile_sizinti"] and r["decompile_var"]):
             raise ValueError("Ana v6 sızıntı bayrakları geçerli ve temiz olmalı.")
         if any(type(r[k]) is not int or r[k] < 0 for k in ("decompile_ad_anonim_degisim", "decompile_ad_anonim_satir")):
             raise ValueError("Ana v6 anonimleştirme sayacı bozuk.")

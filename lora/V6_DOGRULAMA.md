@@ -43,8 +43,18 @@ Sızıntı denetimi ana `ad_sizintisi` yardımcısını kullanır; hem ham
 `gercek_ad` hem assistant JSON'daki gerçek öneksiz eğitim hedefi denetlenir.
 `lfs_dir_compact` / `dir_compact` ve Mach-O alt çizgili biçimler sentetik
 regresyonla korunur. Ana hazırlayıcının proje-içi anonimleştirmesi tekrar
-uygulanmaz. Sızıntı bayrağı temiz değilse pilot durur. Decompile bulunmayan
-ana hat satırları düşürülmez; kapsam ayrı raporlanır.
+uygulanmaz. Decompile içinde kalan sızıntı bayrağı pilotu durdurur; ana hattın
+sızıntı yüzünden decompile'ı zaten çıkardığı satırlar temizdir. Decompile
+bulunmayan ana hat satırları düşürülmez; kapsam ayrı raporlanır.
+
+asm, bağlam ve decompile ayrı aranır. Stripped binary'de de görünen adlar
+sızıntı sayılmaz: komut adları (`push`), bağlamın `komut`/`string` etiketleri ve
+asm/bağlamdaki tanımsız dış semboller (`; -> statvfs`, `çağırır abort`). Bu
+dylib'de tanımlı fonksiyon kendi import'u olamaz; öneksiz hedef yalnız satırın
+kendi import'u ise muaftır (`sigar_statvfs` → `statvfs`). Ham ad import dışında
+ve decompile'ın tamamında katı denetlenir. Yayımlanmış v5/v6 release'lerinde
+(95.000 train + 300 valid, iki sürüm) bu kuralla 0 satır reddedilir; önceki
+katı kural 119 / 124 train ve sabit valid çapasından 1 satırı reddediyordu.
 
 Validation kimlikleri ve sırası sabit valid300 cache'iyle eşleştirilir.
 Test_sabit/eval115 kimlikleri adından bağımsız reddedilir; eğitimde mevcut
