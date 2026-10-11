@@ -92,6 +92,8 @@ def ozet(puan_yol, v5_yol=V5_PUAN, tekrar=2000):
              "ortalama": sum(valid) / len(valid) if valid else None,
              "dogru_orani": a.count(2) / len(a),
              "tam_karar_dogru_orani": valid.count(2) / len(valid) if valid else None,
+             "tam_karar_kismen_orani": valid.count(1) / len(valid) if valid else None,
+             "tam_karar_yanlis_orani": valid.count(0) / len(valid) if valid else None,
              "kismen_orani": a.count(1) / len(a), "yanlis_orani": a.count(0) / len(a),
              "v5_dogru_orani": b.count(2) / len(b),
              "v5_tam_karar_dogru_orani": bv.count(2) / len(bv) if bv else None,

@@ -181,6 +181,7 @@ yeniden örnekler (opt kopyaları birlikte); tarihsel satır aralığı yalnız 
 `decompile.var` kapsanan satırlardır; `tam`/`kirpildi`/`yok` ayrık alt kümelerdir.
 Boş gruplar `n=0, f1=null` olarak görünür. Alt grup farkları tanısaldır.
 `tam_isabet` birebir ad eşitliği, `f1_tam_isabet` ise sözcük kümesi F1=1 sayısıdır.
+`oneksiz_f1_tam_isabet` öneksiz sözcük kümesi F1=1 sayısıdır (birebir ad değil).
 F1 hedefleri test2000 ≥0.14 ve eval115 ≥0.17; v5 yayımlanmış kıyas 0.124/0.155.
 
 Açıklama için aynı v5 **300 kimliği**, aynı C kaynak/ref ve hakem istemi kullanılır

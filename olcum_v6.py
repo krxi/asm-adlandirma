@@ -102,12 +102,13 @@ def eslestir(veri, aday, v5, beklenen):
 def ozet(rows):
     if not rows:
         return {"n": 0, "f1": None, "v5_f1": None, "fark": None, "oneksiz_f1": None,
-                "v5_oneksiz_f1": None, "tam_isabet": 0, "f1_tam_isabet": 0}
+                "v5_oneksiz_f1": None, "tam_isabet": 0, "f1_tam_isabet": 0, "oneksiz_f1_tam_isabet": 0}
     mean = lambda k: math.fsum(r[k] for r in rows) / len(rows)
     return {"n": len(rows), "f1": mean("f1"), "v5_f1": mean("v5_f1"),
             "fark": mean("f1") - mean("v5_f1"), "oneksiz_f1": mean("oneksiz_f1"),
             "v5_oneksiz_f1": mean("v5_oneksiz_f1"), "tam_isabet": sum(r["tam_isabet"] for r in rows),
             "f1_tam_isabet": sum(r["f1"] == 1 for r in rows),
+            "oneksiz_f1_tam_isabet": sum(r["oneksiz_f1"] == 1 for r in rows),
             "kayitli_f1_uyumsuz": sum(r["kayitli_f1_uyumsuz"] for r in rows)}
 
 

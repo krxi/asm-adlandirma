@@ -30,6 +30,8 @@ def test_canonical_and_prefix_metrics():
     assert result["oneksiz_f1"] == 1
     assert result["fark"] == 0
     assert result["tam_isabet"] == 0
+    assert result["f1_tam_isabet"] == 0
+    assert result["oneksiz_f1_tam_isabet"] == 1
     assert result["kayitli_f1_uyumsuz"] == 0
     assert rows[0]["decompile"] == "kirpildi"
 
