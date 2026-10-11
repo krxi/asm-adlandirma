@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use asmsense, its dataset or its baselines, please cite it as below."
+title: "asmsense: naming and describing functions in stripped x86-64 binaries"
+type: software
+authors:
+  - alias: krxi
+repository-code: "https://github.com/krxi/asmsense"
+url: "https://huggingface.co/datasets/krxi123/asmsense"
+license: MIT
+abstract: >-
+  A dataset, evaluation protocol and baselines for recovering function names and
+  one-sentence descriptions from stripped x86-64 binaries. The v4 data covers
+  228,177 functions from 341 permissively licensed C projects at five optimization
+  levels, with a project-level split whose test projects are little-known and
+  recent to limit memorization. Baselines include large open models with and
+  without call context or decompiled code, and Qwen3-8B LoRA adapters.
+keywords:
+  - reverse engineering
+  - binary analysis
+  - function name recovery
+  - stripped binaries
+  - decompilation
+  - dataset
+  - large language models
+references:
+  - type: data
+    title: "asmsense dataset"
+    authors:
+      - alias: krxi
+    url: "https://huggingface.co/datasets/krxi123/asmsense"
+    repository: "https://github.com/krxi/asmsense-data"
+  - type: software
+    title: "asmsense Qwen3-8B LoRA adapter"
+    authors:
+      - alias: krxi
+    url: "https://huggingface.co/krxi123/asmsense-qwen3-8b-lora"
