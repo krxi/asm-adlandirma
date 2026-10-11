@@ -12,8 +12,8 @@
     "mapping_validator": "dogrula_v6.py"
   },
   "status": {
-    "real_input_provenance": "not run",
-    "real_expected_hashes": "not verified; pinned manifest deliberately blocks execution",
+    "real_input_provenance": "train/valid (v5) and train_v6/valid_v6 verified against the public asmsense-data v5/v6 releases (archive SHA-256 = GitHub asset digests); binary dogrula_v6 evidence not public",
+    "real_expected_hashes": "4 of 6 input hashes and the v5 training-order hash pinned from the public releases; dogrulama_raporu and dogrulanmis_idler null, so the manifest still blocks execution",
     "gpu_training": "not run",
     "new_model_inference": "not run",
     "quality_gain": "not measured"
@@ -22,6 +22,7 @@
     "command": "python3 -m pytest -q",
     "new_cases": "synthetic main-preparer/main-validator integration; raw and actual target leaks; expected data and order hashes; held-out identities/projects; token and budget limits",
     "full_suite_scope": "also re-scores existing archived real prediction files for report regression",
-    "published_revision_and_ci": "https://github.com/krxi/asmsense/pull/6"
+    "published_revision_and_ci": "https://github.com/krxi/asmsense/pull/6",
+    "real_data_gate": "sema_dogrula rejects 0 of 95,000 train + 300 valid rows in both v5 and v6 releases after the leak-gate fix"
   }
 }
