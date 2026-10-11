@@ -138,6 +138,35 @@ python3 <repo>/lora/hazirla_olcek.py --veri veri/bin/olcek --cikti lora/veri-olc
 
 CI bu komutları her push'ta çalıştırır (`.github/workflows/test.yml`).
 
+### Sabit imza ipuçları (çevrimdışı v7 araştırması)
+
+`lora/imzalar.py`, mevcut sohbet JSONL'indeki yalnız **user** girdisini (assembly + Ghidra)
+tarar; eğitim veya model çıkarımı yapmaz, asıl veri dosyalarını değiştirmez:
+
+```bash
+python3 lora/imzalar.py \
+  --dataset train=lora/veri-v6/train.jsonl \
+  --dataset test_sabit=lora/veri-v6/test_sabit.jsonl \
+  --dataset eval115=lora/veri-v6/eval115.jsonl \
+  --predictions test_sabit=sonuc/test2000-molab-qwen3-8b-v5.jsonl \
+  --predictions eval115=sonuc/eval115-molab-qwen3-8b-v5.jsonl \
+  --output /tmp/imza-isabetler.jsonl --summary /tmp/imza-ozet.json
+```
+
+Çıktı, eşleşen satırlar için kimlikli yan dosya ve hedeften bağımsız `input_block` önerisidir.
+Özet, bölüm başına satır/fonksiyon sayısı, adında hash/kripto işareti olanların betimsel sayımı
+ve varsa kayıtlı v5 tahminlerinin gerçek adla yeniden hesaplanan `taban.f1` puanını içerir.
+`--predictions` isteğe bağlıdır; eğitim kümesinde tahmin yoksa puan üretilmez.
+
+CRC polinomları ve Adler modülü tek-sabit/zayıf ipucudur. CRC tablo-değer eşleşmesi bir tablonun
+varlığını kanıtlamaz. IV'ler MD4/MD5/SHA-1/RIPEMD-160 veya SHA-2/BLAKE2 arasında ortak olabilir;
+betik bunları belirsiz olarak işaretler. 64-bit gerçek sabitler, rastgele 32-bit yarılara ayrılmaz;
+yalnız iki yarısı aynı bilinen imzada bulunan paketli sözcükler açılır. AES için sıralı sekiz
+bayt gerekir. `dat_`/`DAT_` tablosunun içeriği mevcut girdide yoksa okunamaz; imza bulunmaması,
+algoritmanın bulunmadığı anlamına gelmez. Bu araç v6 eğitim girdisine otomatik eklenmez.
+
+Regresyon testleri: `python3 -m pytest tests/test_imzalar.py -q`.
+
 ## 7. Eğitim ve ölçüm
 
 Yerel (Apple Silicon): `sh lora/egit.sh` (`lora/ayar.yaml`), sonra `.venv/bin/python lora/olc.py`.
