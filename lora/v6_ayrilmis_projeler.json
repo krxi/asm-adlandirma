@@ -1,0 +1,198 @@
+{
+  "sema_surumu": 1,
+  "amac": "Mevcut ayrilmis bolumlerin proje uyeliginden turetilmis egitim girdi korumasi; bolme degistirmez.",
+  "proje_hash_kurali": "sha256(proje.encode(utf-8)); mevcut proje metni aynen, normalizasyon yok",
+  "kaynaklar": [
+    {
+      "kaynak": "v4_validation",
+      "sha256": "7516244ec1798b05f6c3ef09fbfb4636241b5dd6bbfd8b6814ad340b6f1beef3",
+      "satir_sayisi": 19770,
+      "proje_sayisi": 23,
+      "proje_sha256": [
+        "139090d3c652ce9e586a2858c81e503f126f9052da917a95b4422ca3bc97fd89",
+        "1cdb45fc818471d7ef42cf671925364c5d50542c45e28e2a2a4b8e648ca5ea16",
+        "1d036a923f848de0fa12028f2f198885d2afdce405867db1517f8de73ae4682a",
+        "2dcfa626015b93849d9ba26b2f491b9c4d0650680622844cc3659d6ad31cc7cf",
+        "33888463c8276d7b4bd329b010c5cd364a481459bd04dcf126a50044a3d9eefb",
+        "37d6015f7971ecda19d8a000093525b409b7f7dc38587546653c3bba427d2068",
+        "4a629391c44ba0a62af88b65911a6c33ecf08598f6a74b52187a5921cc81c13f",
+        "4bc529d33e80672d2c818851c8974428eddab767b45ce0e948d36e93218ed45d",
+        "4ed81dd66dc34c0d72bf658abf878a68c9822dbfa5f8e594a6245c06e12444a0",
+        "50d74538bafdfca8d5ba78d8aa0f8ce83f549157891fd815b9706399df1f28c4",
+        "60fd61ec37acac66dac3eea1a7ba6a2eafd0d94de18d4b5156b719e15ade7732",
+        "6a42f3b5d1154428a12579babe23b6ccdc33b3b89065ad0b20e9c1d8a66077be",
+        "6bd52b204f5b4cffb267597f37d0fa62bae229341394dfec0e5d42439d8b722c",
+        "78549542949d5cc0a07821a081f64f4232b6b88d19b011afe7cfd1f5c0a7075e",
+        "83711b30d714ef00b98a68bc2ef22193de662eeb8494e83c96869ae729178c22",
+        "844dc5346b0351680eb630de490f70df0874bbbf0e5e5854052b2c175a863fa5",
+        "8e9ccec2f90a3f57b5df44cb1b8e6beb70183ac9fefd7a9772173340ea5d8401",
+        "b71fbcdc127467bc1e0c7ddb275f6d28492bd39b1ca1cce2e2a98ae1047fee17",
+        "bd46b2d94583c78b5991e70d901b7d6f151e043495dabcebaf1fce1e49f90c9c",
+        "c70f06578a30fa9093bb4d036421bdee4052be6e20524272624b1ab66f88eef9",
+        "ca21136dbd8d004f7dcb304ce4148d68998840736bca592c82ad5516a2e7f457",
+        "e0b9a8799f32453a478c9122f8b83cee68e16db18f493ac81bc1d474594b5df4",
+        "e10c9da5812d9fdd72636bd2723af2399bb524fbdec82a6c628b2010cc53d9f3"
+      ],
+      "url": "https://huggingface.co/datasets/krxi123/asmsense/resolve/6e1eb5e44c3114a06c0b4cac9b38540c33e322e0/data/v4/validation-00000.jsonl.gz",
+      "revizyon": "6e1eb5e44c3114a06c0b4cac9b38540c33e322e0",
+      "sha256_kapsami": "acilmis JSONL baytlari"
+    },
+    {
+      "kaynak": "v4_test",
+      "sha256": "76c2ac6a14999247efb6d663e29d7f60ba7592195493aaa56b82811532eabdf8",
+      "satir_sayisi": 12290,
+      "proje_sayisi": 28,
+      "proje_sha256": [
+        "0585ecb318af83c000f5ad8b5d84c9a109a1896f9429d0dc08148c4407036a20",
+        "06f0e3bfc77441e6dddcc12f2c2c663de13c0b3a955fa74f0d1e99fb72b00fb2",
+        "0bf97c7b302d147594bb0c6e117696d332f2d10e58610b533eac7bb64cdb6a9c",
+        "21eb0e01bbb111a648bb069d3b187b1c4aaa96a6e83025dcf1799b3293b7a697",
+        "43338a5b3ae2dbe58a86c6a207f7ceb68f7c1068b0f261f09d33465b745f9290",
+        "4784a50cf107aae04c1852c9a1e1cd1a1389b410dd0e12fb6f35e74a6f6f23ac",
+        "6b50375ee4e3db22685a552c64d4997e916f06381cc0127f5e385ba742ccabeb",
+        "6de756fa14978afe986c32e2988c525c72a20b2539f06b4f66ddf61e820f5248",
+        "71fa8de0fed210508f4cac62b05785d485126aae3400b89fc000abcf5b50d3fa",
+        "74cd321c6bf3b043e8ab93c54a43ba161dba8f78a47a30d6f5b82f183b929dba",
+        "75c1278c8039de6ba2f6ef8efa798a6102de83c70528aefa96a94f8ca67f880a",
+        "75fc68d49156e9c6128b60cfab08d1527ecc6b1c1487fd546b89ca63bf2592c0",
+        "77c6a9f2d88474511a785c6e59c2c294c7bb540afe844e260e32eec15a2ed06b",
+        "9f3271fac26d43552ab94d0f0fb50baf1cb52eb62acfaaf0645167a75ecee98b",
+        "a5d95459b53438cac1967b865251d191269d3aef7f87f654c79666ac1ff099f7",
+        "a68357552b136db35b86324ef9415a65beea00fe06f22ce4fdf0d57315829495",
+        "ade9a26e3a09ef215aff2a3b6f693ed158683766ecfb81a94438b97688290b41",
+        "b01a23189d35aca824914aa3f1dfc465f638b0f5d62227b612af59e7f151d42b",
+        "b5b16b0f3dba4fbf2ae9c03cd3e52415387a544f1919dc418987d0faa490ac86",
+        "b79b5ab81f291e0d8ac4eab37e0e26b2a83e73b294f9ba97cf38de2b8a49e0a8",
+        "c0abfad57b87dee22a88dea2ee7c41fa2fbfe43cfa1edadb024fc4d2a6b25b2f",
+        "d27d7c78d3fba6e216b610c451efc4fd9088159c2f523e339fa9702ac6e01c7f",
+        "dcfcbf8a387c9d490a04eca8c7c47797a7201056ac96e2620b6befdd153346a4",
+        "e158ac501aab98943c0626137cacb355ac6750df9bc1fad0f482455f75235375",
+        "e4dabe6ba3a93698732c71c8b1b324f968b6b72dfdfaa239964e77a809003a71",
+        "ecd358026df1ca0816f1c84c65f1d7706211c4acd0cf815043ab92e1c0409d5b",
+        "f526fb0c883a932d1847f5b58124376c8e9223f5e6927375961c2cbc18f88e4f",
+        "f7f376a1fcd0d0e11a10ed1b6577c99784d3a6bbe669b1d13fae43eb64634f6e"
+      ],
+      "url": "https://huggingface.co/datasets/krxi123/asmsense/resolve/6e1eb5e44c3114a06c0b4cac9b38540c33e322e0/data/v4/test-00000.jsonl.gz",
+      "revizyon": "6e1eb5e44c3114a06c0b4cac9b38540c33e322e0",
+      "sha256_kapsami": "acilmis JSONL baytlari"
+    },
+    {
+      "kaynak": "veri/test.jsonl",
+      "sha256": "1c21ac7c37f0138d8176db6ff05db5ef0be352f66661d6422d6c7f623119ecc6",
+      "satir_sayisi": 115,
+      "proje_sayisi": 5,
+      "proje_sha256": [
+        "0bf97c7b302d147594bb0c6e117696d332f2d10e58610b533eac7bb64cdb6a9c",
+        "6b50375ee4e3db22685a552c64d4997e916f06381cc0127f5e385ba742ccabeb",
+        "74cd321c6bf3b043e8ab93c54a43ba161dba8f78a47a30d6f5b82f183b929dba",
+        "dcfcbf8a387c9d490a04eca8c7c47797a7201056ac96e2620b6befdd153346a4",
+        "e4dabe6ba3a93698732c71c8b1b324f968b6b72dfdfaa239964e77a809003a71"
+      ],
+      "commit": "63e6ddc76633f849cbcb9336e7e7f895e67e268b"
+    },
+    {
+      "kaynak": "veri/test/cyaml.jsonl",
+      "sha256": "6f03c12afae227d36d8852da65740c8120c247bc47d697f0d97ad72fb5b26b64",
+      "satir_sayisi": 405,
+      "proje_sayisi": 1,
+      "proje_sha256": [
+        "74cd321c6bf3b043e8ab93c54a43ba161dba8f78a47a30d6f5b82f183b929dba"
+      ],
+      "commit": "63e6ddc76633f849cbcb9336e7e7f895e67e268b"
+    },
+    {
+      "kaynak": "veri/test/mu_json_x.jsonl",
+      "sha256": "85bac590d5aa9ed58ef39bcb7442521fc293b8a5c0a2ccfe8474caaa8d4a0d38",
+      "satir_sayisi": 134,
+      "proje_sayisi": 1,
+      "proje_sha256": [
+        "dcfcbf8a387c9d490a04eca8c7c47797a7201056ac96e2620b6befdd153346a4"
+      ],
+      "commit": "63e6ddc76633f849cbcb9336e7e7f895e67e268b"
+    },
+    {
+      "kaynak": "veri/test/picomatch.jsonl",
+      "sha256": "b8075d87a8c9f30591ddd4533dd978d597746c46c44e56217bf3774054915808",
+      "satir_sayisi": 29,
+      "proje_sayisi": 1,
+      "proje_sha256": [
+        "0bf97c7b302d147594bb0c6e117696d332f2d10e58610b533eac7bb64cdb6a9c"
+      ],
+      "commit": "63e6ddc76633f849cbcb9336e7e7f895e67e268b"
+    },
+    {
+      "kaynak": "veri/test/sajs.jsonl",
+      "sha256": "13ec2da493fbbc6857b4cda565452116f43138ea60426dbaba05f8ecbeaab70a",
+      "satir_sayisi": 91,
+      "proje_sayisi": 1,
+      "proje_sha256": [
+        "6b50375ee4e3db22685a552c64d4997e916f06381cc0127f5e385ba742ccabeb"
+      ],
+      "commit": "63e6ddc76633f849cbcb9336e7e7f895e67e268b"
+    },
+    {
+      "kaynak": "veri/test/tomlc17.jsonl",
+      "sha256": "8b2d3187646e5d08d0e1de627ed0c462e905a6b22d357ccb316372b9d97e42de",
+      "satir_sayisi": 118,
+      "proje_sayisi": 1,
+      "proje_sha256": [
+        "e4dabe6ba3a93698732c71c8b1b324f968b6b72dfdfaa239964e77a809003a71"
+      ],
+      "commit": "63e6ddc76633f849cbcb9336e7e7f895e67e268b"
+    }
+  ],
+  "ayrilmis_proje_sha256": [
+    "0585ecb318af83c000f5ad8b5d84c9a109a1896f9429d0dc08148c4407036a20",
+    "06f0e3bfc77441e6dddcc12f2c2c663de13c0b3a955fa74f0d1e99fb72b00fb2",
+    "0bf97c7b302d147594bb0c6e117696d332f2d10e58610b533eac7bb64cdb6a9c",
+    "139090d3c652ce9e586a2858c81e503f126f9052da917a95b4422ca3bc97fd89",
+    "1cdb45fc818471d7ef42cf671925364c5d50542c45e28e2a2a4b8e648ca5ea16",
+    "1d036a923f848de0fa12028f2f198885d2afdce405867db1517f8de73ae4682a",
+    "21eb0e01bbb111a648bb069d3b187b1c4aaa96a6e83025dcf1799b3293b7a697",
+    "2dcfa626015b93849d9ba26b2f491b9c4d0650680622844cc3659d6ad31cc7cf",
+    "33888463c8276d7b4bd329b010c5cd364a481459bd04dcf126a50044a3d9eefb",
+    "37d6015f7971ecda19d8a000093525b409b7f7dc38587546653c3bba427d2068",
+    "43338a5b3ae2dbe58a86c6a207f7ceb68f7c1068b0f261f09d33465b745f9290",
+    "4784a50cf107aae04c1852c9a1e1cd1a1389b410dd0e12fb6f35e74a6f6f23ac",
+    "4a629391c44ba0a62af88b65911a6c33ecf08598f6a74b52187a5921cc81c13f",
+    "4bc529d33e80672d2c818851c8974428eddab767b45ce0e948d36e93218ed45d",
+    "4ed81dd66dc34c0d72bf658abf878a68c9822dbfa5f8e594a6245c06e12444a0",
+    "50d74538bafdfca8d5ba78d8aa0f8ce83f549157891fd815b9706399df1f28c4",
+    "60fd61ec37acac66dac3eea1a7ba6a2eafd0d94de18d4b5156b719e15ade7732",
+    "6a42f3b5d1154428a12579babe23b6ccdc33b3b89065ad0b20e9c1d8a66077be",
+    "6b50375ee4e3db22685a552c64d4997e916f06381cc0127f5e385ba742ccabeb",
+    "6bd52b204f5b4cffb267597f37d0fa62bae229341394dfec0e5d42439d8b722c",
+    "6de756fa14978afe986c32e2988c525c72a20b2539f06b4f66ddf61e820f5248",
+    "71fa8de0fed210508f4cac62b05785d485126aae3400b89fc000abcf5b50d3fa",
+    "74cd321c6bf3b043e8ab93c54a43ba161dba8f78a47a30d6f5b82f183b929dba",
+    "75c1278c8039de6ba2f6ef8efa798a6102de83c70528aefa96a94f8ca67f880a",
+    "75fc68d49156e9c6128b60cfab08d1527ecc6b1c1487fd546b89ca63bf2592c0",
+    "77c6a9f2d88474511a785c6e59c2c294c7bb540afe844e260e32eec15a2ed06b",
+    "78549542949d5cc0a07821a081f64f4232b6b88d19b011afe7cfd1f5c0a7075e",
+    "83711b30d714ef00b98a68bc2ef22193de662eeb8494e83c96869ae729178c22",
+    "844dc5346b0351680eb630de490f70df0874bbbf0e5e5854052b2c175a863fa5",
+    "8e9ccec2f90a3f57b5df44cb1b8e6beb70183ac9fefd7a9772173340ea5d8401",
+    "9f3271fac26d43552ab94d0f0fb50baf1cb52eb62acfaaf0645167a75ecee98b",
+    "a5d95459b53438cac1967b865251d191269d3aef7f87f654c79666ac1ff099f7",
+    "a68357552b136db35b86324ef9415a65beea00fe06f22ce4fdf0d57315829495",
+    "ade9a26e3a09ef215aff2a3b6f693ed158683766ecfb81a94438b97688290b41",
+    "b01a23189d35aca824914aa3f1dfc465f638b0f5d62227b612af59e7f151d42b",
+    "b5b16b0f3dba4fbf2ae9c03cd3e52415387a544f1919dc418987d0faa490ac86",
+    "b71fbcdc127467bc1e0c7ddb275f6d28492bd39b1ca1cce2e2a98ae1047fee17",
+    "b79b5ab81f291e0d8ac4eab37e0e26b2a83e73b294f9ba97cf38de2b8a49e0a8",
+    "bd46b2d94583c78b5991e70d901b7d6f151e043495dabcebaf1fce1e49f90c9c",
+    "c0abfad57b87dee22a88dea2ee7c41fa2fbfe43cfa1edadb024fc4d2a6b25b2f",
+    "c70f06578a30fa9093bb4d036421bdee4052be6e20524272624b1ab66f88eef9",
+    "ca21136dbd8d004f7dcb304ce4148d68998840736bca592c82ad5516a2e7f457",
+    "d27d7c78d3fba6e216b610c451efc4fd9088159c2f523e339fa9702ac6e01c7f",
+    "dcfcbf8a387c9d490a04eca8c7c47797a7201056ac96e2620b6befdd153346a4",
+    "e0b9a8799f32453a478c9122f8b83cee68e16db18f493ac81bc1d474594b5df4",
+    "e10c9da5812d9fdd72636bd2723af2399bb524fbdec82a6c628b2010cc53d9f3",
+    "e158ac501aab98943c0626137cacb355ac6750df9bc1fad0f482455f75235375",
+    "e4dabe6ba3a93698732c71c8b1b324f968b6b72dfdfaa239964e77a809003a71",
+    "ecd358026df1ca0816f1c84c65f1d7706211c4acd0cf815043ab92e1c0409d5b",
+    "f526fb0c883a932d1847f5b58124376c8e9223f5e6927375961c2cbc18f88e4f",
+    "f7f376a1fcd0d0e11a10ed1b6577c99784d3a6bbe669b1d13fae43eb64634f6e"
+  ],
+  "sinir": "Kayit metaverisinin dogrulugu ve train upstream kokeni ayrica dogrulanmalidir; fonksiyon adi/kimligi/asm/kaynak icermez."
+}

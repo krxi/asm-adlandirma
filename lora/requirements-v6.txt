@@ -1,0 +1,5 @@
+# Optional GPU runner only; Python >=3.11. CPU plan/tests need none of these.
+transformers==5.3.0
+peft==0.18.1
+accelerate>=1.12,<2
+torch>=2.6,<3
