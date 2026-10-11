@@ -1,0 +1,123 @@
+% asmsense -- MSR 2027 Data and Tool Showcase taslağı (4 sayfa + 1 sayfa kaynak, IEEE).
+% TASLAK: Sayılar repodaki arşiv sonuçlarından ve rapor/arastirma/V6_VERI_DENETIMI.md'den alındı.
+% Metni kendi sesinle revize et; "TODO" işaretlerini gönderimden önce kapat.
+% Derleme: tectonic main.tex  (veya pdflatex + bibtex)
+\documentclass[conference]{IEEEtran}
+\usepackage[T1]{fontenc}
+\usepackage{booktabs}
+\usepackage{url}
+\usepackage{xspace}
+\newcommand{\tool}{\textsc{asmsense}\xspace}
+
+\begin{document}
+
+\title{\tool: A Memorization-Aware Dataset for Naming\\Functions in Stripped x86-64 Binaries}
+
+\author{\IEEEauthorblockN{Emin TODO-soyad}
+\IEEEauthorblockA{TODO-kurum / bağımsız araştırmacı\\TODO-e-posta}}
+
+\maketitle
+
+\begin{abstract}
+Large language models can suggest names for functions in stripped binaries, but they are usually evaluated on famous open-source code that they have likely seen during pre-training. We present \tool, a dataset and evaluation protocol for recovering function names and one-sentence descriptions from stripped x86-64 code. The dataset contains 228,177 functions from 341 permissively licensed C projects, compiled at five optimization levels, linked into real dynamic libraries and stripped. Training, validation and test are split by project, and the test projects are little-known and recent. An independent audit of the released data confirms that projects, identifiers and source functions are disjoint across splits, and documents one vendored-library exception. On the same functions, reasoning triples a large model's exact matches on zlib but adds nothing on little-known code, which shows why familiar benchmarks overstate this task. We release baselines for five large open models with and without call context and decompiled code, and two LoRA-tuned Qwen3-8B models. The best small model reaches a name F1 of 0.124, against 0.167 for the strongest large model with the same context.
+\end{abstract}
+
+\section{Introduction}
+Reverse engineers spend much of their time renaming functions such as \texttt{FUN\_00401a30}. A model that proposes a meaningful name and a short description for each function would speed up this first step. Recent work trains or prompts language models for function-name recovery~\cite{symlm,xfl,nero,llm4decompile}, but most evaluations split data by binary or by function and draw from well-known projects. Such splits leak project conventions, and well-known projects are likely part of a model's pre-training data.
+
+\tool addresses both problems. Our contributions are:
+\begin{itemize}
+  \item a dataset of 228,177 stripped x86-64 functions from 341 projects at \texttt{-O0}/\texttt{-O1}/\texttt{-O2}/\texttt{-O3}/\texttt{-Os}, built by real linking and \texttt{strip -x}, with per-row license information;
+  \item a project-level split whose 28 test projects have at most 200 GitHub stars and were mostly started in 2024--2025, plus an audit tool that checks the released files for split overlap, name leaks and vendored code;
+  \item evidence that reasoning helps large models on famous code but not on little-known code (Table~\ref{tab:memo});
+  \item baselines for five large open models and two LoRA-tuned Qwen3-8B models, released with chat-format training data (v5, v6) and a LoRA adapter.
+\end{itemize}
+
+\section{Dataset Construction}
+\textbf{Project selection.} We searched GitHub for C projects under MIT, BSD, ISC, zlib, Apache-2.0 or public-domain terms. Of 473 candidates, 352 produced rows; 120 failed to compile (mostly kernel, embedded or platform-specific code). Build scripts are not run: files are compiled individually with clang, and files that fail are skipped.
+
+\textbf{Compilation and stripping.} Each project is compiled at five optimization levels for \texttt{x86\_64-apple-macos12}, linked into a Mach-O dynamic library and stripped with \texttt{strip -x}. Function boundaries come from the stripped copy (\texttt{LC\_FUNCTION\_STARTS} and unwind records), so the model sees what a reverse engineer sees.
+
+\textbf{Anonymization.} Project-internal functions become \texttt{sub\_XXXX} and global data \texttt{dat\_XXXX}, with shuffled numbering and separate namespaces per optimization level. Branch targets use function-local labels. Calls into external libraries and string literals stay visible, as in a real binary. Rows whose own assembly contains the function name are flagged as leaking.
+
+\textbf{Deduplication and splits.} Rows are deduplicated by normalized assembly hash. Rows identical to validation or test rows are removed from training, and vendored copies whose (file, name) pair appears in training are removed from validation and test. Table~\ref{tab:splits} summarizes the splits.
+
+\begin{table}[t]
+\centering
+\caption{Project-level splits of the v4 data.}
+\label{tab:splits}
+\begin{tabular}{lrrr}
+\toprule
+Split & Projects & Rows & Source functions \\
+\midrule
+Train & 290 & 196,117 & 72,179 \\
+Validation & 23 & 19,770 & 6,667 \\
+Test (little-known) & 28 & 12,290 & 4,685 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Training releases.} Release v5 converts the data to chat format: 95,000 training rows that cover every training source function at least once, weighted toward optimized variants. The target is a JSON object with a one-sentence English description, the name, and a one-sentence Turkish description. Descriptions come from a teacher model that read the C source. Release v6 adds Ghidra decompilation of the same function to the input (99.7\% of training rows), cut to fit 3,072 tokens; decompilation is withheld for rows where it still contained the target name. Fixed evaluation samples are \texttt{test\_sabit} (2,000 rows, 26 projects), \texttt{valid\_300} and \texttt{eval115} (115 rows, 95 functions from five little-known projects).
+
+\section{Memorization-Aware Evaluation}
+\textbf{Metrics.} Name F1 is computed over word sets after splitting \texttt{snake\_case} and \texttt{camelCase}; prefix-stripped F1 removes a project's common prefix from both sides, since it cannot be inferred from assembly. We also report exact matches.
+
+\textbf{Why little-known projects.} Table~\ref{tab:memo} compares the same model and pipeline on 115 rows from zlib and 115 from five little-known projects. Reasoning triples exact matches on zlib and adds nothing on the unfamiliar code. Evaluating on famous libraries therefore measures recall of seen source as much as understanding of assembly.
+
+\begin{table}[t]
+\centering
+\caption{Reasoning on famous vs.\ little-known code (mimo-v2.6-pro, 115 rows each).}
+\label{tab:memo}
+\begin{tabular}{lcc}
+\toprule
+ & Without reasoning & With reasoning \\
+\midrule
+zlib & 9 exact, F1 0.18 & 28 exact, F1 0.29 \\
+Little-known projects & 4 exact, F1 0.20 & 3 exact, F1 0.21 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Audit of the released data.} \texttt{veri\_denetim\_v6.py} checks the published archive without model calls. Projects, row identifiers and (project, file, name) source functions are disjoint between train, validation, test and \texttt{eval115}. The gold name never appears as an identifier in the \texttt{test\_sabit} or \texttt{eval115} inputs. Only 2.6\% of \texttt{test\_sabit} rows have a normalized decompilation identical to a training row, mostly 6--20-instruction functions, and copying the training name for them gives an F1 of at most 0.20.
+
+\textbf{Known exception.} Test project \texttt{snkv} embeds SQLite under its own file names, while \texttt{sqlite} is a training project. The (file, name) filter missed it: 217 of the 2,000 \texttt{test\_sabit} rows (10.85\%) carry a name identical to a SQLite training function. All models score \emph{lower} on these rows, so they do not inflate results, but they narrow the gap between small and large models. We therefore report every test2000 result with and without \texttt{snkv}.
+
+\section{Baselines}
+Large open models (mimo-v2.6-pro, glm-5.3, deepseek-v4.1-flash, qwen3.8-flash-next, gemma-4-31b) are prompted zero-shot with the assembly; optional call context summarizes internal callees' imports, calls and strings. Small models are Qwen3-8B with rank-16 LoRA, trained for two epochs on 41k v4 rows with names only (v1) or for one epoch on the 95k v5 rows with description-then-name targets (v5); the v5 checkpoint is selected on \texttt{valid\_300}. Table~\ref{tab:base} reports the fixed 2,000-row test sample.
+
+\begin{table}[t]
+\centering
+\caption{Name F1 on the fixed test sample (2,000 rows, 26 little-known projects). ``No snkv'' drops the vendored project (1,491 rows).}
+\label{tab:base}
+\begin{tabular}{lccc}
+\toprule
+Model and input & F1 & No snkv & Exact \\
+\midrule
+mimo + context & 0.167 & 0.190 & 40 \\
+deepseek + context & 0.154 & 0.173 & 40 \\
+mimo, decompile only & 0.173 & 0.194 & 36 \\
+mimo + context + decompile & \textbf{0.192} & \textbf{0.214} & 52 \\
+\midrule
+Qwen3-8B LoRA v1 & 0.106 & 0.110 & 25 \\
+Qwen3-8B LoRA v5 & 0.124 & 0.132 & 26 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The v5 target improves the small model by +0.018 F1 over v1 (95\% project-cluster bootstrap interval +0.010 to +0.031). The remaining gap to mimo with call context is $-0.044$ $[-0.076, -0.021]$, and $-0.058$ $[-0.082, -0.033]$ without \texttt{snkv}. Decompiled code helps the large model: adding it to assembly and context raises F1 by +0.025 $[+0.018, +0.032]$, which motivates release v6. On \texttt{eval115}, wrappers that only call one internal function stay at F1 0 for every model, even with the callee's full assembly in context.
+
+\textbf{Descriptions.} A judge model compared v5's English descriptions with the C source on 300 test rows: 20.0\% correct, 15.3\% partly correct and 64.7\% wrong. Name F1 is 0.306 when the description is correct and 0.054 when it is wrong, so understanding the function, not choosing a name, is the bottleneck.
+
+\section{Availability and Use}
+The v4 function table is on Hugging Face (\url{https://huggingface.co/datasets/krxi123/asmsense}) and Kaggle; the chat-format releases v4--v6 are GitHub release archives with published SHA-256 checksums (\url{https://github.com/krxi/asmsense-data}), archived on Zenodo (DOI: TODO). Every row carries the license of its source project. Code, prompts, archived predictions and the audit tool are MIT-licensed at \url{https://github.com/krxi/asmsense}; the Qwen3-8B LoRA adapter is on Hugging Face. The dataset supports training naming and summarization models, studying memorization with a matched famous-vs.-unfamiliar design, and testing inputs such as call context or decompilation.
+
+\section{Limitations}
+All binaries are Mach-O built with clang; ELF, PE and other compilers are not covered. The fixed test sample guided development decisions and is not an untouched hold-out; a sealed test of projects created after the evaluated models' release is future work. Project-level splits and little-known projects reduce, but cannot exclude, pre-training contamination. Name F1 is lexical and gives no credit for synonyms. Reference descriptions come from a teacher model, not from human annotators.
+
+\section{Related Work}
+NERO~\cite{nero}, SymLM~\cite{symlm} and XFL~\cite{xfl} predict function names from binaries with learned embeddings or label spaces; DIRE~\cite{dire} recovers variable names from decompiler output, and LLM4Decompile~\cite{llm4decompile} recovers source from binaries. Most of these use binary- or function-level splits. BLens~\cite{blens} reports a cross-project word-level F1 of 0.460 but excludes 20 common names, and SymGen~\cite{symgen} shows that aggressive deduplication sharply lowers earlier models' scores. Their metrics and inputs differ from ours, so we do not compare numbers directly. \tool contributes a project-level, memorization-aware evaluation with an audited release.
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}
