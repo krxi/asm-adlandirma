@@ -78,6 +78,8 @@ Of 473 projects, 352 produced rows and 120 failed to compile (kernel, embedded, 
 
 The training/test split is strictly **project-level**: no function from a project can appear on both sides. Test projects were deliberately chosen to be little-known (2-190 stars), and most were started in 2024-2025, making it far less likely that large models encountered them during training than a library such as zlib. Licenses: [veri/LISANSLAR.md](veri/LISANSLAR.md).
 
+**Known exception: vendored code.** An independent audit of the released v6 data ([rapor/arastirma/V6_VERI_DENETIMI.md](rapor/arastirma/V6_VERI_DENETIMI.md), `veri_denetim_v6.py`) confirmed that no project, id or (project, file, name) appears on both sides, but test project `snkv` embeds SQLite under its own file names while `sqlite` is a training project. In the fixed 2,000-row test sample, 217 rows (10.85%) have a name identical to a SQLite training function. Every model scores *lower* on those rows, so they do not inflate the results; they narrow the small-vs-large gap instead (see Results, section 6). The validation sample `valid_300` contains 16 similar rows (5.3%).
+
 ## Results
 
 ### 1. Memorization-resistant test: 5 little-known projects, 115 functions
@@ -164,6 +166,8 @@ Same fixed v4 test sample (`lora/test_sabit_idler.txt`, little-known test projec
 | Qwen3-8B + LoRA v1 | `eval_115` | 115 | 0.102 / 0.085 / 0.094 | 0.111 | 1 / 4 |
 | Qwen2.5-Coder-1.5B + LoRA v3, with call context (MLX, laptop) | first 500 of the fixed sample | 500 | 0.044 | 0.045 | 0 |
 | Qwen2.5-Coder-1.5B + LoRA v3, assembly only | first 500 of the fixed sample | 500 | 0.037 | 0.038 | 0 |
+
+**Outside the vendored project.** Without `snkv` (1,491 of the 2,000 rows), name F1 is 0.132 for v5 and 0.190 for mimo-v2.6-pro with call context; the paired gap widens from −0.044 [−0.076, −0.021] to −0.058 [−0.082, −0.033] (project-cluster bootstrap, 2,000 draws). The headline figures above keep all 2,000 rows so they stay comparable with earlier runs.
 
 On the same 500 rows the 8B model scores 0.108 versus 0.044 for 1.5B. The 1.5B adapter does not generalize to new projects and shows strong mode collapse (the most frequent prediction covers 13.6% of rows). The 8B model is the first small model that is clearly above zero.
 

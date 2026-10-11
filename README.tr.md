@@ -77,6 +77,8 @@ Veri seti Hugging Face'te: [krxi123/asmsense](https://huggingface.co/datasets/kr
 
 Eğitim/test ayrımı **proje bazındadır**: bir projenin hiçbir fonksiyonu iki tarafa birden düşmez. Test projeleri bilerek az bilinen (2-190 yıldız), çoğu 2024-2025'te başlamış projelerden seçildi; büyük modellerin bunları eğitimde görmüş olma ihtimali zlib'e göre çok düşük. Lisanslar: [veri/LISANSLAR.md](veri/LISANSLAR.md).
 
+**Bilinen istisna: gömülü kod.** Yayımlanmış v6 verisinin bağımsız denetimi ([rapor/arastirma/V6_VERI_DENETIMI.md](rapor/arastirma/V6_VERI_DENETIMI.md), `veri_denetim_v6.py`) hiçbir proje, kimlik veya (proje, dosya, ad) üçlüsünün iki tarafa birden düşmediğini doğruladı. Ancak test projesi `snkv`, SQLite'ı kendi dosya adlarıyla gömüyor ve `sqlite` bir eğitim projesi. Sabit 2.000 satırlık test örnekleminde 217 satırın (%10,85) adı bir SQLite eğitim fonksiyonuyla birebir aynı. Bütün modeller bu satırlarda *daha düşük* puan alıyor; yani sonuçları şişirmiyor, küçük-büyük model farkını daraltıyor (Sonuçlar, bölüm 6). Doğrulama örneklemi `valid_300`'de 16 benzer satır (%5,3) var.
+
 ## Sonuçlar
 
 ### 1. Ezbere dayanıklı test: az bilinen 5 proje, 115 fonksiyon
@@ -163,6 +165,8 @@ Aynı sabit v4 test örneklemi (`lora/test_sabit_idler.txt`, az bilinen test pro
 | Qwen3-8B + LoRA v1 | `eval_115` | 115 | 0.102 / 0.085 / 0.094 | 0.111 | 1 / 4 |
 | Qwen2.5-Coder-1.5B + LoRA v3, çağrı bağlamlı (MLX, laptop) | sabit örneklemin ilk 500'ü | 500 | 0.044 | 0.045 | 0 |
 | Qwen2.5-Coder-1.5B + LoRA v3, yalnız assembly | sabit örneklemin ilk 500'ü | 500 | 0.037 | 0.038 | 0 |
+
+**Gömülü proje dışında.** `snkv` olmadan (2.000 satırın 1.491'i) ad F1 v5'te 0.132, çağrı bağlamlı mimo-v2.6-pro'da 0.190; eşli fark −0.044 [−0.076, −0.021] yerine −0.058 [−0.082, −0.033] (proje kümeli bootstrap, 2.000 çekim). Yukarıdaki başlık rakamları önceki koşularla karşılaştırılabilir kalsın diye 2.000 satırın hepsini kullanır.
 
 Aynı 500 satırda 8B 0.108, 1.5B 0.044 alıyor. 1.5B adaptörü yeni projelere genellemiyor ve ciddi mod çöküşü var (en sık tahmin satırların %13,6'sı). 8B, sıfırın belirgin üstüne çıkan ilk küçük model.
 
