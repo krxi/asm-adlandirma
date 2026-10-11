@@ -1,6 +1,6 @@
 {
   "sema": 1,
-  "durum": "Gercek hazirlanmis girdiler dogrulanmadi; beklenen hashler incelemeden sonra sabitlenmeden pilot calismaz.",
+  "durum": "train/valid/train_v6/valid_v6 ve v5 eğitim sırası yayımlanmış asmsense-data v5 (veri-v5.zip sha256 d907792492dff79523035d4825b21ea190424cea633f0c052d38a54a7f6effd3) ve v6 (veri-v6.zip sha256 e1286104e59860a34fc18fe908ccadc3896b4db40fe1a5a75253aa9cc7a8c201) release'lerinden, GitHub asset digest'leriyle eşleşen arşivlerden bağımsız hesaplandı (PR #6 review). dogrulama_raporu ve dogrulanmis_idler ikili dogrula_v6 kanıtı gerektirir; sabitlenmeden pilot çalışmaz.",
   "ana_hat_commit": "15e3b28f1be387d0e8655edd838e1c32f9d348d5",
   "ana_hat_tree": "6f8d4781522bc7be45839071dc7231e12d0164e5",
   "ana_hat_bloblari": {
@@ -8,12 +8,12 @@
     "dogrula_v6.py": "8a41298d94dabce7f52db655cb8bfe96bbcbf4f7"
   },
   "beklenen_sha256": {
-    "train": null,
-    "valid": null,
-    "train_v6": null,
-    "valid_v6": null,
+    "train": "d54cab265e131812d44b2cb86f3c50cb5f985d2ab5becaa81497b72e64eccc93",
+    "valid": "45ed0960b03453f6a2eb45a118cc68bff3ff50ae22afec1849d023633dea90ad",
+    "train_v6": "b4ce965f8977258c8408ca78bdbb0393c34cf53d909eb9c5e291629d64c42b35",
+    "valid_v6": "1148a533d05b044624e99d5a74dc43f6b481523dda61e8fbfc4f93ff77010256",
     "dogrulama_raporu": null,
     "dogrulanmis_idler": null
   },
-  "train_sira_sha256": null
+  "train_sira_sha256": "3de444ea6ed91dbe83481915df52e7f2962f8eb49d6f19881e2ee776413cad16"
 }
