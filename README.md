@@ -262,6 +262,46 @@ sh lora/egit.sh                                                 # ayarlar lora/a
 .venv/bin/python lora/olc.py                                    # evaluate on the test set → sonuc/
 ```
 
+### Bottom-up naming (no training)
+
+`alttan_yukari_sim.py` measures **lexical information**, not model accuracy: it
+rewrites only the existing call-context section with gold callee names, archived
+v5 predictions, or the original anonymous names. A fourth, coverage-matched gold
+condition separates prediction quality from missing callee predictions. It reports
+prefix-stripped target-token recall and oracle best-callee-name-copy F1; neither
+is a bound on a language model's eventual naming F1. Assembly, decompile, literal
+strings, imports and self-recursive aliases remain unchanged.
+
+```bash
+python3 alttan_yukari_sim.py --prompts lora/veri-v6/test_sabit.jsonl \
+  --raw veri/olcek-v6/ham/test --predictions sonuc/test2000-molab-qwen3-8b-v5.jsonl \
+  --output /tmp/context-information.json --export /tmp/context-prompts.jsonl
+```
+
+`alttan_yukari.py` runs leaf-first inference against an OpenAI-compatible endpoint
+serving the desired adapter (it does not load or train an adapter). Supply prepared
+v6 chat rows for the project's functions and their matching raw extraction JSONL:
+
+```bash
+python3 alttan_yukari.py --prompts project-v6.jsonl --raw project-raw.jsonl \
+  --model <served-v6-adapter> --endpoint http://127.0.0.1:8080/v1 \
+  --output /tmp/bottom-up-predictions.jsonl
+# Offline replay exercises orchestration without issuing any model request:
+python3 alttan_yukari.py --prompts project-v6.jsonl --raw project-raw.jsonl \
+  --replay project-predictions.jsonl --output /tmp/bottom-up-replay.jsonl
+```
+
+Graph aliases are scoped by project, optimization and stripping mode; source files
+do not define separate alias namespaces. Direct calls/tail jumps come from raw
+assembly, not the summaries' second-hop calls. Strongly connected components are
+processed sink-first; predictions within a recursive component become visible
+only after the entire component has been named. Gold labels and assistant answers
+are never sent to the endpoint. Missing prompt nodes are reported, not invented:
+the fixed test sample is an incomplete project graph, so a project-wide experiment
+needs its complete prepared function corpus. Output is append-only during a run,
+and an existing output file is never overwritten. These tools do not change
+binaries or benchmark labels.
+
 Evaluations were run on infrastructure in Türkiye provided by the [EVREN](https://evren.ssyz.org.tr) AI platform.
 
 ## License
