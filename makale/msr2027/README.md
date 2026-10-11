@@ -14,7 +14,7 @@ Bugünkü taslak 3 sayfa (kaynaklar dahil); bir şekil veya v6 satırı için ye
 
 - [ ] Yazar adı, kurum ve e-posta (`main.tex` başı)
 - [ ] Zenodo DOI (`asmsense-data` için entegrasyonu aç, yeni release yayımla) ve metindeki `DOI: TODO`
-- [ ] `refs.bib`: `TODO` yazar listelerini ve başlıkları birincil kaynaktan doğrula
+- [x] `refs.bib`: BLens ve SymGen kayıtlarını birincil konferans kaynaklarından doğrula
 - [ ] v6 sonucu geldiyse Tablo III'e satır ekle (`olcum_v6.py rapor`)
 - [ ] Metni kendi sesinle revize et; sayıları değiştirme, kaynakları aşağıda
 - [ ] İsteğe bağlı şekil: `grafik/x-ezber.png` (ezber karşılaştırması) veya `grafik/test-hata.png`
